@@ -67,7 +67,7 @@ const I18N = {
     apply: 'Apply', errFixEnd: 'The end must be between {a} and {b}.', errFixStart: '{p} ended less time ago than that.',
     timesFixed: '⏱ Times fixed',
     gameReport: 'Game report', gameTime: 'Game time {t}', inProgress: 'game still in progress',
-    didNotPlay: 'Did not play',
+    didNotPlay: 'Did not play', notCalled: 'Not called up',
     reportHint: 'Preview of the PDF (scroll sideways to see every column). Each half starts at its regular time; extra time shows as (+mm:ss).',
     pdf: '📄 Share PDF',
     confirmFullTime: 'End the game (full time)?', confirmDeleteGame: 'Delete this game and all its stats?',
@@ -127,7 +127,7 @@ const I18N = {
     apply: 'Aplicar', errFixEnd: 'O fim tem de estar entre {a} e {b}.', errFixStart: '{p} terminou há menos tempo do que isso.',
     timesFixed: '⏱ Tempos corrigidos',
     gameReport: 'Relatório do jogo', gameTime: 'Tempo de jogo {t}', inProgress: 'jogo ainda a decorrer',
-    didNotPlay: 'Não jogou',
+    didNotPlay: 'Não jogou', notCalled: 'Não convocado',
     reportHint: 'Pré-visualização do PDF (desliza para o lado para ver todas as colunas). Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
     pdf: '📄 Partilhar PDF',
     confirmFullTime: 'Terminar o jogo?', confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
@@ -985,27 +985,31 @@ function statsSheet(g) {
     { title: t('pdfRed'), w: 66, fill: '#c0392b' },
   ];
 
-  // Players who played first, then alphabetical, like the club's sheet.
-  const players = g.squad
-    .map((id) => ({ p: g.names[id], full: fullName(g, id), s: d.stats[id], starter: g.starters.includes(id) }))
-    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.full.localeCompare(b.full, locale()));
+  // Players who played, then unused subs, then team players not called up;
+  // alphabetical within each group, like the club's sheet.
+  const squad = g.squad.map((id) => ({ p: g.names[id], full: fullName(g, id), s: d.stats[id], starter: g.starters.includes(id) }));
+  const notCalled = (g.teamId ? teamPlayers(g.teamId) : [])
+    .filter((p) => !g.squad.includes(p.id))
+    .map((p) => ({ p, full: p.fullName || p.name, s: null }));
+  const group = (r) => (!r.s ? 2 : r.s.intervals.length ? 0 : 1);
+  const players = [...squad, ...notCalled].sort((a, b) => group(a) - group(b) || a.full.localeCompare(b.full, locale()));
   const dash = '—';
   const rows = players.map((r, i) => {
-    const played = r.s.intervals.length > 0;
+    const played = group(r) === 0;
     return [
       [String(i + 1)],
       [r.full],
       [r.p.number || ''],
-      [r.starter ? 'X' : ''],
-      [r.starter ? '' : 'X'],
-      played ? stintLabels(g, r.s, ' – ') : [t('didNotPlay')],
+      [r.s && r.starter ? 'X' : ''],
+      [r.s && !r.starter ? 'X' : ''],
+      played ? stintLabels(g, r.s, ' – ') : [r.s ? t('didNotPlay') : t('notCalled')],
       [played ? mmss(r.s.played) : dash],
       [played ? String(r.s.goals) : dash],
       [played ? String(r.s.yellow) : dash],
       [played ? String(r.s.red) : dash],
     ];
   });
-  const sum = (k) => String(players.reduce((n, r) => n + r.s[k], 0));
+  const sum = (k) => String(squad.reduce((n, r) => n + r.s[k], 0));
   const [yy, mo, dd] = String(g.date).split('-');
 
   return {
