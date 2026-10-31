@@ -551,7 +551,7 @@ function gameCard(g) {
   const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
   return `<li><a class="card" href="${href}">
     <div class="grow">
-      <strong>vs ${esc(g.opponent || t('opponent'))}</strong>
+      <strong>${esc(matchTitle(g))}</strong>
       <div class="muted">${g.team ? `${esc(g.team)} · ` : ''}${formatLine(g)}</div>
     </div>
     <div class="right">
@@ -793,7 +793,7 @@ function viewGame(id) {
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
 
   main.innerHTML = `
-    ${bar(`vs ${esc(g.opponent || t('opponent'))}`, '#/games')}
+    ${bar(esc(matchTitle(g)), '#/games')}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
       <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${d.us} – ${d.them}</div>
