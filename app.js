@@ -50,7 +50,7 @@ const I18N = {
     notStarted: 'Not started · {n} × {m} min', paused: 'paused', breakAfter: 'Break after {p}',
     autoStoppedToast: '⏱ {p} auto-stopped at +{m} min', fixTimes: 'Fix times',
     timeUp: '⏰ {p}: time is up', extraMin: '⏰ {p}: +{m} min extra',
-    evSub: '🔁 {in} on, {out} off', evGoal: '⚽ Goal: {p}', evOppGoal: '🥅 Goal conceded',
+    evGoal: '⚽ Goal: {p}', evOppGoal: '🥅 Goal conceded',
     evYellow: '🟨 Yellow: {p}', evRed: '🟥 Red: {p}', evGk: '🧤 In goal: {p}', evStart: '⏱ Start of {p}', evEnd: '⏱ End of {p}',
     notFound: 'Not found', gameGone: 'This game no longer exists.', back: 'Back',
     autoStoppedAlert: '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
@@ -110,7 +110,7 @@ const I18N = {
     notStarted: 'Por começar · {n} × {m} min', paused: 'em pausa', breakAfter: 'Intervalo após {p}',
     autoStoppedToast: '⏱ {p} parada automaticamente aos +{m} min', fixTimes: 'Corrigir tempos',
     timeUp: '⏰ {p}: tempo esgotado', extraMin: '⏰ {p}: +{m} min extra',
-    evSub: '🔁 Entra {in}, sai {out}', evGoal: '⚽ Golo: {p}', evOppGoal: '🥅 Golo sofrido',
+    evGoal: '⚽ Golo: {p}', evOppGoal: '🥅 Golo sofrido',
     evYellow: '🟨 Amarelo: {p}', evRed: '🟥 Vermelho: {p}', evGk: '🧤 Na baliza: {p}', evStart: '⏱ Início: {p}', evEnd: '⏱ Fim: {p}',
     notFound: 'Não encontrado', gameGone: 'Este jogo já não existe.', back: 'Voltar',
     autoStoppedAlert: '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
@@ -242,9 +242,10 @@ function matchTitle(g) {
 }
 
 // Optional button HTML (e.g. Undo) is shown next to the message.
+// `msg` is plain text; pass { html } instead for already-escaped markup.
 function toast(msg, button = '') {
   const el = $('#toast');
-  el.innerHTML = `<span>${esc(msg)}</span>${button}`;
+  el.innerHTML = `<span>${msg.html ?? esc(msg)}</span>${button}`;
   el.hidden = false;
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => (el.hidden = true), button ? 6000 : 2200);
@@ -463,12 +464,17 @@ function addEvent(g, e) {
 function doSub(g, out, inn) {
   const id = addEvent(g, { type: 'sub', playerId: out, inId: inn });
   render();
-  toast(t('evSub', { in: g.names[inn].name, out: g.names[out].name }), undoBtn(id));
+  toast({ html: subLine(esc(pname(g, inn)), esc(pname(g, out))) }, undoBtn(id));
 }
+
+// Substitution line: green ▲ for the player coming on, red ▼ for the one going off.
+// Names must already be escaped.
+const subLine = (inName, outName) =>
+  `<span class="nw"><span class="sub-in" aria-hidden="true">▲</span>${inName}</span> <span class="nw"><span class="sub-out" aria-hidden="true">▼</span>${outName}</span>`;
 
 function describe(g, e) {
   switch (e.type) {
-    case 'sub': return t('evSub', { in: esc(pname(g, e.inId)), out: esc(pname(g, e.playerId)) });
+    case 'sub': return subLine(esc(pname(g, e.inId)), esc(pname(g, e.playerId)));
     case 'goal': return t('evGoal', { p: esc(pname(g, e.playerId)) });
     case 'oppgoal': return t('evOppGoal');
     case 'yellow': return t('evYellow', { p: esc(pname(g, e.playerId)) });
