@@ -77,7 +77,7 @@ const I18N = {
     p1: '1st half', p2: '2nd half', pQ: 'Q{n}', pGame: 'Game', pN: 'Period {n}',
     pdfTitle: 'Stats sheet', pdfSeason: 'Season', pdfGame: 'GAME:', pdfRound: 'ROUND:', pdfDate: 'DATE:',
     pdfNo: 'No.', pdfPlayer: 'Player', pdfShirt: 'Shirt', pdfStints: 'ON – OFF', pdfMinutes: 'MINUTES',
-    pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', fileRound: 'Round', fileStats: 'Stats',
+    pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarters: 'STARTERS', pdfSubs: 'SUBSTITUTES', fileRound: 'Round', fileStats: 'Stats',
   },
   pt: {
     newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
@@ -137,7 +137,7 @@ const I18N = {
     p1: '1ª parte', p2: '2ª parte', pQ: '{n}.º período', pGame: 'Jogo', pN: '{n}.º período',
     pdfTitle: 'Folha de estatísticas', pdfSeason: 'Época', pdfGame: 'JOGO:', pdfRound: 'JORNADA:', pdfDate: 'DATA:',
     pdfNo: 'Nº', pdfPlayer: 'Atleta', pdfShirt: 'Cam.', pdfStints: 'ENTRADA – SAÍDA', pdfMinutes: 'MINUTOS',
-    pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', fileRound: 'Jornada', fileStats: 'Estatisticas',
+    pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarters: 'TITULARES', pdfSubs: 'SUPLENTES', fileRound: 'Jornada', fileStats: 'Estatisticas',
   },
 };
 
@@ -1144,10 +1144,10 @@ function buildPdf(g) {
   const tableW = cols.reduce((s, c) => s + c.w, 0);
   const colX = cols.map((_, i) => M + cols.slice(0, i).reduce((s, c) => s + c.w, 0));
 
-  // Players who played first, then alphabetical, like the club's sheet.
+  // Starters, then subs; within each, players who played first, then alphabetical.
   const rows = g.squad
-    .map((id) => ({ p: g.names[id], s: d.stats[id] }))
-    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
+    .map((id) => ({ p: g.names[id], s: d.stats[id], starter: g.starters.includes(id) }))
+    .sort((a, b) => b.starter - a.starter || !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
   const mmss = (ms) => {
     const s = Math.floor(ms / 1000);
     return `${Math.floor(s / 60)}:${pad(s % 60)}`;
@@ -1201,8 +1201,20 @@ function buildPdf(g) {
   y -= 14;
   tableHeader();
 
+  // A full-width heading row; kept on the same page as at least one player row.
+  const section = (title) => {
+    if (y - 18 - 26 < M) {
+      newPage();
+      tableHeader();
+    }
+    pdf.rect(M, y - 18, tableW, 18, '#c9d6e3', GRID);
+    pdf.text(title, M + 7, y - 12.5, { size: 8.5, bold: true, color: NAVY });
+    y -= 18;
+  };
+
   const dash = '—';
   rows.forEach((r, i) => {
+    if (i === 0 || r.starter !== rows[i - 1].starter) section(r.starter ? t('pdfStarters') : t('pdfSubs'));
     const played = r.s.intervals.length > 0;
     row([
       [String(i + 1)],
