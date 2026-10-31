@@ -175,14 +175,24 @@ form.row { margin: 10px 0; }
 }
 .toast[hidden] { display: none; }
 
-/* Report */
-.report { width: 100%; border-collapse: collapse; margin-top: 16px; font-variant-numeric: tabular-nums; }
-.report th { text-align: left; font-size: .8rem; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--line); }
-.report th:not(:first-child), .report td:not(:first-child) { text-align: center; width: 1%; white-space: nowrap; padding: 6px 6px; }
-.report td { padding: 8px 4px 2px; }
-.report .sub-row td { padding: 0 4px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: .85rem; }
-.report tfoot td { font-weight: 800; padding-top: 10px; }
-.iv { display: inline-block; background: var(--panel-2); border-radius: 8px; padding: 1px 7px; margin: 2px 2px 0 0; }
+/* Report: preview of the PDF stats sheet */
+.pdf-preview { overflow-x: auto; margin: 4px -14px 0; padding: 0 14px 8px; }
+.pp-page {
+  background: #fff; color: #222; padding: 20px; border-radius: 6px;
+  font-family: Helvetica, Arial, sans-serif; font-variant-numeric: tabular-nums;
+}
+.pp-title { font-weight: 700; font-size: 19.5px; color: #1f3a5a; margin-bottom: 14px; white-space: nowrap; }
+.pp-meta { position: relative; height: 18px; margin-bottom: 6px; font-size: 13px; color: #333; }
+.pp-meta span { position: absolute; top: 0; white-space: nowrap; }
+.pp-table { border-collapse: collapse; table-layout: fixed; width: auto; }
+.pp-table th { color: #fff; font-size: 11.7px; font-weight: 700; padding: 0 2px; height: 26px; border: 1px solid #a9bcb6; white-space: nowrap; overflow: hidden; }
+.pp-table td {
+  border: 1px solid #a9bcb6; text-align: center; padding: 6px 4px; height: 34px; font-size: 12.3px; line-height: 15.6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pp-table td.l { text-align: left; padding-left: 9px; }
+.pp-table tbody tr:nth-child(even) td { background: #dce8e4; }
+.pp-table tfoot td { background: #eef2f4; font-weight: 700; border-top: 2px solid #1f3a5a; }
 
 /* Fast touch interactions */
 .center-text { text-align: center; }

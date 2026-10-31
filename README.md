@@ -19,7 +19,7 @@ It's plain HTML/CSS/JS with no build step and no server code. Data is saved on t
    - Every action shows a toast with **Undo**. There's also an "Undo" button above the timeline.
    - A red card takes the player off; they can't come back and the team plays one short. If the GK is sent off, tap another player and choose 🧤 To goal.
    - The screen stays on while the game is live, where the browser supports it.
-4. **Report**: each player's stints (entered–left, game clock), minutes played, goals and cards. **Share summary** sends text to WhatsApp and similar apps; **PDF** creates the stats sheet (club, team, season, game, round, stints, minutes, goals, cards) and shares or downloads it.
+4. **Report**: a preview of the PDF stats sheet (club, team, season, game, round; per player: starter/sub, stints entered–left on the game clock, minutes, goals, cards). **Share PDF** sends the file to WhatsApp and similar apps, or downloads it where sharing isn't available.
 5. **Language**: EN | PT switch at the bottom of the home screen (Portuguese is the default on phones set to Portuguese). The PDF follows the app language.
 6. **Backup**: Export/Import on the home screen, since data lives only on that phone.
 

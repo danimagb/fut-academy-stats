@@ -67,9 +67,9 @@ const I18N = {
     apply: 'Apply', errFixEnd: 'The end must be between {a} and {b}.', errFixStart: '{p} ended less time ago than that.',
     timesFixed: '⏱ Times fixed',
     gameReport: 'Game report', gameTime: 'Game time {t}', inProgress: 'game still in progress',
-    thPlayer: 'Player', thMin: 'Min', didNotPlay: 'Did not play', sentOffAt: 'sent off {t}',
-    reportHint: 'Times are game-clock time (mm:ss). Each chip shows a stint on the pitch: entered–left. Each half starts at its regular time; extra time is shown as (+mm:ss).',
-    share: 'Share summary', pdf: '📄 PDF', result: 'Result: {s} · Game time {t}', summaryCopied: 'Summary copied',
+    didNotPlay: 'Did not play',
+    reportHint: 'Preview of the PDF (scroll sideways to see every column). Each half starts at its regular time; extra time shows as (+mm:ss).',
+    pdf: '📄 Share PDF',
     confirmFullTime: 'End the game (full time)?', confirmDeleteGame: 'Delete this game and all its stats?',
     gkSentOff: '🟥 GK sent off: tap a player › To goal', inGoalToast: '🧤 {p} in goal',
     confirmRestore: 'Replace all data with this backup ({p} players, {g} games)?',
@@ -127,9 +127,9 @@ const I18N = {
     apply: 'Aplicar', errFixEnd: 'O fim tem de estar entre {a} e {b}.', errFixStart: '{p} terminou há menos tempo do que isso.',
     timesFixed: '⏱ Tempos corrigidos',
     gameReport: 'Relatório do jogo', gameTime: 'Tempo de jogo {t}', inProgress: 'jogo ainda a decorrer',
-    thPlayer: 'Jogador', thMin: 'Min', didNotPlay: 'Não jogou', sentOffAt: 'expulso aos {t}',
-    reportHint: 'Tempos no relógio do jogo (mm:ss). Cada etiqueta é uma passagem em campo: entrada–saída. Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
-    share: 'Partilhar resumo', pdf: '📄 PDF', result: 'Resultado: {s} · Tempo de jogo {t}', summaryCopied: 'Resumo copiado',
+    didNotPlay: 'Não jogou',
+    reportHint: 'Pré-visualização do PDF (desliza para o lado para ver todas as colunas). Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
+    pdf: '📄 Partilhar PDF',
     confirmFullTime: 'Terminar o jogo?', confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
     gkSentOff: '🟥 GR expulso: toca num jogador › Para a baliza', inGoalToast: '🧤 {p} na baliza',
     confirmRestore: 'Substituir todos os dados por esta cópia ({p} jogadores, {g} jogos)?',
@@ -944,20 +944,89 @@ function openFixSheet(g) {
 // Stints as game-clock labels: entered (start of the later period on a boundary) – left.
 const stintLabels = (g, s, sep) => s.intervals.map(([a, b]) => `${fmtAt(g, a, true)}${sep}${fmtAt(g, b)}`);
 
-function reportRows(g, d) {
-  return sortIds(g, g.squad).map((id) => {
-    const s = d.stats[id];
-    return { id, p: g.names[id], s, intervals: stintLabels(g, s, '–') };
+const mmss = (ms) => {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+};
+
+const SHEET_NAVY = '#1f3a5a';
+
+// The stats sheet table, shared by the PDF and its preview on the report screen.
+// Column widths are in PDF points; cells are arrays of lines.
+function statsSheet(g) {
+  const d = derive(g);
+  const cols = [
+    { title: t('pdfNo'), w: 32, fill: SHEET_NAVY },
+    { title: t('pdfPlayer'), w: 170, fill: SHEET_NAVY, left: true },
+    { title: t('pdfShirt'), w: 42, fill: SHEET_NAVY },
+    { title: t('pdfStarter'), w: 62, fill: SHEET_NAVY },
+    { title: t('pdfSub'), w: 62, fill: SHEET_NAVY },
+    { title: t('pdfStints'), w: 154, fill: '#3d8b40' },
+    { title: t('pdfMinutes'), w: 60, fill: SHEET_NAVY },
+    { title: t('pdfGoals'), w: 52, fill: SHEET_NAVY },
+    { title: t('pdfYellow'), w: 62, fill: '#e3b008' },
+    { title: t('pdfRed'), w: 66, fill: '#c0392b' },
+  ];
+
+  // Players who played first, then alphabetical, like the club's sheet.
+  const players = g.squad
+    .map((id) => ({ p: g.names[id], s: d.stats[id], starter: g.starters.includes(id) }))
+    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
+  const dash = '—';
+  const rows = players.map((r, i) => {
+    const played = r.s.intervals.length > 0;
+    return [
+      [String(i + 1)],
+      [r.p.name],
+      [r.p.number || ''],
+      [r.starter ? 'X' : ''],
+      [r.starter ? '' : 'X'],
+      played ? stintLabels(g, r.s, ' – ') : [t('didNotPlay')],
+      [played ? mmss(r.s.played) : dash],
+      [played ? String(r.s.goals) : dash],
+      [played ? String(r.s.yellow) : dash],
+      [played ? String(r.s.red) : dash],
+    ];
   });
+  const sum = (k) => String(players.reduce((n, r) => n + r.s[k], 0));
+  const [yy, mo, dd] = String(g.date).split('-');
+
+  return {
+    title: [g.club, `${t('pdfTitle')} · ${g.team || ''}`.replace(/ · $/, ''), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
+      .filter(Boolean).join(' — '),
+    // [label, value, column it lines up with]
+    meta: [
+      [t('pdfGame'), matchTitle(g), 0],
+      dd && [t('pdfDate'), `${dd}/${mo}/${yy}`, 6],
+      g.round && [t('pdfRound'), g.round, 8],
+    ].filter(Boolean),
+    cols,
+    rows,
+    total: [[''], [t('pdfTotal')], [''], [''], [''], [''], [''], [sum('goals')], [sum('yellow')], [sum('red')]],
+  };
+}
+
+// The PDF page as HTML, scaled up a little for the phone screen.
+function sheetPreview(sh) {
+  const S = 1.3;
+  const x = (i) => Math.round(sh.cols.slice(0, i).reduce((n, c) => n + c.w, 0) * S);
+  const cell = (lines, c) => `<td class="${c.left ? 'l' : ''}">${lines.map(esc).join('<br>')}</td>`;
+  return `<div class="pdf-preview"><div class="pp-page" style="width:${x(sh.cols.length) + 40}px">
+    <div class="pp-title">${esc(sh.title)}</div>
+    <div class="pp-meta">${sh.meta.map(([k, v, col]) => `<span style="left:${x(col)}px"><b>${esc(k)}</b> ${esc(v)}</span>`).join('')}</div>
+    <table class="pp-table" style="width:${x(sh.cols.length)}px">
+      <colgroup>${sh.cols.map((c) => `<col style="width:${Math.round(c.w * S)}px">`).join('')}</colgroup>
+      <thead><tr>${sh.cols.map((c) => `<th style="background:${c.fill}">${esc(c.title)}</th>`).join('')}</tr></thead>
+      <tbody>${sh.rows.map((r) => `<tr>${r.map((lines, i) => cell(lines, sh.cols[i])).join('')}</tr>`).join('')}</tbody>
+      <tfoot><tr>${sh.total.map((lines, i) => cell(lines, sh.cols[i])).join('')}</tr></tfoot>
+    </table>
+  </div></div>`;
 }
 
 function viewReport(id) {
   const g = getGame(id);
   if (!g) return notFound();
   const d = derive(g);
-  const rows = reportRows(g, d);
-  const yellows = rows.reduce((n, r) => n + r.s.yellow, 0);
-  const reds = rows.reduce((n, r) => n + r.s.red, 0);
 
   main.innerHTML = `
     ${bar(t('gameReport'), `#/game/${g.id}`)}
@@ -968,40 +1037,9 @@ function viewReport(id) {
       <div class="muted">${t('gameTime', { t: fmtNow(g) })}${g.status === 'finished' ? '' : ` · <span class="warn">${t('inProgress')}</span>`}</div>
     </section>
 
-    <table class="report">
-      <thead><tr><th>${t('thPlayer')}</th><th>${t('thMin')}</th><th>⚽</th><th>🟨</th><th>🟥</th></tr></thead>
-      <tbody>${rows.map((r) => `
-        <tr class="main-row">
-          <td><span class="shirt sm">${esc(r.p.number) || '–'}</span> ${esc(r.p.name)}${r.id === g.gkId ? gkTag() : ''}</td>
-          <td>${fmtClock(r.s.played)}</td><td>${r.s.goals || ''}</td><td>${r.s.yellow || ''}</td><td>${r.s.red || ''}</td>
-        </tr>
-        <tr class="sub-row"><td colspan="5">${r.intervals.length
-          ? r.intervals.map((iv) => `<span class="iv">${iv}</span>`).join(' ')
-          : `<span class="muted">${t('didNotPlay')}</span>`}${r.s.redAt != null ? ` <span class="warn">${t('sentOffAt', { t: fmtAt(g, r.s.redAt) })}</span>` : ''}</td></tr>`).join('')}
-      </tbody>
-      <tfoot><tr><td>${t('team')}</td><td></td><td>${d.us}</td><td>${yellows || ''}</td><td>${reds || ''}</td></tr></tfoot>
-    </table>
+    <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
     <p class="hint">${t('reportHint')}</p>
-
-    <div class="row gap">
-      <button class="btn primary grow" data-action="share">${t('share')}</button>
-      <button class="btn grow" data-action="pdf">${t('pdf')}</button>
-    </div>`;
-}
-
-function reportText(g) {
-  const d = derive(g);
-  const lines = [
-    `${matchTitle(g)} — ${fmtDate(g)} (${g.formatId}, ${t('gkPlus', { n: g.field })})`,
-    t('result', { s: `${d.us}–${d.them}`, t: fmtNow(g) }),
-    '',
-  ];
-  for (const r of reportRows(g, d)) {
-    const extras = [r.s.goals && `⚽${r.s.goals}`, r.s.yellow && `🟨${r.s.yellow}`, r.s.red && `🟥${r.s.red}`].filter(Boolean).join(' ');
-    lines.push(`${pname(g, r.id)} — ${fmtClock(r.s.played)}${extras ? ` · ${extras}` : ''}`);
-    lines.push(`   ${r.intervals.length ? r.intervals.join(', ') : t('didNotPlay')}`);
-  }
-  return lines.join('\n');
+    ${sheetPreview(statsSheet(g))}`;
 }
 
 // ---------- PDF report ----------
@@ -1124,36 +1162,15 @@ function seasonOf(date) {
 }
 
 function buildPdf(g) {
-  const d = derive(g);
+  const sh = statsSheet(g);
   const pdf = pdfDoc();
   const M = 40;
-  const NAVY = '#1f3a5a';
   const GRID = '#a9bcb6';
   const FS = 9.5;
   const LH = 12;
-  const cols = [
-    { title: t('pdfNo'), w: 32, fill: NAVY },
-    { title: t('pdfPlayer'), w: 170, fill: NAVY, left: true },
-    { title: t('pdfShirt'), w: 42, fill: NAVY },
-    { title: t('pdfStarter'), w: 62, fill: NAVY },
-    { title: t('pdfSub'), w: 62, fill: NAVY },
-    { title: t('pdfStints'), w: 154, fill: '#3d8b40' },
-    { title: t('pdfMinutes'), w: 60, fill: NAVY },
-    { title: t('pdfGoals'), w: 52, fill: NAVY },
-    { title: t('pdfYellow'), w: 62, fill: '#e3b008' },
-    { title: t('pdfRed'), w: 66, fill: '#c0392b' },
-  ];
-  const tableW = cols.reduce((s, c) => s + c.w, 0);
-  const colX = cols.map((_, i) => M + cols.slice(0, i).reduce((s, c) => s + c.w, 0));
-
-  // Players who played first, then alphabetical, like the club's sheet.
-  const rows = g.squad
-    .map((id) => ({ p: g.names[id], s: d.stats[id], starter: g.starters.includes(id) }))
-    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
-  const mmss = (ms) => {
-    const s = Math.floor(ms / 1000);
-    return `${Math.floor(s / 60)}:${pad(s % 60)}`;
-  };
+  const { cols } = sh;
+  const tableW = cols.reduce((n, c) => n + c.w, 0);
+  const colX = cols.map((_, i) => M + cols.slice(0, i).reduce((n, c) => n + c.w, 0));
 
   let y;
   const tableHeader = () => {
@@ -1188,41 +1205,18 @@ function buildPdf(g) {
   };
 
   newPage();
-  const title = [g.club, `${t('pdfTitle')} · ${g.team || ''}`.replace(/ · $/, ''), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
-    .filter(Boolean).join(' — ');
-  pdf.text(title, M, y - 14, { size: 15, bold: true, color: NAVY, maxW: tableW });
+  pdf.text(sh.title, M, y - 14, { size: 15, bold: true, color: SHEET_NAVY, maxW: tableW });
   y -= 36;
-  const label = (k, v, x) => {
-    const w = pdf.text(k, x, y, { size: 10, bold: true, color: '#333333' });
-    pdf.text(v, x + w + 4, y, { size: 10, color: '#333333', maxW: 360 });
-  };
-  label(t('pdfGame'), matchTitle(g), M);
-  const [yy, mo, dd] = String(g.date).split('-');
-  if (dd) label(t('pdfDate'), `${dd}/${mo}/${yy}`, colX[6]);
-  if (g.round) label(t('pdfRound'), g.round, colX[8]);
+  for (const [k, v, col] of sh.meta) {
+    const w = pdf.text(k, colX[col], y, { size: 10, bold: true, color: '#333333' });
+    pdf.text(v, colX[col] + w + 4, y, { size: 10, color: '#333333', maxW: 360 });
+  }
   y -= 14;
   tableHeader();
-
-  const dash = '—';
-  rows.forEach((r, i) => {
-    const played = r.s.intervals.length > 0;
-    row([
-      [String(i + 1)],
-      [r.p.name],
-      [r.p.number || ''],
-      [r.starter ? 'X' : ''],
-      [r.starter ? '' : 'X'],
-      played ? stintLabels(g, r.s, ' – ') : [t('didNotPlay')],
-      [played ? mmss(r.s.played) : dash],
-      [played ? String(r.s.goals) : dash],
-      [played ? String(r.s.yellow) : dash],
-      [played ? String(r.s.red) : dash],
-    ], { fill: i % 2 ? '#dce8e4' : null });
-  });
-  const sum = (k) => String(rows.reduce((n, r) => n + r.s[k], 0));
+  sh.rows.forEach((cells, i) => row(cells, { fill: i % 2 ? '#dce8e4' : null }));
   const lineY = y;
-  row([[''], [t('pdfTotal')], [''], [''], [''], [''], [''], [sum('goals')], [sum('yellow')], [sum('red')]], { fill: '#eef2f4', bold: true });
-  pdf.line(M, lineY, M + tableW, lineY, NAVY, 1.2);
+  row(sh.total, { fill: '#eef2f4', bold: true });
+  pdf.line(M, lineY, M + tableW, lineY, SHEET_NAVY, 1.2);
   return pdf.bytes();
 }
 
@@ -1433,17 +1427,6 @@ const actions = {
   },
 
   // report
-  share: async () => {
-    const g = currentGame();
-    const text = reportText(g);
-    try {
-      if (navigator.share) await navigator.share({ title: matchTitle(g), text });
-      else {
-        await navigator.clipboard.writeText(text);
-        toast(t('summaryCopied'));
-      }
-    } catch {}
-  },
   pdf: () => exportPdf(currentGame()),
 
   // backup
