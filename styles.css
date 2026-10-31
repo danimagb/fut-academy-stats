@@ -279,3 +279,9 @@ label.inline input { width: 90px; min-height: 40px; }
 .dialog-box h3 { margin-bottom: 6px; }
 .dialog-box p { margin: 0 0 16px; }
 .btn.danger-fill { background: var(--danger); border-color: var(--danger); color: #2a0606; }
+
+/* Substitution arrows in the timeline / toast */
+.sub-in, .sub-out { font-size: .8em; margin-right: 3px; }
+.sub-in { color: #2fbf6f; }
+.sub-out { color: var(--danger); }
+.nw { white-space: nowrap; }
