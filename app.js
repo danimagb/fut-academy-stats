@@ -77,7 +77,7 @@ const I18N = {
     p1: '1st half', p2: '2nd half', pQ: 'Q{n}', pGame: 'Game', pN: 'Period {n}',
     pdfTitle: 'Stats sheet', pdfSeason: 'Season', pdfGame: 'GAME:', pdfRound: 'ROUND:', pdfDate: 'DATE:',
     pdfNo: 'No.', pdfPlayer: 'Player', pdfShirt: 'Shirt', pdfStints: 'ON – OFF', pdfMinutes: 'MINUTES',
-    pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarters: 'STARTERS', pdfSubs: 'SUBSTITUTES', fileRound: 'Round', fileStats: 'Stats',
+    pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarter: 'STARTER', pdfSub: 'SUB', fileRound: 'Round', fileStats: 'Stats',
   },
   pt: {
     newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
@@ -137,7 +137,7 @@ const I18N = {
     p1: '1ª parte', p2: '2ª parte', pQ: '{n}.º período', pGame: 'Jogo', pN: '{n}.º período',
     pdfTitle: 'Folha de estatísticas', pdfSeason: 'Época', pdfGame: 'JOGO:', pdfRound: 'JORNADA:', pdfDate: 'DATA:',
     pdfNo: 'Nº', pdfPlayer: 'Atleta', pdfShirt: 'Cam.', pdfStints: 'ENTRADA – SAÍDA', pdfMinutes: 'MINUTOS',
-    pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarters: 'TITULARES', pdfSubs: 'SUPLENTES', fileRound: 'Jornada', fileStats: 'Estatisticas',
+    pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarter: 'TITULAR', pdfSub: 'SUPLENTE', fileRound: 'Jornada', fileStats: 'Estatisticas',
   },
 };
 
@@ -1133,21 +1133,23 @@ function buildPdf(g) {
   const LH = 12;
   const cols = [
     { title: t('pdfNo'), w: 32, fill: NAVY },
-    { title: t('pdfPlayer'), w: 214, fill: NAVY, left: true },
+    { title: t('pdfPlayer'), w: 170, fill: NAVY, left: true },
     { title: t('pdfShirt'), w: 42, fill: NAVY },
-    { title: t('pdfStints'), w: 186, fill: '#3d8b40' },
-    { title: t('pdfMinutes'), w: 70, fill: NAVY },
-    { title: t('pdfGoals'), w: 64, fill: NAVY },
-    { title: t('pdfYellow'), w: 75, fill: '#e3b008' },
-    { title: t('pdfRed'), w: 79, fill: '#c0392b' },
+    { title: t('pdfStarter'), w: 62, fill: NAVY },
+    { title: t('pdfSub'), w: 62, fill: NAVY },
+    { title: t('pdfStints'), w: 154, fill: '#3d8b40' },
+    { title: t('pdfMinutes'), w: 60, fill: NAVY },
+    { title: t('pdfGoals'), w: 52, fill: NAVY },
+    { title: t('pdfYellow'), w: 62, fill: '#e3b008' },
+    { title: t('pdfRed'), w: 66, fill: '#c0392b' },
   ];
   const tableW = cols.reduce((s, c) => s + c.w, 0);
   const colX = cols.map((_, i) => M + cols.slice(0, i).reduce((s, c) => s + c.w, 0));
 
-  // Starters, then subs; within each, players who played first, then alphabetical.
+  // Players who played first, then alphabetical, like the club's sheet.
   const rows = g.squad
     .map((id) => ({ p: g.names[id], s: d.stats[id], starter: g.starters.includes(id) }))
-    .sort((a, b) => b.starter - a.starter || !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
+    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
   const mmss = (ms) => {
     const s = Math.floor(ms / 1000);
     return `${Math.floor(s / 60)}:${pad(s % 60)}`;
@@ -1196,30 +1198,20 @@ function buildPdf(g) {
   };
   label(t('pdfGame'), matchTitle(g), M);
   const [yy, mo, dd] = String(g.date).split('-');
-  if (dd) label(t('pdfDate'), `${dd}/${mo}/${yy}`, colX[4]);
-  if (g.round) label(t('pdfRound'), g.round, colX[6]);
+  if (dd) label(t('pdfDate'), `${dd}/${mo}/${yy}`, colX[6]);
+  if (g.round) label(t('pdfRound'), g.round, colX[8]);
   y -= 14;
   tableHeader();
 
-  // A full-width heading row; kept on the same page as at least one player row.
-  const section = (title) => {
-    if (y - 18 - 26 < M) {
-      newPage();
-      tableHeader();
-    }
-    pdf.rect(M, y - 18, tableW, 18, '#c9d6e3', GRID);
-    pdf.text(title, M + 7, y - 12.5, { size: 8.5, bold: true, color: NAVY });
-    y -= 18;
-  };
-
   const dash = '—';
   rows.forEach((r, i) => {
-    if (i === 0 || r.starter !== rows[i - 1].starter) section(r.starter ? t('pdfStarters') : t('pdfSubs'));
     const played = r.s.intervals.length > 0;
     row([
       [String(i + 1)],
       [r.p.name],
       [r.p.number || ''],
+      [r.starter ? 'X' : ''],
+      [r.starter ? '' : 'X'],
       played ? stintLabels(g, r.s, ' – ') : [t('didNotPlay')],
       [played ? mmss(r.s.played) : dash],
       [played ? String(r.s.goals) : dash],
@@ -1229,7 +1221,7 @@ function buildPdf(g) {
   });
   const sum = (k) => String(rows.reduce((n, r) => n + r.s[k], 0));
   const lineY = y;
-  row([[''], [t('pdfTotal')], [''], [''], [''], [sum('goals')], [sum('yellow')], [sum('red')]], { fill: '#eef2f4', bold: true });
+  row([[''], [t('pdfTotal')], [''], [''], [''], [''], [''], [sum('goals')], [sum('yellow')], [sum('red')]], { fill: '#eef2f4', bold: true });
   pdf.line(M, lineY, M + tableW, lineY, NAVY, 1.2);
   return pdf.bytes();
 }
