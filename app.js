@@ -797,7 +797,7 @@ function viewGame(id) {
       ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}</div>` : ''}
       <div class="row gap center wrap">${clockButtons(g)}</div>
       <div class="row gap center wrap">
-        <button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>
+        ${g.status === 'live' ? `<button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
         ${g.status !== 'scheduled' ? `<button class="btn small ghost" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
       </div>
     </section>
@@ -884,7 +884,7 @@ function openPlayerSheet(g, id) {
       <span class="muted small">${on ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(d.stats[id].played) })}</span>
     </div>
     <div class="quick-row">
-      ${quick('goal', '⚽', t('goalBtn'), on)}
+      ${quick('goal', '⚽', t('goalBtn'), on && g.status === 'live')}
       ${quick('yellow', '🟨', t('yellowBtn'))}
       ${quick('red', '🟥', t('redBtn'))}
       ${quick('make-gk', '🧤', t('toGoal'), on && d.gk !== id)}
