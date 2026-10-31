@@ -148,6 +148,10 @@ form.add-player { display: grid; gap: 8px; margin: 10px 0; }
 .timeline { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 4px; }
 .timeline li { display: flex; gap: 10px; padding: 6px 2px; border-bottom: 1px solid var(--line); font-size: .92rem; }
 .timeline .t { color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 48px; white-space: nowrap; }
+.timeline li.tap { cursor: pointer; }
+.timeline li.tap:active { background: var(--panel); }
+.timeline .edit { margin-left: auto; color: var(--muted); padding-left: 8px; }
+.opt.current { border-color: var(--accent); }
 
 /* Bottom sheet */
 .sheet { position: fixed; inset: 0; z-index: 10; }

@@ -31,7 +31,7 @@ const I18N = {
     players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
     deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
-    editPlayer: 'Edit player', gameInfo: '✎ Game details', homeAway: 'Home / Away', shirtNumber: 'Shirt number', save: 'Save',
+    editPlayer: 'Edit player', editGoal: 'Fix goal · {t}', whoScored: 'Who scored?', removeGoal: '🗑 Remove goal', confirmRemoveGoal: 'Remove this goal?', gameInfo: '✎ Game details', homeAway: 'Home / Away', shirtNumber: 'Shirt number', save: 'Save',
     confirmRemovePlayer: 'Remove {name} from the roster? Past games keep their stats.',
     editGame: 'Edit game', newGameTitle: 'New game', needTeam: 'Create your team and add its players first.', goTeams: 'Go to Teams',
     opponentPh: 'e.g. Sporting U8', home: 'Home', away: 'Away', round: 'Round (optional)',
@@ -91,7 +91,7 @@ const I18N = {
     players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
     deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
-    editPlayer: 'Editar jogador', gameInfo: '✎ Dados do jogo', homeAway: 'Casa / Fora', shirtNumber: 'Número da camisola', save: 'Guardar',
+    editPlayer: 'Editar jogador', editGoal: 'Corrigir golo · {t}', whoScored: 'Quem marcou?', removeGoal: '🗑 Apagar golo', confirmRemoveGoal: 'Apagar este golo?', gameInfo: '✎ Dados do jogo', homeAway: 'Casa / Fora', shirtNumber: 'Número da camisola', save: 'Guardar',
     confirmRemovePlayer: 'Remover {name} do plantel? Os jogos anteriores mantêm as estatísticas.',
     editGame: 'Editar jogo', newGameTitle: 'Novo jogo', needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.', goTeams: 'Ir para Equipas',
     opponentPh: 'ex.: Sporting Sub-8', home: 'Casa', away: 'Fora', round: 'Jornada (opcional)',
@@ -819,7 +819,9 @@ function viewGame(id) {
 
     <h2>${t('timeline')}</h2>
     ${last ? `<button class="btn small ghost" data-action="undo">${t('undoX', { x: describe(g, last) })}</button>` : ''}
-    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
+    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => e.type === 'goal'
+      ? `<li class="tap" data-action="edit-goal" data-id="${e.id}"><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span><span class="edit">✎</span></li>`
+      : `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
 
     <div class="row gap foot">
       ${canEdit ? `<a class="btn ghost" href="#/edit/${g.id}">${t('edit')}</a>` : `<button class="btn ghost" data-action="edit-info">${t('gameInfo')}</button>`}
@@ -1425,6 +1427,37 @@ const actions = {
     buzz();
     render();
     toast(t('timesFixed'));
+  },
+  // Fix a goal given to the wrong player: pick who was on the pitch at that moment, or remove it.
+  'edit-goal': ({ id }) => {
+    const g = currentGame();
+    const e = g.events.find((x) => x.id === id);
+    const d = derive(g);
+    const onAt = g.squad.filter((p) => d.stats[p].intervals.some(([a, b]) => a <= e.t && e.t <= b));
+    const ids = sortIds(g, onAt.length ? onAt : g.squad);
+    openSheet(`
+      <h3>${t('editGoal', { t: timeOf(g, e) })}</h3>
+      <p class="muted small sub-title">${t('whoScored')}</p>
+      ${ids.map((p) => `<button class="opt ${p === e.playerId ? 'current' : ''}" data-action="set-scorer" data-id="${e.id}" data-p="${p}">
+        <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}</span>${p === e.playerId ? '<span>⚽</span>' : ''}
+      </button>`).join('')}
+      <button class="btn ghost danger block" data-action="delete-goal" data-id="${e.id}">${t('removeGoal')}</button>
+      <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
+  },
+  'set-scorer': ({ id, p }) => {
+    const g = currentGame();
+    g.events.find((x) => x.id === id).playerId = p;
+    save();
+    buzz();
+    render();
+    toast(t('evGoal', { p: g.names[p].name }));
+  },
+  'delete-goal': ({ id }) => {
+    const g = currentGame();
+    if (!confirm(t('confirmRemoveGoal'))) return;
+    g.events = g.events.filter((x) => x.id !== id);
+    save();
+    render();
   },
   'undo-toast': ({ id }) => {
     const g = currentGame();
