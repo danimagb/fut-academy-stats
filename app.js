@@ -31,7 +31,7 @@ const I18N = {
     players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
     deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
-    editPlayer: 'Edit player', shirtNumber: 'Shirt number', save: 'Save',
+    editPlayer: 'Edit player', gameInfo: '✎ Game details', homeAway: 'Home / Away', shirtNumber: 'Shirt number', save: 'Save',
     confirmRemovePlayer: 'Remove {name} from the roster? Past games keep their stats.',
     editGame: 'Edit game', newGameTitle: 'New game', needTeam: 'Create your team and add its players first.', goTeams: 'Go to Teams',
     opponentPh: 'e.g. Sporting U8', home: 'Home', away: 'Away', round: 'Round (optional)',
@@ -91,7 +91,7 @@ const I18N = {
     players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
     deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
-    editPlayer: 'Editar jogador', shirtNumber: 'Número da camisola', save: 'Guardar',
+    editPlayer: 'Editar jogador', gameInfo: '✎ Dados do jogo', homeAway: 'Casa / Fora', shirtNumber: 'Número da camisola', save: 'Guardar',
     confirmRemovePlayer: 'Remover {name} do plantel? Os jogos anteriores mantêm as estatísticas.',
     editGame: 'Editar jogo', newGameTitle: 'Novo jogo', needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.', goTeams: 'Ir para Equipas',
     opponentPh: 'ex.: Sporting Sub-8', home: 'Casa', away: 'Fora', round: 'Jornada (opcional)',
@@ -822,7 +822,7 @@ function viewGame(id) {
     ${timeline.length ? `<ul class="timeline">${timeline.map((e) => `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
 
     <div class="row gap foot">
-      ${canEdit ? `<a class="btn ghost" href="#/edit/${g.id}">${t('edit')}</a>` : ''}
+      ${canEdit ? `<a class="btn ghost" href="#/edit/${g.id}">${t('edit')}</a>` : `<button class="btn ghost" data-action="edit-info">${t('gameInfo')}</button>`}
       ${g.status !== 'scheduled' ? `<a class="btn ghost" href="#/report/${g.id}">${t('report')}</a>` : ''}
       <button class="btn ghost danger" data-action="delete-game">${t('deleteGame')}</button>
     </div>`;
@@ -1055,6 +1055,7 @@ function viewReport(id) {
     </section>
 
     <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
+    <button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>
     <p class="hint">${t('reportHint')}</p>
     ${sheetPreview(statsSheet(g))}`;
 }
@@ -1437,6 +1438,29 @@ const actions = {
     save();
     render();
   },
+  // Match details (not the lineup) can be changed at any time, e.g. after full time.
+  'edit-info': () => {
+    const g = currentGame();
+    const teamId = getTeam(g.teamId) ? g.teamId : defaultTeamId();
+    openSheet(`
+      <h3>${t('gameInfo')}</h3>
+      <form class="form" data-form="game-info">
+        ${db.teams.length ? `<label>${t('team')}
+          <select name="teamId">${db.teams.map((tm) => `<option value="${tm.id}" ${tm.id === teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
+        </label>` : ''}
+        <label>${t('opponent')}<input name="opponent" autocomplete="off" value="${esc(g.opponent)}"></label>
+        <label>${t('homeAway')}
+          <select name="home"><option value="1">${t('home')}</option><option value="0" ${g.home === false ? 'selected' : ''}>${t('away')}</option></select>
+        </label>
+        <label>${t('round')}<input type="number" inputmode="numeric" min="1" name="round" value="${esc(g.round)}"></label>
+        <div class="row gap">
+          <label class="grow">${t('date')}<input type="date" name="date" value="${esc(g.date)}" required></label>
+          <label class="grow">${t('time')}<input type="time" name="time" value="${esc(g.time)}"></label>
+        </div>
+        <button class="btn primary block">${t('save')}</button>
+        <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
+      </form>`);
+  },
   'delete-game': () => {
     const g = currentGame();
     if (!confirm(t('confirmDeleteGame'))) return;
@@ -1522,6 +1546,19 @@ document.addEventListener('submit', (e) => {
   if (!form) return;
   e.preventDefault();
   const data = new FormData(e.target);
+  if (form === 'game-info') {
+    const g = currentGame();
+    const tm = getTeam(data.get('teamId'));
+    const round = parseInt(data.get('round'), 10);
+    Object.assign(g, {
+      opponent: String(data.get('opponent')).trim(), home: data.get('home') === '1',
+      round: round >= 1 ? String(round) : '', date: data.get('date') || g.date, time: data.get('time'),
+    });
+    if (tm) Object.assign(g, { teamId: tm.id, club: tm.club, team: tm.name });
+    save();
+    render();
+    return;
+  }
   const name = String(data.get('name') || '').trim();
   if (!name) return;
   const number = String(data.get('number') || '').trim();
