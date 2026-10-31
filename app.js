@@ -57,7 +57,7 @@ const I18N = {
     oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
     tapHint: 'Tap a player for subs, goals &amp; cards · hold and drag onto another player to sub',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
-    undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game',
+    undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
     goalBtn: 'Goal', yellowBtn: 'Yellow', redBtn: 'Red', toGoal: 'To goal', benchState: 'Bench', played: '{t} played',
     subOff: '🔁 Sub off, bring on:', subOn: '🔁 Sub on, replacing:', noAvail: 'No players available.', cancel: 'Cancel',
     fixTitle: '⏱ Fix times · {p}', whenEnd: '{p}: when did it really end?', regular: "{v}' regular", now: 'Now',
@@ -117,7 +117,7 @@ const I18N = {
     oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
     tapHint: 'Toca num jogador para substituições, golos e cartões · mantém e arrasta para outro jogador para substituir',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
-    undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo',
+    undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
     goalBtn: 'Golo', yellowBtn: 'Amarelo', redBtn: 'Vermelho', toGoal: 'Para a baliza', benchState: 'Suplente', played: '{t} jogados',
     subOff: '🔁 Sai, entra:', subOn: '🔁 Entra, para o lugar de:', noAvail: 'Sem jogadores disponíveis.', cancel: 'Cancelar',
     fixTitle: '⏱ Corrigir tempos · {p}', whenEnd: '{p}: quando terminou realmente?', regular: "{v}' regulamentar", now: 'Agora',
@@ -515,8 +515,56 @@ window.addEventListener('hashchange', () => {
   window.scrollTo(0, 0);
 });
 
-function bar(title, back) {
-  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1></header>`;
+// `menu` is optional HTML for the items of a ⋯ menu shown on the right of the bar.
+function bar(title, back, menu = '') {
+  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1>${menu ? `
+    <div class="menu">
+      <button class="menu-btn" data-action="menu-toggle" aria-label="${t('menu')}" aria-haspopup="true" aria-expanded="false">⋯</button>
+      <div class="menu-list" role="menu" hidden>${menu}</div>
+    </div>` : ''}</header>`;
+}
+
+function closeMenus() {
+  for (const m of document.querySelectorAll('.menu-list:not([hidden])')) {
+    m.hidden = true;
+    m.previousElementSibling?.setAttribute('aria-expanded', 'false');
+  }
+}
+
+// A styled replacement for confirm(): resolves true only when the user taps the confirm button.
+function askConfirm({ title, message, ok, danger = false }) {
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.className = 'dialog';
+    el.innerHTML = `
+      <div class="dialog-backdrop" data-v="0"></div>
+      <div class="dialog-box" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title">
+        <h3 id="dialog-title">${title}</h3>
+        ${message ? `<p class="muted">${message}</p>` : ''}
+        <div class="row gap">
+          <button class="btn ghost grow" data-v="0">${t('cancel')}</button>
+          <button class="btn grow ${danger ? 'danger-fill' : 'primary'}" data-v="1">${ok}</button>
+        </div>
+      </div>`;
+    const done = (v) => {
+      el.remove();
+      document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('hashchange', onHash);
+      resolve(v);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+    const onHash = () => done(false);
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-v]');
+      if (!b) return;
+      e.stopPropagation();
+      done(b.dataset.v === '1');
+    });
+    document.addEventListener('keydown', onKey, true);
+    window.addEventListener('hashchange', onHash);
+    document.body.appendChild(el);
+    el.querySelector('[data-v="0"].btn').focus({ preventScroll: true });
+  });
 }
 
 function notFound() {
@@ -793,7 +841,12 @@ function viewGame(id) {
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
 
   main.innerHTML = `
-    ${bar(esc(matchTitle(g)), '#/games')}
+    ${bar(esc(matchTitle(g)), '#/games', `
+      ${canEdit
+        ? `<a class="menu-item" role="menuitem" href="#/edit/${g.id}">✎ ${t('edit')}</a>`
+        : `<button class="menu-item" role="menuitem" data-action="edit-info">${t('gameInfo')}</button>`}
+      ${g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : ''}
+      <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`)}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
       <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${d.us} – ${d.them}</div>
@@ -822,12 +875,7 @@ function viewGame(id) {
     ${timeline.length ? `<ul class="timeline">${timeline.map((e) => e.type === 'goal'
       ? `<li class="tap" data-action="edit-goal" data-id="${e.id}"><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span><span class="edit">✎</span></li>`
       : `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
-
-    <div class="row gap foot">
-      ${canEdit ? `<a class="btn ghost" href="#/edit/${g.id}">${t('edit')}</a>` : `<button class="btn ghost" data-action="edit-info">${t('gameInfo')}</button>`}
-      ${g.status !== 'scheduled' ? `<a class="btn ghost" href="#/report/${g.id}">${t('report')}</a>` : ''}
-      <button class="btn ghost danger" data-action="delete-game">${t('deleteGame')}</button>
-    </div>`;
+`;
 }
 
 function tick() {
@@ -1498,9 +1546,20 @@ const actions = {
         <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
       </form>`);
   },
-  'delete-game': () => {
+  'menu-toggle': (_, el) => {
+    const list = el.nextElementSibling;
+    const open = list.hidden;
+    closeMenus();
+    list.hidden = !open;
+    el.setAttribute('aria-expanded', String(open));
+  },
+  'delete-game': async () => {
     const g = currentGame();
-    if (!confirm(t('confirmDeleteGame'))) return;
+    if (!g) return;
+    const ok = await askConfirm({
+      title: t('deleteGameTitle'), message: t('confirmDeleteGame'), ok: t('deleteBtn'), danger: true,
+    });
+    if (!ok) return;
     db.games = db.games.filter((x) => x !== g);
     save();
     location.hash = '#/games';
@@ -1518,6 +1577,8 @@ document.addEventListener('click', (e) => {
     e.preventDefault();
     return;
   }
+  // Any tap closes an open ⋯ menu (except the toggle itself, which handles it).
+  if (!e.target.closest('[data-action="menu-toggle"]')) closeMenus();
   const el = e.target.closest('[data-action]');
   if (!el || el.disabled) return;
   const fn = actions[el.dataset.action];
@@ -1731,6 +1792,7 @@ async function updateWakeLock() {
 }
 
 document.addEventListener('visibilitychange', updateWakeLock);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenus(); });
 
 // ---------- Start ----------
 
