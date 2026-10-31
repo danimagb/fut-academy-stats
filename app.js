@@ -3,6 +3,7 @@
 // ---------- Config ----------
 
 const STORE_KEY = 'fut-academy-stats.v1';
+const LANG_KEY = 'fut-academy-stats.lang';
 
 const FORMATS = [
   { id: 'U7', field: 3, periods: 2, periodMin: 20 },
@@ -15,18 +16,164 @@ const FORMATS = [
   { id: 'Custom', field: 4, periods: 2, periodMin: 20 },
 ];
 
-const STATUS = { scheduled: 'Scheduled', live: 'Live', break: 'Break', finished: 'Finished' };
+// ---------- Language ----------
+
+const I18N = {
+  en: {
+    newGame: '+ New game', teamsBtn: 'Teams ({n})',
+    noGames: 'No games yet.<br>Create your team and its players, then create a game.',
+    exportBackup: 'Export backup', importBackup: 'Import backup',
+    opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
+    st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
+    teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
+    playersCount: '{n} players', unnamedTeam: 'My team',
+    club: 'Club', clubPh: 'e.g. Padroense F.C.', team: 'Team', teamPh: 'e.g. U7 B',
+    players: 'Players', playerName: 'Player name', add: 'Add', edit: 'Edit',
+    noPlayers: 'No players yet. Add the squad above.',
+    deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
+    promptName: 'Name', promptNumber: 'Shirt number',
+    confirmRemovePlayer: 'Remove {name} from the roster? Past games keep their stats.',
+    editGame: 'Edit game', newGameTitle: 'New game', needTeam: 'Create your team and add its players first.', goTeams: 'Go to Teams',
+    opponentPh: 'e.g. Sporting U8', home: 'Home', away: 'Away', round: 'Round (optional)',
+    date: 'Date', time: 'Time', format: 'Age group / format', custom: 'Custom',
+    fieldPlayers: 'Field players', periods: 'Periods', minPeriod: 'Min/period',
+    autoStop: 'Auto-stop a half after this many extra minutes (in case you forget)',
+    squad: 'Squad', squadHint: 'Choose Bench or Start for each player called up, then tap 🧤 on the goalkeeper.',
+    startersCount: 'Starters {s}/{n}', benchCount: 'Bench {n}',
+    selOut: 'Out', selBench: 'Bench', selStart: 'Start', gkAria: 'Goalkeeper', addNewPlayer: 'Add a new player',
+    saveChanges: 'Save changes', createGame: 'Create game',
+    errField: 'Set the number of field players.', errPeriods: 'Set the number of periods and minutes per period.',
+    errDate: 'Set the game date.', errStarters: 'Pick exactly {need} starters (1 GK + {field}). You have {n}.',
+    errGk: 'Tap 🧤 to choose the goalkeeper among the starters.',
+    kickoff: '▶ Kick off', pause: '⏸ Pause', resume: '▶ Resume', fullTimeBtn: '🏁 Full time', fullTime: 'Full time',
+    endPeriod: 'End {p}', startPeriod: '▶ Start {p}', viewReport: '📋 View report',
+    notStarted: 'Not started · {n} × {m} min', paused: 'paused', breakAfter: 'Break after {p}',
+    autoStoppedToast: '⏱ {p} auto-stopped at +{m} min', fixTimes: 'Fix times',
+    timeUp: '⏰ {p}: time is up', extraMin: '⏰ {p}: +{m} min extra',
+    evSub: '🔁 {in} on, {out} off', evGoal: '⚽ Goal: {p}', evOppGoal: '🥅 Goal conceded',
+    evYellow: '🟨 Yellow: {p}', evRed: '🟥 Red: {p}', evGk: '🧤 In goal: {p}', evStart: '⏱ Start of {p}', evEnd: '⏱ End of {p}',
+    notFound: 'Not found', gameGone: 'This game no longer exists.', back: 'Back',
+    autoStoppedAlert: '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
+    oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
+    tapHint: 'Tap a player for subs, goals &amp; cards · hold and drag onto another player to sub',
+    onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
+    undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game',
+    goalBtn: 'Goal', yellowBtn: 'Yellow', redBtn: 'Red', toGoal: 'To goal', benchState: 'Bench', played: '{t} played',
+    subOff: '🔁 Sub off, bring on:', subOn: '🔁 Sub on, replacing:', noAvail: 'No players available.', cancel: 'Cancel',
+    fixTitle: '⏱ Fix times · {p}', whenEnd: '{p}: when did it really end?', regular: "{v}' regular", now: 'Now',
+    other: 'Other:', nextStarted: '{p}: has it already started?', notYet: 'Not yet', minAgo: '{n} min ago',
+    startedPre: 'Started', startedPost: 'min ago',
+    previewEnds: '{p} ends at {t}', previewBreak: ' · now on break', previewStarted: ' · {p} started {n} min ago',
+    apply: 'Apply', errFixEnd: 'The end must be between {a} and {b}.', errFixStart: '{p} ended less time ago than that.',
+    timesFixed: '⏱ Times fixed',
+    gameReport: 'Game report', gameTime: 'Game time {t}', inProgress: 'game still in progress',
+    thPlayer: 'Player', thMin: 'Min', didNotPlay: 'Did not play', sentOffAt: 'sent off {t}',
+    reportHint: 'Times are game-clock time (mm:ss). Each chip shows a stint on the pitch: entered–left. Each half starts at its regular time; extra time is shown as (+mm:ss).',
+    share: 'Share summary', pdf: '📄 PDF', result: 'Result: {s} · Game time {t}', summaryCopied: 'Summary copied',
+    confirmFullTime: 'End the game (full time)?', confirmDeleteGame: 'Delete this game and all its stats?',
+    gkSentOff: '🟥 GK sent off: tap a player › To goal', inGoalToast: '🧤 {p} in goal',
+    confirmRestore: 'Replace all data with this backup ({p} players, {g} games)?',
+    restored: 'Backup restored', badBackup: 'That file is not a valid backup.',
+    p1: '1st half', p2: '2nd half', pQ: 'Q{n}', pGame: 'Game', pN: 'Period {n}',
+    pdfTitle: 'Stats sheet', pdfSeason: 'Season', pdfGame: 'GAME:', pdfRound: 'ROUND:', pdfDate: 'DATE:',
+    pdfNo: 'No.', pdfPlayer: 'Player', pdfShirt: 'Shirt', pdfStints: 'ON – OFF', pdfMinutes: 'MINUTES',
+    pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', fileRound: 'Round', fileStats: 'Stats',
+  },
+  pt: {
+    newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
+    noGames: 'Ainda não há jogos.<br>Cria a tua equipa com os jogadores e depois um jogo.',
+    exportBackup: 'Exportar cópia', importBackup: 'Importar cópia',
+    opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
+    st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
+    teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
+    playersCount: '{n} jogadores', unnamedTeam: 'A minha equipa',
+    club: 'Clube', clubPh: 'ex.: Padroense F.C.', team: 'Equipa', teamPh: 'ex.: Sub-7B',
+    players: 'Jogadores', playerName: 'Nome do jogador', add: 'Adicionar', edit: 'Editar',
+    noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
+    deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
+    promptName: 'Nome', promptNumber: 'Número da camisola',
+    confirmRemovePlayer: 'Remover {name} do plantel? Os jogos anteriores mantêm as estatísticas.',
+    editGame: 'Editar jogo', newGameTitle: 'Novo jogo', needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.', goTeams: 'Ir para Equipas',
+    opponentPh: 'ex.: Sporting Sub-8', home: 'Casa', away: 'Fora', round: 'Jornada (opcional)',
+    date: 'Data', time: 'Hora', format: 'Escalão / formato', custom: 'Personalizado',
+    fieldPlayers: 'Jogadores de campo', periods: 'Partes', minPeriod: 'Min/parte',
+    autoStop: 'Parar automaticamente uma parte após estes minutos extra (caso te esqueças)',
+    squad: 'Convocados', squadHint: 'Escolhe Suplente ou Titular para cada convocado e toca em 🧤 no guarda-redes.',
+    startersCount: 'Titulares {s}/{n}', benchCount: 'Suplentes {n}',
+    selOut: 'Fora', selBench: 'Suplente', selStart: 'Titular', gkAria: 'Guarda-redes', addNewPlayer: 'Adicionar novo jogador',
+    saveChanges: 'Guardar alterações', createGame: 'Criar jogo',
+    errField: 'Indica o número de jogadores de campo.', errPeriods: 'Indica o número de partes e os minutos por parte.',
+    errDate: 'Indica a data do jogo.', errStarters: 'Escolhe exatamente {need} titulares (1 GR + {field}). Tens {n}.',
+    errGk: 'Toca em 🧤 para escolher o guarda-redes entre os titulares.',
+    kickoff: '▶ Início', pause: '⏸ Pausa', resume: '▶ Retomar', fullTimeBtn: '🏁 Fim do jogo', fullTime: 'Fim do jogo',
+    endPeriod: 'Terminar {p}', startPeriod: '▶ Iniciar {p}', viewReport: '📋 Ver relatório',
+    notStarted: 'Por começar · {n} × {m} min', paused: 'em pausa', breakAfter: 'Intervalo após {p}',
+    autoStoppedToast: '⏱ {p} parada automaticamente aos +{m} min', fixTimes: 'Corrigir tempos',
+    timeUp: '⏰ {p}: tempo esgotado', extraMin: '⏰ {p}: +{m} min extra',
+    evSub: '🔁 Entra {in}, sai {out}', evGoal: '⚽ Golo: {p}', evOppGoal: '🥅 Golo sofrido',
+    evYellow: '🟨 Amarelo: {p}', evRed: '🟥 Vermelho: {p}', evGk: '🧤 Na baliza: {p}', evStart: '⏱ Início: {p}', evEnd: '⏱ Fim: {p}',
+    notFound: 'Não encontrado', gameGone: 'Este jogo já não existe.', back: 'Voltar',
+    autoStoppedAlert: '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
+    oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
+    tapHint: 'Toca num jogador para substituições, golos e cartões · mantém e arrasta para outro jogador para substituir',
+    onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
+    undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo',
+    goalBtn: 'Golo', yellowBtn: 'Amarelo', redBtn: 'Vermelho', toGoal: 'Para a baliza', benchState: 'Suplente', played: '{t} jogados',
+    subOff: '🔁 Sai, entra:', subOn: '🔁 Entra, para o lugar de:', noAvail: 'Sem jogadores disponíveis.', cancel: 'Cancelar',
+    fixTitle: '⏱ Corrigir tempos · {p}', whenEnd: '{p}: quando terminou realmente?', regular: "{v}' regulamentar", now: 'Agora',
+    other: 'Outro:', nextStarted: '{p}: já começou?', notYet: 'Ainda não', minAgo: 'há {n} min',
+    startedPre: 'Começou há', startedPost: 'min',
+    previewEnds: '{p} termina aos {t}', previewBreak: ' · agora em intervalo', previewStarted: ' · {p} começou há {n} min',
+    apply: 'Aplicar', errFixEnd: 'O fim tem de estar entre {a} e {b}.', errFixStart: '{p} terminou há menos tempo do que isso.',
+    timesFixed: '⏱ Tempos corrigidos',
+    gameReport: 'Relatório do jogo', gameTime: 'Tempo de jogo {t}', inProgress: 'jogo ainda a decorrer',
+    thPlayer: 'Jogador', thMin: 'Min', didNotPlay: 'Não jogou', sentOffAt: 'expulso aos {t}',
+    reportHint: 'Tempos no relógio do jogo (mm:ss). Cada etiqueta é uma passagem em campo: entrada–saída. Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
+    share: 'Partilhar resumo', pdf: '📄 PDF', result: 'Resultado: {s} · Tempo de jogo {t}', summaryCopied: 'Resumo copiado',
+    confirmFullTime: 'Terminar o jogo?', confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
+    gkSentOff: '🟥 GR expulso: toca num jogador › Para a baliza', inGoalToast: '🧤 {p} na baliza',
+    confirmRestore: 'Substituir todos os dados por esta cópia ({p} jogadores, {g} jogos)?',
+    restored: 'Cópia restaurada', badBackup: 'Esse ficheiro não é uma cópia válida.',
+    p1: '1ª parte', p2: '2ª parte', pQ: '{n}.º período', pGame: 'Jogo', pN: '{n}.º período',
+    pdfTitle: 'Folha de estatísticas', pdfSeason: 'Época', pdfGame: 'JOGO:', pdfRound: 'JORNADA:', pdfDate: 'DATA:',
+    pdfNo: 'Nº', pdfPlayer: 'Atleta', pdfShirt: 'Cam.', pdfStints: 'ENTRADA – SAÍDA', pdfMinutes: 'MINUTOS',
+    pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', fileRound: 'Jornada', fileStats: 'Estatisticas',
+  },
+};
+
+let lang = localStorage.getItem(LANG_KEY) || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en');
+document.documentElement.lang = lang;
+
+function t(key, vars = {}) {
+  const s = I18N[lang][key] ?? I18N.en[key] ?? key;
+  return s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+}
+
+const locale = () => (lang === 'pt' ? 'pt-PT' : 'en-GB');
 
 // ---------- Storage ----------
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 let db = load();
 
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (data && Array.isArray(data.players) && Array.isArray(data.games)) return data;
+    if (data && Array.isArray(data.players) && Array.isArray(data.games)) return normalize(data);
   } catch {}
-  return { players: [], games: [] };
+  return normalize({ players: [], games: [] });
+}
+
+// Players belong to a team. Data from before teams existed gets one team holding everyone.
+function normalize(data) {
+  if (!Array.isArray(data.teams)) data.teams = [];
+  const orphans = data.players.filter((p) => !data.teams.some((tm) => tm.id === p.teamId));
+  if (orphans.length) {
+    if (!data.teams.length) data.teams.push({ id: uid(), club: '', name: '' });
+    for (const p of orphans) p.teamId = data.teams[0].id;
+  }
+  return data;
 }
 
 function save() {
@@ -38,7 +185,6 @@ function save() {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 const main = $('#main');
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
@@ -57,10 +203,13 @@ function isoDate(d) {
 function fmtDate(g) {
   const d = new Date(`${g.date}T${g.time || '00:00'}`);
   if (isNaN(d)) return g.date || '';
-  return d.toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 const getGame = (id) => db.games.find((g) => g.id === id);
+const getTeam = (id) => db.teams.find((tm) => tm.id === id);
+const teamLabel = (tm) => tm.name || tm.club || t('unnamedTeam');
+const teamPlayers = (teamId) => db.players.filter((p) => p.teamId === teamId);
 
 const byNumber = (a, b) =>
   (parseInt(a.number, 10) || 999) - (parseInt(b.number, 10) || 999) || a.name.localeCompare(b.name);
@@ -76,10 +225,20 @@ function pname(g, id) {
 }
 
 function periodName(g, n) {
-  if (g.periods === 2) return n === 1 ? '1st half' : '2nd half';
-  if (g.periods === 4) return `Q${n}`;
-  if (g.periods === 1) return 'Game';
-  return `Period ${n}`;
+  if (g.periods === 2) return n === 1 ? t('p1') : t('p2');
+  if (g.periods === 4) return t('pQ', { n });
+  if (g.periods === 1) return t('pGame');
+  return t('pN', { n });
+}
+
+const formatLine = (g) => `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
+
+// "Club x Opponent" (or the other way round when playing away).
+function matchTitle(g) {
+  const us = g.club || g.team;
+  const them = g.opponent || t('opponent');
+  if (!us) return `vs ${them}`;
+  return g.home === false ? `${them} x ${us}` : `${us} x ${them}`;
 }
 
 // Optional button HTML (e.g. Undo) is shown next to the message.
@@ -91,12 +250,12 @@ function toast(msg, button = '') {
   toast.timer = setTimeout(() => (el.hidden = true), button ? 6000 : 2200);
 }
 
-const undoBtn = (eventId) => `<button data-action="undo-toast" data-id="${eventId}">Undo</button>`;
+const undoBtn = (eventId) => `<button data-action="undo-toast" data-id="${eventId}">${t('undo')}</button>`;
 
 const buzz = () => navigator.vibrate?.(35);
 
-function download(filename, text, type) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
+function download(filename, data, type) {
+  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type }));
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
@@ -107,6 +266,9 @@ function download(filename, text, type) {
 }
 
 // ---------- Clock ----------
+// Match time (e.t, marks, clock) counts only time actually played, so minutes
+// played add up. The clock shown to the coach restarts every period at its
+// regular start (2nd half at 20:00), and extra time shows as "20:00 (+02:00)".
 
 function matchTime(g) {
   const c = g.clock;
@@ -131,17 +293,35 @@ function periodStart(g) {
   return m ? m.t : 0;
 }
 
+// Game clock for `ms` into period p.
+function fmtInPeriod(g, p, ms) {
+  const regular = g.periodMin * 60000;
+  const offset = (p - 1) * regular;
+  return Math.floor(ms / 1000) > g.periodMin * 60
+    ? `${fmtClock(offset + regular)} (+${fmtClock(ms - regular)})`
+    : fmtClock(offset + ms);
+}
+
+// Game clock for match time t. A time on the boundary between two periods
+// counts as the end of the earlier one, or the start of the later one with atStart.
+function fmtAt(g, t, atStart = false) {
+  let m = null;
+  for (const x of g.marks) if (x.type === 'start' && (!m || (atStart ? x.t <= t : x.t < t))) m = x;
+  return m ? fmtInPeriod(g, m.period, t - m.t) : fmtClock(t);
+}
+
+function fmtNow(g) {
+  if (g.status === 'live') return fmtInPeriod(g, g.clock.period, matchTime(g) - periodStart(g));
+  return fmtAt(g, matchTime(g));
+}
+
 function periodLabel(g) {
   const c = g.clock;
   switch (g.status) {
-    case 'scheduled': return `Not started · ${g.periods} × ${g.periodMin} min`;
-    case 'live': {
-      const pt = matchTime(g) - periodStart(g);
-      const over = pt - g.periodMin * 60000;
-      return `${periodName(g, c.period)} · ${fmtClock(pt)}${over > 0 ? ` (+${fmtClock(over)})` : ''}${c.running ? '' : ' (paused)'}`;
-    }
-    case 'break': return `Break after ${periodName(g, c.period)}`;
-    default: return 'Full time';
+    case 'scheduled': return t('notStarted', { n: g.periods, m: g.periodMin });
+    case 'live': return `${periodName(g, c.period)}${c.running ? '' : ` (${t('paused')})`}`;
+    case 'break': return t('breakAfter', { p: periodName(g, c.period) });
+    default: return t('fullTime');
   }
 }
 
@@ -172,7 +352,7 @@ function checkTime(g) {
     navigator.vibrate?.([500, 200, 500]);
     if (onThisGame) {
       render();
-      toast(`⏱ ${periodName(g, p)} auto-stopped at +${g.maxExtra ?? 10} min`, '<button data-action="fix-open">Fix times</button>');
+      toast(t('autoStoppedToast', { p: periodName(g, p), m: g.maxExtra ?? 10 }), `<button data-action="fix-open">${t('fixTimes')}</button>`);
     }
     return;
   }
@@ -183,8 +363,8 @@ function checkTime(g) {
     save();
     navigator.vibrate?.([300, 150, 300]);
     if (onThisGame) {
-      const msg = n === 0 ? `⏰ ${periodName(g, p)}: time is up` : `⏰ ${periodName(g, p)}: +${Math.floor((pt - regular) / 60000)} min extra`;
-      toast(msg, `<button data-action="end-period">${last ? 'Full time' : `End ${periodName(g, p)}`}</button>`);
+      const msg = n === 0 ? t('timeUp', { p: periodName(g, p) }) : t('extraMin', { p: periodName(g, p), m: Math.floor((pt - regular) / 60000) });
+      toast(msg, `<button data-action="end-period">${last ? t('fullTime') : t('endPeriod', { p: periodName(g, p) })}</button>`);
     }
   }
 }
@@ -283,22 +463,25 @@ function addEvent(g, e) {
 function doSub(g, out, inn) {
   const id = addEvent(g, { type: 'sub', playerId: out, inId: inn });
   render();
-  toast(`🔁 ${g.names[inn].name} on, ${g.names[out].name} off`, undoBtn(id));
+  toast(t('evSub', { in: g.names[inn].name, out: g.names[out].name }), undoBtn(id));
 }
 
 function describe(g, e) {
   switch (e.type) {
-    case 'sub': return `🔁 ${esc(pname(g, e.inId))} on, ${esc(pname(g, e.playerId))} off`;
-    case 'goal': return `⚽ Goal: ${esc(pname(g, e.playerId))}`;
-    case 'oppgoal': return '🥅 Goal conceded';
-    case 'yellow': return `🟨 Yellow: ${esc(pname(g, e.playerId))}`;
-    case 'red': return `🟥 Red: ${esc(pname(g, e.playerId))}`;
-    case 'gk': return `🧤 In goal: ${esc(pname(g, e.playerId))}`;
-    case 'start': return `⏱ Start of ${periodName(g, e.period)}`;
-    case 'end': return `⏱ End of ${periodName(g, e.period)}`;
+    case 'sub': return t('evSub', { in: esc(pname(g, e.inId)), out: esc(pname(g, e.playerId)) });
+    case 'goal': return t('evGoal', { p: esc(pname(g, e.playerId)) });
+    case 'oppgoal': return t('evOppGoal');
+    case 'yellow': return t('evYellow', { p: esc(pname(g, e.playerId)) });
+    case 'red': return t('evRed', { p: esc(pname(g, e.playerId)) });
+    case 'gk': return t('evGk', { p: esc(pname(g, e.playerId)) });
+    case 'start': return t('evStart', { p: periodName(g, e.period) });
+    case 'end': return t('evEnd', { p: periodName(g, e.period) });
   }
   return '';
 }
+
+// Timeline time: a period start shows its regular start, everything else the game clock.
+const timeOf = (g, e) => (e.type === 'start' ? fmtInPeriod(g, e.period, 0) : fmtAt(g, e.t));
 
 // ---------- Routing ----------
 
@@ -312,7 +495,10 @@ function route() {
 function render() {
   closeSheet();
   const { view, id } = route();
-  const views = { games: viewGames, players: viewPlayers, new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport };
+  const views = {
+    games: viewGames, teams: viewTeams, players: viewTeams, team: viewTeam,
+    new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport,
+  };
   (views[view] || viewGames)(id);
   updateWakeLock();
 }
@@ -324,11 +510,11 @@ window.addEventListener('hashchange', () => {
 });
 
 function bar(title, back) {
-  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="Back">‹</a>` : ''}<h1>${title}</h1></header>`;
+  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1></header>`;
 }
 
 function notFound() {
-  main.innerHTML = `${bar('Not found', '#/games')}<p class="empty">This game no longer exists.</p>`;
+  main.innerHTML = `${bar(t('notFound'), '#/games')}<p class="empty">${t('gameGone')}</p>`;
 }
 
 // ---------- Views: games list ----------
@@ -338,15 +524,19 @@ function viewGames() {
   main.innerHTML = `
     ${bar('⚽ Fut Academy Stats')}
     <div class="row gap">
-      <a class="btn primary grow" href="#/new">+ New game</a>
-      <a class="btn" href="#/players">Players (${db.players.length})</a>
+      <a class="btn primary grow" href="#/new">${t('newGame')}</a>
+      <a class="btn" href="#/teams">${t('teamsBtn', { n: db.teams.length })}</a>
     </div>
     ${games.length
       ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
-      : '<p class="empty">No games yet.<br>Add your players, then create a game.</p>'}
+      : `<p class="empty">${t('noGames')}</p>`}
     <div class="row gap foot">
-      <button class="btn small ghost" data-action="backup">Export backup</button>
-      <label class="btn small ghost">Import backup<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
+      <button class="btn small ghost" data-action="backup">${t('exportBackup')}</button>
+      <label class="btn small ghost">${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
+      <span class="seg lang">
+        <button class="${lang === 'en' ? 'on' : ''}" data-action="lang" data-v="en">EN</button>
+        <button class="${lang === 'pt' ? 'on' : ''}" data-action="lang" data-v="pt">PT</button>
+      </span>
     </div>`;
 }
 
@@ -355,37 +545,65 @@ function gameCard(g) {
   const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
   return `<li><a class="card" href="${href}">
     <div class="grow">
-      <strong>vs ${esc(g.opponent || 'Opponent')}</strong>
-      <div class="muted">${esc(fmtDate(g))} · ${esc(g.formatId)} · 1 GK + ${g.field}</div>
+      <strong>vs ${esc(g.opponent || t('opponent'))}</strong>
+      <div class="muted">${g.team ? `${esc(g.team)} · ` : ''}${formatLine(g)}</div>
     </div>
     <div class="right">
       ${g.status !== 'scheduled' ? `<div class="score">${d.us}–${d.them}</div>` : ''}
-      <span class="badge ${g.status}">${STATUS[g.status]}</span>
+      <span class="badge ${g.status}">${t(`st_${g.status}`)}</span>
     </div>
   </a></li>`;
 }
 
-// ---------- Views: players (roster) ----------
+// ---------- Views: teams and their players ----------
 
-function viewPlayers() {
-  const ps = [...db.players].sort(byNumber);
+function viewTeams() {
   main.innerHTML = `
-    ${bar('Players', '#/games')}
+    ${bar(t('teams'), '#/games')}
+    <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
+    ${db.teams.length ? `<ul class="list">${db.teams.map((tm) => `
+      <li><a class="card" href="#/team/${tm.id}">
+        <div class="grow">
+          <strong>${esc(teamLabel(tm))}</strong>
+          ${tm.club ? `<div class="muted">${esc(tm.club)}</div>` : ''}
+        </div>
+        <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
+      </a></li>`).join('')}</ul>` : `<p class="empty">${t('noTeams')}</p>`}`;
+}
+
+function viewTeam(id) {
+  const tm = getTeam(id);
+  if (!tm) return viewTeams();
+  const ps = teamPlayers(id).sort(byNumber);
+  main.innerHTML = `
+    ${bar(esc(teamLabel(tm)), '#/teams')}
+    <div class="form">
+      <label>${t('club')}<input data-team="club" value="${esc(tm.club)}" placeholder="${t('clubPh')}" autocomplete="off"></label>
+      <label>${t('team')}<input data-team="name" value="${esc(tm.name)}" placeholder="${t('teamPh')}" autocomplete="off"></label>
+    </div>
+    <h2>${t('players')}</h2>
     <form class="row gap" data-form="add-player">
       <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
-      <input class="grow" name="name" placeholder="Player name" required autocomplete="off">
-      <button class="btn primary">Add</button>
+      <input class="grow" name="name" placeholder="${t('playerName')}" required autocomplete="off">
+      <button class="btn primary">${t('add')}</button>
     </form>
     ${ps.length ? `<ul class="list">${ps.map((p) => `
       <li class="item">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow">${esc(p.name)}</span>
-        <button class="btn small ghost" data-action="edit-player" data-id="${p.id}">Edit</button>
-        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="Delete">✕</button>
-      </li>`).join('')}</ul>` : '<p class="empty">No players yet. Add your squad above.</p>'}`;
+        <button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
+        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>
+      </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`}
+    <div class="row gap foot">
+      <button class="btn ghost danger" data-action="delete-team">${t('deleteTeam')}</button>
+    </div>`;
 }
 
 // ---------- Views: new / edit game ----------
+
+function defaultTeamId() {
+  return getTeam(db.lastTeamId)?.id ?? db.teams[0]?.id ?? null;
+}
 
 function newDraft(id) {
   const g = id && getGame(id);
@@ -393,6 +611,7 @@ function newDraft(id) {
     return {
       id: g.id, date: g.date, time: g.time, opponent: g.opponent, formatId: g.formatId,
       field: g.field, periods: g.periods, periodMin: g.periodMin, maxExtra: g.maxExtra ?? 10, gkId: g.gkId,
+      teamId: getTeam(g.teamId) ? g.teamId : defaultTeamId(), home: g.home ?? true, round: g.round ?? '',
       sel: Object.fromEntries(g.squad.map((p) => [p, g.starters.includes(p) ? 'start' : 'bench'])),
     };
   }
@@ -401,6 +620,7 @@ function newDraft(id) {
   return {
     date: isoDate(now), time: `${pad(now.getHours())}:00`, opponent: '', formatId: f.id,
     field: f.field, periods: f.periods, periodMin: f.periodMin, maxExtra: 10, gkId: null, sel: {},
+    teamId: defaultTeamId(), home: true, round: '',
   };
 }
 
@@ -409,56 +629,71 @@ function squadCount() {
   const vals = Object.values(draft.sel);
   const starters = vals.filter((v) => v === 'start').length;
   const bench = vals.filter((v) => v === 'bench').length;
-  return `<span class="${starters === need ? 'ok' : 'warn'}">Starters ${starters}/${need}</span> · Bench ${bench}`;
+  return `<span class="${starters === need ? 'ok' : 'warn'}">${t('startersCount', { s: starters, n: need })}</span> · ${t('benchCount', { n: bench })}`;
 }
 
 function viewEdit(id) {
   if (!draft) draft = newDraft(id);
-  const ps = [...db.players].sort(byNumber);
   const back = draft.id ? `#/game/${draft.id}` : '#/games';
+  const title = draft.id ? t('editGame') : t('newGameTitle');
+  if (!draft.teamId) {
+    main.innerHTML = `${bar(title, back)}<p class="empty">${t('needTeam')}</p><a class="btn primary block" href="#/teams">${t('goTeams')}</a>`;
+    return;
+  }
+  const ps = teamPlayers(draft.teamId).sort(byNumber);
   main.innerHTML = `
-    ${bar(draft.id ? 'Edit game' : 'New game', back)}
+    ${bar(title, back)}
     <div class="form">
-      <label>Opponent<input data-field="opponent" value="${esc(draft.opponent)}" placeholder="e.g. Sporting U8" autocomplete="off"></label>
+      <label>${t('team')}
+        <select data-field="teamId">${db.teams.map((tm) => `<option value="${tm.id}" ${tm.id === draft.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
+      </label>
+      <label>${t('opponent')}<input data-field="opponent" value="${esc(draft.opponent)}" placeholder="${t('opponentPh')}" autocomplete="off"></label>
       <div class="row gap">
-        <label class="grow">Date<input type="date" data-field="date" value="${esc(draft.date)}"></label>
-        <label class="grow">Time<input type="time" data-field="time" value="${esc(draft.time)}"></label>
+        <span class="seg big">
+          <button class="${draft.home ? 'on' : ''}" data-action="set-home" data-v="1">${t('home')}</button>
+          <button class="${draft.home ? '' : 'on'}" data-action="set-home" data-v="0">${t('away')}</button>
+        </span>
+        <label class="grow">${t('round')}<input type="number" inputmode="numeric" min="1" data-field="round" value="${esc(draft.round)}"></label>
       </div>
-      <label>Age group / format
-        <select data-field="formatId">${FORMATS.map((f) => `<option value="${f.id}" ${f.id === draft.formatId ? 'selected' : ''}>${f.id === 'Custom' ? 'Custom' : `${f.id} · 1 GK + ${f.field}`}</option>`).join('')}</select>
+      <div class="row gap">
+        <label class="grow">${t('date')}<input type="date" data-field="date" value="${esc(draft.date)}"></label>
+        <label class="grow">${t('time')}<input type="time" data-field="time" value="${esc(draft.time)}"></label>
+      </div>
+      <label>${t('format')}
+        <select data-field="formatId">${FORMATS.map((f) => `<option value="${f.id}" ${f.id === draft.formatId ? 'selected' : ''}>${f.id === 'Custom' ? t('custom') : `${f.id} · ${t('gkPlus', { n: f.field })}`}</option>`).join('')}</select>
       </label>
       <div class="row gap">
-        <label class="grow">Field players<input type="number" inputmode="numeric" min="1" max="10" data-field="field" value="${esc(draft.field)}"></label>
-        <label class="grow">Periods<input type="number" inputmode="numeric" min="1" max="4" data-field="periods" value="${esc(draft.periods)}"></label>
-        <label class="grow">Min/period<input type="number" inputmode="numeric" min="1" data-field="periodMin" value="${esc(draft.periodMin)}"></label>
+        <label class="grow">${t('fieldPlayers')}<input type="number" inputmode="numeric" min="1" max="10" data-field="field" value="${esc(draft.field)}"></label>
+        <label class="grow">${t('periods')}<input type="number" inputmode="numeric" min="1" max="4" data-field="periods" value="${esc(draft.periods)}"></label>
+        <label class="grow">${t('minPeriod')}<input type="number" inputmode="numeric" min="1" data-field="periodMin" value="${esc(draft.periodMin)}"></label>
       </div>
-      <label>Auto-stop a half after this many extra minutes (in case you forget)
+      <label>${t('autoStop')}
         <input type="number" inputmode="numeric" min="1" max="60" data-field="maxExtra" value="${esc(draft.maxExtra)}">
       </label>
     </div>
 
-    <h2>Squad <span class="muted small" id="squad-count">${squadCount()}</span></h2>
-    <p class="hint">Choose Bench or Start for each player called up, then tap 🧤 on the goalkeeper.</p>
+    <h2>${t('squad')} <span class="muted small" id="squad-count">${squadCount()}</span></h2>
+    <p class="hint">${t('squadHint')}</p>
     <ul class="list">${ps.map((p) => {
       const v = draft.sel[p.id] || '';
       return `<li class="item ${v}">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow">${esc(p.name)}</span>
         <span class="seg">
-          <button class="${v === '' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="">Out</button>
-          <button class="${v === 'bench' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="bench">Bench</button>
-          <button class="${v === 'start' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="start">Start</button>
+          <button class="${v === '' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="">${t('selOut')}</button>
+          <button class="${v === 'bench' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="bench">${t('selBench')}</button>
+          <button class="${v === 'start' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="start">${t('selStart')}</button>
         </span>
-        <button class="gkbtn ${draft.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="Goalkeeper">🧤</button>
+        <button class="gkbtn ${draft.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="${t('gkAria')}">🧤</button>
       </li>`;
     }).join('')}</ul>
     <form class="row gap" data-form="add-player-draft">
       <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
-      <input class="grow" name="name" placeholder="Add a new player" required autocomplete="off">
-      <button class="btn">Add</button>
+      <input class="grow" name="name" placeholder="${t('addNewPlayer')}" required autocomplete="off">
+      <button class="btn">${t('add')}</button>
     </form>
 
-    <button class="btn primary block" data-action="save-game">${draft.id ? 'Save changes' : 'Create game'}</button>`;
+    <button class="btn primary block" data-action="save-game">${draft.id ? t('saveChanges') : t('createGame')}</button>`;
 }
 
 function saveGame() {
@@ -466,16 +701,18 @@ function saveGame() {
   const periods = parseInt(draft.periods, 10);
   const periodMin = parseInt(draft.periodMin, 10);
   const maxExtra = parseInt(draft.maxExtra, 10) || 10;
-  if (!(field >= 1)) return alert('Set the number of field players.');
-  if (!(periods >= 1) || !(periodMin >= 1)) return alert('Set the number of periods and minutes per period.');
-  if (!draft.date) return alert('Set the game date.');
+  const round = parseInt(draft.round, 10);
+  if (!(field >= 1)) return alert(t('errField'));
+  if (!(periods >= 1) || !(periodMin >= 1)) return alert(t('errPeriods'));
+  if (!draft.date) return alert(t('errDate'));
 
-  const order = [...db.players].sort(byNumber).map((p) => p.id);
+  const team = getTeam(draft.teamId);
+  const order = teamPlayers(team.id).sort(byNumber).map((p) => p.id);
   const squad = order.filter((id) => draft.sel[id]);
   const starters = squad.filter((id) => draft.sel[id] === 'start');
   const need = field + 1;
-  if (starters.length !== need) return alert(`Pick exactly ${need} starters (1 GK + ${field}). You have ${starters.length}.`);
-  if (!starters.includes(draft.gkId)) return alert('Tap 🧤 to choose the goalkeeper among the starters.');
+  if (starters.length !== need) return alert(t('errStarters', { need, field, n: starters.length }));
+  if (!starters.includes(draft.gkId)) return alert(t('errGk'));
 
   let g = draft.id && getGame(draft.id);
   if (!g) {
@@ -490,7 +727,9 @@ function saveGame() {
   Object.assign(g, {
     date: draft.date, time: draft.time, opponent: draft.opponent.trim(), formatId: draft.formatId,
     field, periods, periodMin, maxExtra, squad, starters, gkId: draft.gkId, names,
+    teamId: team.id, club: team.club, team: team.name, home: draft.home, round: round >= 1 ? String(round) : '',
   });
+  db.lastTeamId = team.id;
   save();
   location.hash = `#/game/${g.id}`;
 }
@@ -501,14 +740,16 @@ function clockButtons(g) {
   const c = g.clock;
   const b = (action, label, cls = '') => `<button class="btn ${cls}" data-action="${action}">${label}</button>`;
   switch (g.status) {
-    case 'scheduled': return b('kickoff', '▶ Kick off', 'primary');
+    case 'scheduled': return b('kickoff', t('kickoff'), 'primary');
     case 'live':
-      return (c.running ? b('pause', '⏸ Pause') : b('resume', '▶ Resume', 'primary')) +
-        b('end-period', c.period >= g.periods ? '🏁 Full time' : `End ${periodName(g, c.period)}`, 'warn');
-    case 'break': return b('next-period', `▶ Start ${periodName(g, c.period + 1)}`, 'primary');
-    default: return `<a class="btn primary" href="#/report/${g.id}">📋 View report</a>`;
+      return (c.running ? b('pause', t('pause')) : b('resume', t('resume'), 'primary')) +
+        b('end-period', c.period >= g.periods ? t('fullTimeBtn') : t('endPeriod', { p: periodName(g, c.period) }), 'warn');
+    case 'break': return b('next-period', t('startPeriod', { p: periodName(g, c.period + 1) }), 'primary');
+    default: return `<a class="btn primary" href="#/report/${g.id}">${t('viewReport')}</a>`;
   }
 }
+
+const gkTag = () => ` <span class="tag">${t('gk')}</span>`;
 
 function chip(g, d, id, where) {
   const s = d.stats[id];
@@ -520,7 +761,7 @@ function chip(g, d, id, where) {
   ].join('');
   return `<button class="chip ${where} ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" ${where === 'off' ? 'disabled' : ''}>
     <span class="shirt">${esc(p.number) || '–'}</span>
-    <span class="pname">${esc(p.name)}${id === d.gk ? ' <span class="tag">GK</span>' : ''}</span>
+    <span class="pname">${esc(p.name)}${id === d.gk ? gkTag() : ''}</span>
     <span class="meta"><span data-pt="${id}">${fmtMins(s.played)}</span> ${badges}</span>
   </button>`;
 }
@@ -541,38 +782,38 @@ function viewGame(id) {
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
 
   main.innerHTML = `
-    ${bar(`vs ${esc(g.opponent || 'Opponent')}`, '#/games')}
+    ${bar(`vs ${esc(g.opponent || t('opponent'))}`, '#/games')}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
-      <div class="muted small">${esc(fmtDate(g))} · ${esc(g.formatId)} · 1 GK + ${g.field}</div>
+      <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${d.us} – ${d.them}</div>
-      <div class="clock" id="clock">${fmtClock(matchTime(g))}</div>
+      <div class="clock" id="clock">${fmtNow(g)}</div>
       <div class="muted" id="period">${periodLabel(g)}</div>
-      ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">⏱ ${periodName(g, g.clock.period)} was stopped automatically at +${g.maxExtra ?? 10} min. If it ended earlier or the next half already started, tap <b>Fix times</b>.</div>` : ''}
+      ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}</div>` : ''}
       <div class="row gap center wrap">${clockButtons(g)}</div>
       <div class="row gap center wrap">
-        <button class="btn small ghost" data-action="opp-goal">+ Goal conceded</button>
-        ${g.status !== 'scheduled' ? '<button class="btn small ghost" data-action="fix-open">⏱ Fix times</button>' : ''}
+        <button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>
+        ${g.status !== 'scheduled' ? `<button class="btn small ghost" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
       </div>
     </section>
 
-    <p class="hint center-text">Tap a player for subs, goals &amp; cards · hold and drag onto another player to sub</p>
+    <p class="hint center-text">${t('tapHint')}</p>
 
-    <h2>On pitch <span class="muted small">${d.on.size}/${g.field + 1}</span></h2>
+    <h2>${t('onPitch')} <span class="muted small">${d.on.size}/${g.field + 1}</span></h2>
     <div class="grid">${onIds.map((p) => chip(g, d, p, 'on')).join('')}</div>
 
-    <h2>Bench</h2>
-    ${benchIds.length ? `<div class="grid">${benchIds.map((p) => chip(g, d, p, 'bench')).join('')}</div>` : '<p class="empty small">No substitutes.</p>'}
+    <h2>${t('bench')}</h2>
+    ${benchIds.length ? `<div class="grid">${benchIds.map((p) => chip(g, d, p, 'bench')).join('')}</div>` : `<p class="empty small">${t('noSubs')}</p>`}
 
-    ${offIds.length ? `<h2>Sent off</h2><div class="grid">${offIds.map((p) => chip(g, d, p, 'off')).join('')}</div>` : ''}
+    ${offIds.length ? `<h2>${t('sentOff')}</h2><div class="grid">${offIds.map((p) => chip(g, d, p, 'off')).join('')}</div>` : ''}
 
-    <h2>Timeline</h2>
-    ${last ? `<button class="btn small ghost" data-action="undo">↶ Undo: ${describe(g, last)}</button>` : ''}
-    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => `<li><span class="t">${fmtClock(e.t)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : '<p class="empty small">Nothing yet.</p>'}
+    <h2>${t('timeline')}</h2>
+    ${last ? `<button class="btn small ghost" data-action="undo">${t('undoX', { x: describe(g, last) })}</button>` : ''}
+    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
 
     <div class="row gap foot">
-      ${canEdit ? `<a class="btn ghost" href="#/edit/${g.id}">Edit</a>` : ''}
-      ${g.status !== 'scheduled' ? `<a class="btn ghost" href="#/report/${g.id}">Report</a>` : ''}
-      <button class="btn ghost danger" data-action="delete-game">Delete game</button>
+      ${canEdit ? `<a class="btn ghost" href="#/edit/${g.id}">${t('edit')}</a>` : ''}
+      ${g.status !== 'scheduled' ? `<a class="btn ghost" href="#/report/${g.id}">${t('report')}</a>` : ''}
+      <button class="btn ghost danger" data-action="delete-game">${t('deleteGame')}</button>
     </div>`;
 }
 
@@ -583,7 +824,7 @@ function tick() {
   const g = getGame(id);
   if (!g || g.status !== 'live' || !g.clock.running) return;
   const d = derive(g);
-  $('#clock').textContent = fmtClock(matchTime(g));
+  $('#clock').textContent = fmtNow(g);
   $('#period').textContent = periodLabel(g);
   for (const p of g.squad) {
     const el = main.querySelector(`[data-pt="${p}"]`);
@@ -626,30 +867,33 @@ function openPlayerSheet(g, id) {
   const list = candidates.map((p) => {
     const [out, inn] = on ? [id, p] : [p, id];
     return `<button class="opt" data-action="do-sub" data-out="${out}" data-in="${inn}">
-      <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}${p === d.gk ? ' <span class="tag">GK</span>' : ''}</span>
+      <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}${p === d.gk ? gkTag() : ''}</span>
       <span class="muted">${fmtMins(d.stats[p].played)}</span>
     </button>`;
   }).join('');
 
   openSheet(`
     <div class="sheet-head">
-      <h3>${esc(pname(g, id))}${id === d.gk ? ' <span class="tag">GK</span>' : ''}</h3>
-      <span class="muted small">${on ? 'On pitch' : 'Bench'} · ${fmtMins(d.stats[id].played)} played</span>
+      <h3>${esc(pname(g, id))}${id === d.gk ? gkTag() : ''}</h3>
+      <span class="muted small">${on ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(d.stats[id].played) })}</span>
     </div>
     <div class="quick-row">
-      ${quick('goal', '⚽', 'Goal', on)}
-      ${quick('yellow', '🟨', 'Yellow')}
-      ${quick('red', '🟥', 'Red')}
-      ${quick('make-gk', '🧤', 'To goal', on && d.gk !== id)}
+      ${quick('goal', '⚽', t('goalBtn'), on)}
+      ${quick('yellow', '🟨', t('yellowBtn'))}
+      ${quick('red', '🟥', t('redBtn'))}
+      ${quick('make-gk', '🧤', t('toGoal'), on && d.gk !== id)}
     </div>
-    <p class="muted small sub-title">🔁 ${on ? 'Sub off, bring on:' : 'Sub on, replacing:'}</p>
-    ${list || '<p class="empty small">No players available.</p>'}
-    <button class="btn ghost block" data-action="close-sheet">Cancel</button>`);
+    <p class="muted small sub-title">${on ? t('subOff') : t('subOn')}</p>
+    ${list || `<p class="empty small">${t('noAvail')}</p>`}
+    <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
 }
 
 // ---------- Fix times (forgot to end / start a half) ----------
+// fix.end is minutes into the current period; the sheet shows game-clock minutes.
 
 let fix = null;
+
+const periodOffsetMin = (g) => (g.clock.period - 1) * g.periodMin;
 
 // The latest moment the current period could have ended, in minutes of that period.
 function fixLimits(g) {
@@ -661,14 +905,14 @@ function fixLimits(g) {
 
 function fixPreview(g) {
   const p = g.clock.period;
-  const over = fix.end - g.periodMin;
-  let text = `${periodName(g, p)} ends at ${fmtClock(fix.end * 60000)}${over > 0 ? ` (+${fmtClock(over * 60000)})` : ''}`;
-  if (p < g.periods) text += fix.started == null ? ' · now on break' : ` · ${periodName(g, p + 1)} started ${fix.started} min ago`;
+  let text = t('previewEnds', { p: periodName(g, p), t: fmtInPeriod(g, p, fix.end * 60000) });
+  if (p < g.periods) text += fix.started == null ? t('previewBreak') : t('previewStarted', { p: periodName(g, p + 1), n: fix.started });
   return text;
 }
 
 function openFixSheet(g) {
   const p = g.clock.period;
+  const off = periodOffsetMin(g);
   const { maxMin } = fixLimits(g);
   if (!fix) fix = { end: Math.min(g.periodMin, maxMin), started: null };
   const pick = (action, v, label, on) => `<button class="pick ${on ? 'on' : ''}" data-action="${action}" data-v="${v}">${label}</button>`;
@@ -676,32 +920,34 @@ function openFixSheet(g) {
   const canResume = p < g.periods && g.status !== 'finished';
   const room = maxMin - fix.end;
   openSheet(`
-    <h3>⏱ Fix times · ${periodName(g, p)}</h3>
-    <p class="muted small">When did the ${periodName(g, p)} really end?</p>
+    <h3>${t('fixTitle', { p: periodName(g, p) })}</h3>
+    <p class="muted small">${t('whenEnd', { p: periodName(g, p) })}</p>
     <div class="pick-row">
-      ${ends.map((v) => pick('fix-end', v, v === g.periodMin ? `${v}' regular` : `+${v - g.periodMin}'`, fix.end === v)).join('')}
-      ${g.status === 'live' ? pick('fix-end', maxMin, 'Now', fix.end === maxMin) : ''}
+      ${ends.map((v) => pick('fix-end', v, v === g.periodMin ? t('regular', { v: off + v }) : `+${v - g.periodMin}'`, fix.end === v)).join('')}
+      ${g.status === 'live' ? pick('fix-end', maxMin, t('now'), fix.end === maxMin) : ''}
     </div>
-    <label class="inline">Other: <input type="number" inputmode="decimal" min="0" step="0.5" data-fix="end" placeholder="${g.periodMin}"> min</label>
+    <label class="inline">${t('other')} <input type="number" inputmode="decimal" min="${off}" step="0.5" data-fix="end" placeholder="${off + g.periodMin}"> min</label>
     ${canResume ? `
-      <p class="muted small">Has the ${periodName(g, p + 1)} already started?</p>
+      <p class="muted small">${t('nextStarted', { p: periodName(g, p + 1) })}</p>
       <div class="pick-row">
-        ${pick('fix-started', '', 'Not yet', fix.started == null)}
-        ${[1, 2, 3, 5, 10, 15].filter((v) => v <= room).map((v) => pick('fix-started', v, `${v} min ago`, fix.started === v)).join('')}
+        ${pick('fix-started', '', t('notYet'), fix.started == null)}
+        ${[1, 2, 3, 5, 10, 15].filter((v) => v <= room).map((v) => pick('fix-started', v, t('minAgo', { n: v }), fix.started === v)).join('')}
       </div>
-      <label class="inline">Started <input type="number" inputmode="decimal" min="0" step="0.5" data-fix="started"> min ago</label>` : ''}
+      <label class="inline">${t('startedPre')} <input type="number" inputmode="decimal" min="0" step="0.5" data-fix="started"> ${t('startedPost')}</label>` : ''}
     <p class="alert small" id="fix-preview">${fixPreview(g)}</p>
-    <button class="btn primary block" data-action="fix-apply">Apply</button>
-    <button class="btn ghost block" data-action="close-sheet">Cancel</button>`);
+    <button class="btn primary block" data-action="fix-apply">${t('apply')}</button>
+    <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
 }
 
 // ---------- Report ----------
 
+// Stints as game-clock labels: entered (start of the later period on a boundary) – left.
+const stintLabels = (g, s, sep) => s.intervals.map(([a, b]) => `${fmtAt(g, a, true)}${sep}${fmtAt(g, b)}`);
+
 function reportRows(g, d) {
   return sortIds(g, g.squad).map((id) => {
     const s = d.stats[id];
-    const intervals = s.intervals.map(([a, b]) => `${fmtClock(a)}–${fmtClock(b)}`);
-    return { id, p: g.names[id], s, intervals };
+    return { id, p: g.names[id], s, intervals: stintLabels(g, s, '–') };
   });
 }
 
@@ -714,59 +960,286 @@ function viewReport(id) {
   const reds = rows.reduce((n, r) => n + r.s.red, 0);
 
   main.innerHTML = `
-    ${bar('Game report', `#/game/${g.id}`)}
+    ${bar(t('gameReport'), `#/game/${g.id}`)}
     <section class="scoreboard">
-      <strong>vs ${esc(g.opponent || 'Opponent')}</strong>
-      <div class="muted small">${esc(fmtDate(g))} · ${esc(g.formatId)} · 1 GK + ${g.field}</div>
+      <strong>${esc(matchTitle(g))}</strong>
+      <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${d.us} – ${d.them}</div>
-      <div class="muted">Game time ${fmtClock(matchTime(g))}${g.status === 'finished' ? '' : ' · <span class="warn">game still in progress</span>'}</div>
+      <div class="muted">${t('gameTime', { t: fmtNow(g) })}${g.status === 'finished' ? '' : ` · <span class="warn">${t('inProgress')}</span>`}</div>
     </section>
 
     <table class="report">
-      <thead><tr><th>Player</th><th>Min</th><th>⚽</th><th>🟨</th><th>🟥</th></tr></thead>
+      <thead><tr><th>${t('thPlayer')}</th><th>${t('thMin')}</th><th>⚽</th><th>🟨</th><th>🟥</th></tr></thead>
       <tbody>${rows.map((r) => `
         <tr class="main-row">
-          <td><span class="shirt sm">${esc(r.p.number) || '–'}</span> ${esc(r.p.name)}${r.id === g.gkId ? ' <span class="tag">GK</span>' : ''}</td>
+          <td><span class="shirt sm">${esc(r.p.number) || '–'}</span> ${esc(r.p.name)}${r.id === g.gkId ? gkTag() : ''}</td>
           <td>${fmtClock(r.s.played)}</td><td>${r.s.goals || ''}</td><td>${r.s.yellow || ''}</td><td>${r.s.red || ''}</td>
         </tr>
         <tr class="sub-row"><td colspan="5">${r.intervals.length
           ? r.intervals.map((iv) => `<span class="iv">${iv}</span>`).join(' ')
-          : '<span class="muted">Did not play</span>'}${r.s.redAt != null ? ` <span class="warn">sent off ${fmtClock(r.s.redAt)}</span>` : ''}</td></tr>`).join('')}
+          : `<span class="muted">${t('didNotPlay')}</span>`}${r.s.redAt != null ? ` <span class="warn">${t('sentOffAt', { t: fmtAt(g, r.s.redAt) })}</span>` : ''}</td></tr>`).join('')}
       </tbody>
-      <tfoot><tr><td>Team</td><td></td><td>${d.us}</td><td>${yellows || ''}</td><td>${reds || ''}</td></tr></tfoot>
+      <tfoot><tr><td>${t('team')}</td><td></td><td>${d.us}</td><td>${yellows || ''}</td><td>${reds || ''}</td></tr></tfoot>
     </table>
-    <p class="hint">Times are game-clock time (mm:ss). Each chip shows a stint on the pitch: entered–left.</p>
+    <p class="hint">${t('reportHint')}</p>
 
     <div class="row gap">
-      <button class="btn primary grow" data-action="share">Share summary</button>
-      <button class="btn grow" data-action="csv">Download CSV</button>
+      <button class="btn primary grow" data-action="share">${t('share')}</button>
+      <button class="btn grow" data-action="pdf">${t('pdf')}</button>
     </div>`;
 }
 
 function reportText(g) {
   const d = derive(g);
   const lines = [
-    `vs ${g.opponent || 'Opponent'} — ${fmtDate(g)} (${g.formatId}, 1 GK + ${g.field})`,
-    `Result: ${d.us}–${d.them} · Game time ${fmtClock(matchTime(g))}`,
+    `${matchTitle(g)} — ${fmtDate(g)} (${g.formatId}, ${t('gkPlus', { n: g.field })})`,
+    t('result', { s: `${d.us}–${d.them}`, t: fmtNow(g) }),
     '',
   ];
   for (const r of reportRows(g, d)) {
     const extras = [r.s.goals && `⚽${r.s.goals}`, r.s.yellow && `🟨${r.s.yellow}`, r.s.red && `🟥${r.s.red}`].filter(Boolean).join(' ');
     lines.push(`${pname(g, r.id)} — ${fmtClock(r.s.played)}${extras ? ` · ${extras}` : ''}`);
-    lines.push(`   ${r.intervals.length ? r.intervals.join(', ') : 'Did not play'}`);
+    lines.push(`   ${r.intervals.length ? r.intervals.join(', ') : t('didNotPlay')}`);
   }
   return lines.join('\n');
 }
 
-function reportCsv(g) {
-  const d = derive(g);
-  const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const head = ['number', 'name', 'minutes_played', 'goals', 'yellow', 'red', 'stints (entered-left)'];
-  const lines = [head.map(q).join(',')];
-  for (const r of reportRows(g, d)) {
-    lines.push([r.p.number, r.p.name, (r.s.played / 60000).toFixed(1), r.s.goals, r.s.yellow, r.s.red, r.intervals.join('; ')].map(q).join(','));
+// ---------- PDF report ----------
+// A tiny PDF writer: the PDF's built-in Helvetica fonts (WinAnsi encoding, so
+// Portuguese accents work), filled/stroked rectangles, lines and text.
+
+// Glyph widths (per 1000 em) for character codes 32..126.
+const HELV_W = {
+  regular: [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
+    556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
+    1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
+    667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
+    333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+    556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584],
+  bold: [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278,
+    556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611,
+    975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778,
+    667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556,
+    333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611,
+    611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584],
+};
+// Unicode -> WinAnsi for the few characters outside Latin-1 that we use.
+const WIN_ANSI = { 0x2014: 0x97, 0x2013: 0x96, 0x2026: 0x85, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95 };
+const WIN_W = { 0x97: 1000, 0x96: 556, 0x85: 1000, 0x91: 222, 0x92: 222, 0x93: 333, 0x94: 333, 0x95: 350, 0xaa: 370, 0xba: 365, 0xb7: 278, 0xa0: 278, 0xb0: 400 };
+
+// Text as a string of WinAnsi byte values; anything else becomes "?".
+function winAnsi(s) {
+  let out = '';
+  for (const ch of String(s)) {
+    const c = ch.codePointAt(0);
+    out += String.fromCharCode((c >= 32 && c < 127) || (c >= 160 && c <= 255) ? c : WIN_ANSI[c] ?? 63);
   }
-  return lines.join('\n');
+  return out;
+}
+
+function glyphW(code, bold) {
+  const table = bold ? HELV_W.bold : HELV_W.regular;
+  if (code >= 32 && code < 127) return table[code - 32];
+  if (WIN_W[code]) return WIN_W[code];
+  if (code >= 192) {
+    const base = String.fromCharCode(code).normalize('NFD').charCodeAt(0);
+    if (base === 105) return 278; // accented i is wider than a plain i
+    if (base < 127) return table[base - 32];
+  }
+  return 556;
+}
+
+function textWidth(s, size, bold) {
+  let w = 0;
+  for (const c of winAnsi(s)) w += glyphW(c.charCodeAt(0), bold);
+  return (w * size) / 1000;
+}
+
+function pdfDoc() {
+  const W = 842;
+  const H = 595; // A4 landscape, in points
+  const pages = [];
+  let ops = null;
+  const rgb = (hex) => [1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
+  const n = (v) => +v.toFixed(2);
+
+  return {
+    W, H,
+    page() {
+      ops = [];
+      pages.push(ops);
+    },
+    rect(x, y, w, h, fill, stroke, lw = 0.5) {
+      if (fill) ops.push(`${rgb(fill)} rg ${n(x)} ${n(y)} ${n(w)} ${n(h)} re f`);
+      if (stroke) ops.push(`${rgb(stroke)} RG ${lw} w ${n(x)} ${n(y)} ${n(w)} ${n(h)} re S`);
+    },
+    line(x1, y1, x2, y2, color, lw) {
+      ops.push(`${rgb(color)} RG ${lw} w ${n(x1)} ${n(y1)} m ${n(x2)} ${n(y2)} l S`);
+    },
+    // Draws text at baseline y; returns its width. Too-long text gets an ellipsis.
+    text(s, x, y, { size = 10, bold = false, color = '#000000', align = 'left', maxW = Infinity } = {}) {
+      let str = String(s);
+      if (textWidth(str, size, bold) > maxW) {
+        while (str && textWidth(`${str}…`, size, bold) > maxW) str = str.slice(0, -1);
+        str = `${str.trimEnd()}…`;
+      }
+      const w = textWidth(str, size, bold);
+      const x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+      const body = winAnsi(str).replace(/[\\()]/g, '\\$&');
+      ops.push(`BT /${bold ? 'F2' : 'F1'} ${size} Tf ${rgb(color)} rg ${n(x0)} ${n(y)} Td (${body}) Tj ET`);
+      return w;
+    },
+    // The finished file as bytes.
+    bytes() {
+      const objs = [
+        '<< /Type /Catalog /Pages 2 0 R >>',
+        `<< /Type /Pages /Kids [${pages.map((_, i) => `${5 + 2 * i} 0 R`).join(' ')}] /Count ${pages.length} >>`,
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
+      ];
+      pages.forEach((p, i) => {
+        const stream = p.join('\n');
+        objs.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`);
+        objs.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+      });
+      let out = '%PDF-1.4\n%\xe2\xe3\xcf\xd3\n';
+      const offsets = objs.map((body, i) => {
+        const at = out.length;
+        out += `${i + 1} 0 obj\n${body}\nendobj\n`;
+        return at;
+      });
+      const xref = out.length;
+      out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
+      out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+      return Uint8Array.from(out, (c) => c.charCodeAt(0));
+    },
+  };
+}
+
+// Football seasons run August to July.
+function seasonOf(date) {
+  const [y, m] = String(date).split('-').map(Number);
+  if (!y) return '';
+  return m >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+}
+
+function buildPdf(g) {
+  const d = derive(g);
+  const pdf = pdfDoc();
+  const M = 40;
+  const NAVY = '#1f3a5a';
+  const GRID = '#a9bcb6';
+  const FS = 9.5;
+  const LH = 12;
+  const cols = [
+    { title: t('pdfNo'), w: 32, fill: NAVY },
+    { title: t('pdfPlayer'), w: 214, fill: NAVY, left: true },
+    { title: t('pdfShirt'), w: 42, fill: NAVY },
+    { title: t('pdfStints'), w: 186, fill: '#3d8b40' },
+    { title: t('pdfMinutes'), w: 70, fill: NAVY },
+    { title: t('pdfGoals'), w: 64, fill: NAVY },
+    { title: t('pdfYellow'), w: 75, fill: '#e3b008' },
+    { title: t('pdfRed'), w: 79, fill: '#c0392b' },
+  ];
+  const tableW = cols.reduce((s, c) => s + c.w, 0);
+  const colX = cols.map((_, i) => M + cols.slice(0, i).reduce((s, c) => s + c.w, 0));
+
+  // Players who played first, then alphabetical, like the club's sheet.
+  const rows = g.squad
+    .map((id) => ({ p: g.names[id], s: d.stats[id] }))
+    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
+  const mmss = (ms) => {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  };
+
+  let y;
+  const tableHeader = () => {
+    cols.forEach((c, i) => {
+      pdf.rect(colX[i], y - 20, c.w, 20, c.fill, GRID);
+      pdf.text(c.title, colX[i] + c.w / 2, y - 13.5, { size: 9, bold: true, color: '#ffffff', align: 'center', maxW: c.w - 4 });
+    });
+    y -= 20;
+  };
+  const newPage = () => {
+    pdf.page();
+    y = pdf.H - M;
+  };
+  // One table row: cells is an array of line arrays, one per column.
+  const row = (cells, { fill, bold = false } = {}) => {
+    const h = Math.max(26, Math.max(...cells.map((c) => c.length)) * LH + 14);
+    if (y - h < M) {
+      newPage();
+      tableHeader();
+    }
+    cells.forEach((lines, i) => {
+      const c = cols[i];
+      pdf.rect(colX[i], y - h, c.w, h, fill, GRID);
+      const top = y - (h - lines.length * LH) / 2;
+      lines.forEach((s, k) => {
+        const base = top - k * LH - 9;
+        if (c.left) pdf.text(s, colX[i] + 7, base, { size: FS, bold, maxW: c.w - 12 });
+        else pdf.text(s, colX[i] + c.w / 2, base, { size: FS, bold, align: 'center', maxW: c.w - 6 });
+      });
+    });
+    y -= h;
+  };
+
+  newPage();
+  const title = [g.club, `${t('pdfTitle')} · ${g.team || ''}`.replace(/ · $/, ''), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
+    .filter(Boolean).join(' — ');
+  pdf.text(title, M, y - 14, { size: 15, bold: true, color: NAVY, maxW: tableW });
+  y -= 36;
+  const label = (k, v, x) => {
+    const w = pdf.text(k, x, y, { size: 10, bold: true, color: '#333333' });
+    pdf.text(v, x + w + 4, y, { size: 10, color: '#333333', maxW: 360 });
+  };
+  label(t('pdfGame'), matchTitle(g), M);
+  const [yy, mo, dd] = String(g.date).split('-');
+  if (dd) label(t('pdfDate'), `${dd}/${mo}/${yy}`, colX[4]);
+  if (g.round) label(t('pdfRound'), g.round, colX[6]);
+  y -= 14;
+  tableHeader();
+
+  const dash = '—';
+  rows.forEach((r, i) => {
+    const played = r.s.intervals.length > 0;
+    row([
+      [String(i + 1)],
+      [r.p.name],
+      [r.p.number || ''],
+      played ? stintLabels(g, r.s, ' – ') : [t('didNotPlay')],
+      [played ? mmss(r.s.played) : dash],
+      [played ? String(r.s.goals) : dash],
+      [played ? String(r.s.yellow) : dash],
+      [played ? String(r.s.red) : dash],
+    ], { fill: i % 2 ? '#dce8e4' : null });
+  });
+  const sum = (k) => String(rows.reduce((n, r) => n + r.s[k], 0));
+  const lineY = y;
+  row([[''], [t('pdfTotal')], [''], [''], [''], [sum('goals')], [sum('yellow')], [sum('red')]], { fill: '#eef2f4', bold: true });
+  pdf.line(M, lineY, M + tableW, lineY, NAVY, 1.2);
+  return pdf.bytes();
+}
+
+function pdfFileName(g) {
+  const clean = (s) => String(s || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '');
+  const parts = [clean(g.club), clean(g.team), g.round ? `${t('fileRound')}${g.round}` : g.date, t('fileStats')];
+  return `${parts.filter(Boolean).join('_')}.pdf`;
+}
+
+async function exportPdf(g) {
+  const name = pdfFileName(g);
+  const file = new File([buildPdf(g)], name, { type: 'application/pdf' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+  download(name, file, 'application/pdf');
 }
 
 // ---------- Actions ----------
@@ -774,12 +1247,33 @@ function reportCsv(g) {
 const actions = {
   'close-sheet': () => closeSheet(),
 
-  // roster
+  lang: ({ v }) => {
+    lang = v;
+    localStorage.setItem(LANG_KEY, v);
+    document.documentElement.lang = v;
+    render();
+  },
+
+  // teams and players
+  'new-team': () => {
+    const tm = { id: uid(), club: db.teams[0]?.club || '', name: '' };
+    db.teams.push(tm);
+    save();
+    location.hash = `#/team/${tm.id}`;
+  },
+  'delete-team': () => {
+    const id = route().id;
+    if (teamPlayers(id).length) return alert(t('teamHasPlayers'));
+    if (!confirm(t('confirmDeleteTeam'))) return;
+    db.teams = db.teams.filter((x) => x.id !== id);
+    save();
+    location.hash = '#/teams';
+  },
   'edit-player': ({ id }) => {
     const p = db.players.find((x) => x.id === id);
-    const name = prompt('Name', p.name);
+    const name = prompt(t('promptName'), p.name);
     if (name == null || !name.trim()) return;
-    const number = prompt('Shirt number', p.number);
+    const number = prompt(t('promptNumber'), p.number);
     p.name = name.trim();
     if (number != null) p.number = number.trim();
     save();
@@ -787,7 +1281,7 @@ const actions = {
   },
   'delete-player': ({ id }) => {
     const p = db.players.find((x) => x.id === id);
-    if (!confirm(`Remove ${p.name} from the roster? Past games keep their stats.`)) return;
+    if (!confirm(t('confirmRemovePlayer', { name: p.name }))) return;
     db.players = db.players.filter((x) => x.id !== id);
     save();
     render();
@@ -802,6 +1296,10 @@ const actions = {
   },
   'set-gk': ({ id }) => {
     draft.gkId = id;
+    render();
+  },
+  'set-home': ({ v }) => {
+    draft.home = v === '1';
     render();
   },
   'save-game': () => saveGame(),
@@ -822,7 +1320,7 @@ const actions = {
     const g = currentGame();
     const last = g.clock.period >= g.periods;
     if (g.status !== 'live') return;
-    if (last && !confirm('End the game (full time)?')) return;
+    if (last && !confirm(t('confirmFullTime'))) return;
     endPeriodAt(g, matchTime(g));
     $('#toast').hidden = true;
     buzz();
@@ -848,32 +1346,32 @@ const actions = {
     const g = currentGame();
     const eid = addEvent(g, { type: 'goal', playerId: id });
     render();
-    toast(`⚽ Goal: ${g.names[id].name}`, undoBtn(eid));
+    toast(t('evGoal', { p: g.names[id].name }), undoBtn(eid));
   },
   yellow: ({ id }) => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'yellow', playerId: id });
     render();
-    toast(`🟨 Yellow: ${g.names[id].name}`, undoBtn(eid));
+    toast(t('evYellow', { p: g.names[id].name }), undoBtn(eid));
   },
   red: ({ id }) => {
     const g = currentGame();
     const wasGk = derive(g).gk === id;
     const eid = addEvent(g, { type: 'red', playerId: id });
     render();
-    toast(wasGk ? '🟥 GK sent off: tap a player › To goal' : `🟥 Red: ${g.names[id].name}`, undoBtn(eid));
+    toast(wasGk ? t('gkSentOff') : t('evRed', { p: g.names[id].name }), undoBtn(eid));
   },
   'make-gk': ({ id }) => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'gk', playerId: id });
     render();
-    toast(`🧤 ${g.names[id].name} in goal`, undoBtn(eid));
+    toast(t('inGoalToast', { p: g.names[id].name }), undoBtn(eid));
   },
   'opp-goal': () => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'oppgoal' });
     render();
-    toast('🥅 Goal conceded', undoBtn(eid));
+    toast(t('evOppGoal'), undoBtn(eid));
   },
   'fix-open': () => {
     const g = currentGame();
@@ -893,15 +1391,18 @@ const actions = {
   'fix-apply': () => {
     const g = currentGame();
     const { maxMin } = fixLimits(g);
-    if (!(fix.end >= 0) || fix.end > maxMin + 0.01) return alert(`The end must be between 0 and ${fmtClock(maxMin * 60000)}.`);
+    const p = g.clock.period;
+    if (!(fix.end >= 0) || fix.end > maxMin + 0.01) {
+      return alert(t('errFixEnd', { a: fmtInPeriod(g, p, 0), b: fmtInPeriod(g, p, maxMin * 60000) }));
+    }
     if (fix.started != null && !(fix.started >= 0 && fix.started <= maxMin - fix.end + 0.01)) {
-      return alert(`That's longer ago than the time since the ${periodName(g, g.clock.period)} ended.`);
+      return alert(t('errFixStart', { p: periodName(g, p) }));
     }
     applyFix(g, Math.min(fix.end, maxMin), fix.started);
     fix = null;
     buzz();
     render();
-    toast('⏱ Times fixed');
+    toast(t('timesFixed'));
   },
   'undo-toast': ({ id }) => {
     const g = currentGame();
@@ -921,7 +1422,7 @@ const actions = {
   },
   'delete-game': () => {
     const g = currentGame();
-    if (!confirm('Delete this game and all its stats?')) return;
+    if (!confirm(t('confirmDeleteGame'))) return;
     db.games = db.games.filter((x) => x !== g);
     save();
     location.hash = '#/games';
@@ -932,18 +1433,14 @@ const actions = {
     const g = currentGame();
     const text = reportText(g);
     try {
-      if (navigator.share) await navigator.share({ title: `vs ${g.opponent}`, text });
+      if (navigator.share) await navigator.share({ title: matchTitle(g), text });
       else {
         await navigator.clipboard.writeText(text);
-        toast('Summary copied');
+        toast(t('summaryCopied'));
       }
     } catch {}
   },
-  csv: () => {
-    const g = currentGame();
-    const name = `${g.date}_vs_${(g.opponent || 'opponent').replace(/[^\w-]+/g, '_')}.csv`;
-    download(name, reportCsv(g), 'text/csv');
-  },
+  pdf: () => exportPdf(currentGame()),
 
   // backup
   backup: () => download(`fut-academy-backup-${isoDate(new Date())}.json`, JSON.stringify(db, null, 2), 'application/json'),
@@ -965,11 +1462,20 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const fixKey = e.target.dataset.fix;
   if (fixKey && fix) {
+    const g = currentGame();
     const v = e.target.value === '' ? null : Number(e.target.value);
-    if (fixKey === 'end') fix.end = v ?? Math.min(currentGame().periodMin, fixLimits(currentGame()).maxMin);
+    if (fixKey === 'end') fix.end = v == null ? Math.min(g.periodMin, fixLimits(g).maxMin) : v - periodOffsetMin(g);
     else fix.started = v;
     for (const b of $$(`#sheet .pick[data-action="fix-${fixKey}"]`)) b.classList.remove('on');
-    $('#fix-preview').textContent = fixPreview(currentGame());
+    $('#fix-preview').textContent = fixPreview(g);
+    return;
+  }
+  const teamKey = e.target.dataset.team;
+  if (teamKey) {
+    const tm = getTeam(route().id);
+    tm[teamKey] = e.target.value.trim();
+    save();
+    $('.bar h1').textContent = teamLabel(tm);
     return;
   }
   const field = e.target.dataset.field;
@@ -978,6 +1484,10 @@ document.addEventListener('input', (e) => {
   if (field === 'formatId') {
     const f = FORMATS.find((x) => x.id === draft.formatId);
     if (f && f.id !== 'Custom') Object.assign(draft, { field: f.field, periods: f.periods, periodMin: f.periodMin });
+    render();
+  } else if (field === 'teamId') {
+    draft.sel = {};
+    draft.gkId = null;
     render();
   } else if (field === 'field') {
     $('#squad-count').innerHTML = squadCount();
@@ -991,13 +1501,13 @@ document.addEventListener('change', async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.players) || !Array.isArray(data.games)) throw new Error('bad file');
-    if (!confirm(`Replace all data with this backup (${data.players.length} players, ${data.games.length} games)?`)) return;
-    db = data;
+    if (!confirm(t('confirmRestore', { p: data.players.length, g: data.games.length }))) return;
+    db = normalize(data);
     save();
     render();
-    toast('Backup restored');
+    toast(t('restored'));
   } catch {
-    alert('That file is not a valid backup.');
+    alert(t('badBackup'));
   }
 });
 
@@ -1008,7 +1518,8 @@ document.addEventListener('submit', (e) => {
   const data = new FormData(e.target);
   const name = String(data.get('name') || '').trim();
   if (!name) return;
-  const p = { id: uid(), name, number: String(data.get('number') || '').trim() };
+  const teamId = form === 'add-player-draft' ? draft.teamId : route().id;
+  const p = { id: uid(), name, number: String(data.get('number') || '').trim(), teamId };
   db.players.push(p);
   save();
   if (form === 'add-player-draft') draft.sel[p.id] = 'bench';
