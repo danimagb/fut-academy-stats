@@ -78,6 +78,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .form { display: grid; gap: 12px; }
 .form label { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
 form.row { margin: 10px 0; }
+form.add-player { display: grid; gap: 8px; margin: 10px 0; }
 
 /* Lists */
 .list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }

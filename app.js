@@ -28,10 +28,10 @@ const I18N = {
     teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
     playersCount: '{n} players', unnamedTeam: 'My team',
     club: 'Club', clubPh: 'e.g. Padroense F.C.', team: 'Team', teamPh: 'e.g. U7 B',
-    players: 'Players', playerName: 'Player name', add: 'Add', edit: 'Edit',
+    players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
     deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
-    promptName: 'Name', promptNumber: 'Shirt number',
+    editPlayer: 'Edit player', shirtNumber: 'Shirt number', save: 'Save',
     confirmRemovePlayer: 'Remove {name} from the roster? Past games keep their stats.',
     editGame: 'Edit game', newGameTitle: 'New game', needTeam: 'Create your team and add its players first.', goTeams: 'Go to Teams',
     opponentPh: 'e.g. Sporting U8', home: 'Home', away: 'Away', round: 'Round (optional)',
@@ -88,10 +88,10 @@ const I18N = {
     teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
     playersCount: '{n} jogadores', unnamedTeam: 'A minha equipa',
     club: 'Clube', clubPh: 'ex.: Padroense F.C.', team: 'Equipa', teamPh: 'ex.: Sub-7B',
-    players: 'Jogadores', playerName: 'Nome do jogador', add: 'Adicionar', edit: 'Editar',
+    players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
     deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
-    promptName: 'Nome', promptNumber: 'Número da camisola',
+    editPlayer: 'Editar jogador', shirtNumber: 'Número da camisola', save: 'Guardar',
     confirmRemovePlayer: 'Remover {name} do plantel? Os jogos anteriores mantêm as estatísticas.',
     editGame: 'Editar jogo', newGameTitle: 'Novo jogo', needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.', goTeams: 'Ir para Equipas',
     opponentPh: 'ex.: Sporting Sub-8', home: 'Casa', away: 'Fora', round: 'Jornada (opcional)',
@@ -588,15 +588,20 @@ function viewTeam(id) {
       <label>${t('team')}<input data-team="name" value="${esc(tm.name)}" placeholder="${t('teamPh')}" autocomplete="off"></label>
     </div>
     <h2>${t('players')}</h2>
-    <form class="row gap" data-form="add-player">
-      <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
-      <input class="grow" name="name" placeholder="${t('playerName')}" required autocomplete="off">
-      <button class="btn primary">${t('add')}</button>
+    <form class="add-player" data-form="add-player">
+      <div class="row gap">
+        <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
+        <input class="grow" name="name" placeholder="${t('shirtName')}" required autocomplete="off">
+      </div>
+      <div class="row gap">
+        <input class="grow" name="fullName" placeholder="${t('fullName')}" autocomplete="off">
+        <button class="btn primary">${t('add')}</button>
+      </div>
     </form>
     ${ps.length ? `<ul class="list">${ps.map((p) => `
       <li class="item">
         <span class="shirt">${esc(p.number) || '–'}</span>
-        <span class="grow">${esc(p.name)}</span>
+        <span class="grow">${esc(p.name)}${p.fullName ? `<div class="muted small">${esc(p.fullName)}</div>` : ''}</span>
         <button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
         <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>
       </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`}
@@ -728,7 +733,7 @@ function saveGame() {
   const names = {};
   for (const id of squad) {
     const p = db.players.find((x) => x.id === id);
-    names[id] = { name: p.name, number: p.number };
+    names[id] = { name: p.name, number: p.number, fullName: p.fullName || '' };
   }
   Object.assign(g, {
     date: draft.date, time: draft.time, opponent: draft.opponent.trim(), formatId: draft.formatId,
@@ -959,6 +964,12 @@ const SHEET_NAVY = '#1f3a5a';
 
 // The stats sheet table, shared by the PDF and its preview on the report screen.
 // Column widths are in PDF points; cells are arrays of lines.
+// Full name for the report: the player's current one (so fixing a name also fixes
+// past games), else the one saved with the game, else the shirt name.
+function fullName(g, id) {
+  return db.players.find((p) => p.id === id)?.fullName || g.names[id].fullName || g.names[id].name;
+}
+
 function statsSheet(g) {
   const d = derive(g);
   const cols = [
@@ -976,14 +987,14 @@ function statsSheet(g) {
 
   // Players who played first, then alphabetical, like the club's sheet.
   const players = g.squad
-    .map((id) => ({ p: g.names[id], s: d.stats[id], starter: g.starters.includes(id) }))
-    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.p.name.localeCompare(b.p.name, locale()));
+    .map((id) => ({ p: g.names[id], full: fullName(g, id), s: d.stats[id], starter: g.starters.includes(id) }))
+    .sort((a, b) => !a.s.intervals.length - !b.s.intervals.length || a.full.localeCompare(b.full, locale()));
   const dash = '—';
   const rows = players.map((r, i) => {
     const played = r.s.intervals.length > 0;
     return [
       [String(i + 1)],
-      [r.p.name],
+      [r.full],
       [r.p.number || ''],
       [r.starter ? 'X' : ''],
       [r.starter ? '' : 'X'],
@@ -1275,13 +1286,15 @@ const actions = {
   },
   'edit-player': ({ id }) => {
     const p = db.players.find((x) => x.id === id);
-    const name = prompt(t('promptName'), p.name);
-    if (name == null || !name.trim()) return;
-    const number = prompt(t('promptNumber'), p.number);
-    p.name = name.trim();
-    if (number != null) p.number = number.trim();
-    save();
-    render();
+    openSheet(`
+      <h3>${t('editPlayer')}</h3>
+      <form class="form" data-form="edit-player" data-id="${p.id}">
+        <label>${t('shirtNumber')}<input name="number" inputmode="numeric" maxlength="3" value="${esc(p.number)}"></label>
+        <label>${t('shirtName')}<input name="name" required autocomplete="off" value="${esc(p.name)}"></label>
+        <label>${t('fullName')}<input name="fullName" autocomplete="off" value="${esc(p.fullName)}"></label>
+        <button class="btn primary block">${t('save')}</button>
+        <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
+      </form>`);
   },
   'delete-player': ({ id }) => {
     const p = db.players.find((x) => x.id === id);
@@ -1511,8 +1524,16 @@ document.addEventListener('submit', (e) => {
   const data = new FormData(e.target);
   const name = String(data.get('name') || '').trim();
   if (!name) return;
+  const number = String(data.get('number') || '').trim();
+  const full = String(data.get('fullName') || '').trim();
+  if (form === 'edit-player') {
+    Object.assign(db.players.find((x) => x.id === e.target.dataset.id), { name, number, fullName: full });
+    save();
+    render();
+    return;
+  }
   const teamId = form === 'add-player-draft' ? draft.teamId : route().id;
-  const p = { id: uid(), name, number: String(data.get('number') || '').trim(), teamId };
+  const p = { id: uid(), name, number, fullName: full, teamId };
   db.players.push(p);
   save();
   if (form === 'add-player-draft') draft.sel[p.id] = 'bench';

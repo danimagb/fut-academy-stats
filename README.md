@@ -6,7 +6,7 @@ It's plain HTML/CSS/JS with no build step and no server code. Data is saved on t
 
 ## Using it
 
-1. **Teams**: create your team once (club name, e.g. "Padroense F.C.", and team name, e.g. "Sub-7B") and add its players (shirt number + name).
+1. **Teams**: create your team once (club name, e.g. "Padroense F.C.", and team name, e.g. "Sub-7B") and add its players: shirt number, shirt name (shown on the game screen) and full name (used in the report/PDF; optional).
 2. **New game**: team, opponent, home/away, round (jornada), date/time, age group. The last team used is preselected.
    - U7 = 1 GK + 3 and U8 = 1 GK + 4; every preset can be changed.
    - Set the number of periods, minutes per period, and the auto-stop limit (see below).
