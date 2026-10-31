@@ -481,7 +481,13 @@ function describe(g, e) {
 }
 
 // Timeline time: a period start shows its regular start, everything else the game clock.
-const timeOf = (g, e) => (e.type === 'start' ? fmtInPeriod(g, e.period, 0) : fmtAt(g, e.t));
+// Events logged during a break sit exactly on the end of the period before it, and
+// show at the start of the next one (a half-time sub is at 20:00, not 20:00 (+00:02)).
+function timeOf(g, e) {
+  if (e.type === 'start') return fmtInPeriod(g, e.period, 0);
+  const brk = e.type !== 'end' && g.marks.find((m) => m.type === 'end' && m.t === e.t && m.period < g.periods);
+  return brk ? fmtInPeriod(g, brk.period + 1, 0) : fmtAt(g, e.t);
+}
 
 // ---------- Routing ----------
 
