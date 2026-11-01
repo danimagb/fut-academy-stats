@@ -71,6 +71,7 @@ const I18N = {
     oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
     formation: 'Formation',
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
+    removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
     soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
     undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
@@ -133,6 +134,7 @@ const I18N = {
     oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
     formation: 'Tática',
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
+    removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
     soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
     undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
@@ -661,8 +663,8 @@ function askConfirm({ title, message, ok, danger = false, cancel = true }) {
     el.innerHTML = `
       <div class="dialog-backdrop" data-v="0"></div>
       <div class="dialog-box" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title">
-        <h3 id="dialog-title">${title}</h3>
-        ${message ? `<p class="muted">${message}</p>` : ''}
+        ${title ? `<h3 id="dialog-title">${title}</h3>` : ''}
+        ${message ? `<p ${title ? 'class="muted"' : 'id="dialog-title"'}>${message}</p>` : ''}
         <div class="row gap">
           ${cancel ? `<button class="btn ghost grow" data-v="0">${t('cancel')}</button>` : ''}
           <button class="btn grow ${danger ? 'danger-fill' : 'primary'}" data-v="1">${ok}</button>
@@ -688,6 +690,9 @@ function askConfirm({ title, message, ok, danger = false, cancel = true }) {
     el.querySelector('.dialog-box .btn').focus({ preventScroll: true });
   });
 }
+
+// A styled replacement for alert(): one message and an OK button. `message` is HTML.
+const notify = (message, title = '') => askConfirm({ title, message, ok: t('ok'), cancel: false });
 
 function notFound() {
   main.innerHTML = `${bar(t('notFound'), '#/games')}<p class="empty">${t('gameGone')}</p>`;
@@ -883,17 +888,17 @@ function saveGame() {
   const periodMin = parseInt(draft.periodMin, 10);
   const maxExtra = parseInt(draft.maxExtra, 10) || 10;
   const round = parseInt(draft.round, 10);
-  if (!(field >= 1)) return alert(t('errField'));
-  if (!(periods >= 1) || !(periodMin >= 1)) return alert(t('errPeriods'));
-  if (!draft.date) return alert(t('errDate'));
+  if (!(field >= 1)) return notify(t('errField'));
+  if (!(periods >= 1) || !(periodMin >= 1)) return notify(t('errPeriods'));
+  if (!draft.date) return notify(t('errDate'));
 
   const team = getTeam(draft.teamId);
   const order = teamPlayers(team.id).sort(byNumber).map((p) => p.id);
   const squad = order.filter((id) => draft.sel[id]);
   const starters = squad.filter((id) => draft.sel[id] === 'start');
   const need = field + 1;
-  if (starters.length !== need) return alert(t('errStarters', { need, field, n: starters.length }));
-  if (!starters.includes(draft.gkId)) return alert(t('errGk'));
+  if (starters.length !== need) return notify(t('errStarters', { need, field, n: starters.length }));
+  if (!starters.includes(draft.gkId)) return notify(t('errGk'));
 
   let g = draft.id && getGame(draft.id);
   if (!g) {
@@ -1509,9 +1514,12 @@ const actions = {
         <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
       </form>`);
   },
-  'delete-player': ({ id }) => {
+  'delete-player': async ({ id }) => {
     const p = db.players.find((x) => x.id === id);
-    if (!confirm(t('confirmRemovePlayer', { name: p.name }))) return;
+    const ok = await askConfirm({
+      title: t('removePlayerTitle'), message: t('confirmRemovePlayer', { name: `<b>${esc(p.name)}</b>` }), ok: t('deleteBtn'), danger: true,
+    });
+    if (!ok) return;
     db.players = db.players.filter((x) => x.id !== id);
     save();
     render();
@@ -1545,11 +1553,12 @@ const actions = {
     render();
   },
   resume: () => { const g = currentGame(); startClock(g); save(); render(); },
-  'end-period': () => {
+  'end-period': async () => {
     const g = currentGame();
     const last = g.clock.period >= g.periods;
     if (g.status !== 'live') return;
-    if (last && !confirm(t('confirmFullTime'))) return;
+    if (last && !(await askConfirm({ title: t('confirmFullTime'), ok: t('fullTimeBtn') }))) return;
+    if (g.status !== 'live') return; // auto-stopped while the popup was open
     endPeriodAt(g, matchTime(g));
     $('#toast').hidden = true;
     buzz();
@@ -1638,10 +1647,10 @@ const actions = {
     const { maxMin } = fixLimits(g);
     const p = g.clock.period;
     if (!(fix.end >= 0) || fix.end > maxMin + 0.01) {
-      return alert(t('errFixEnd', { a: fmtInPeriod(g, p, 0), b: fmtInPeriod(g, p, maxMin * 60000) }));
+      return notify(t('errFixEnd', { a: fmtInPeriod(g, p, 0), b: fmtInPeriod(g, p, maxMin * 60000) }));
     }
     if (fix.started != null && !(fix.started >= 0 && fix.started <= maxMin - fix.end + 0.01)) {
-      return alert(t('errFixStart', { p: periodName(g, p) }));
+      return notify(t('errFixStart', { p: periodName(g, p) }));
     }
     applyFix(g, Math.min(fix.end, maxMin), fix.started);
     fix = null;
@@ -1673,9 +1682,9 @@ const actions = {
     render();
     toast(t('evGoal', { p: g.names[p].name }));
   },
-  'delete-goal': ({ id }) => {
+  'delete-goal': async ({ id }) => {
     const g = currentGame();
-    if (!confirm(t('confirmRemoveGoal'))) return;
+    if (!(await askConfirm({ title: t('confirmRemoveGoal'), ok: t('deleteBtn'), danger: true }))) return;
     g.events = g.events.filter((x) => x.id !== id);
     save();
     render();
@@ -1802,13 +1811,16 @@ document.addEventListener('change', async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.players) || !Array.isArray(data.games)) throw new Error('bad file');
-    if (!confirm(t('confirmRestore', { p: data.players.length, g: data.games.length }))) return;
+    const ok = await askConfirm({
+      title: t('importBackup'), message: t('confirmRestore', { p: data.players.length, g: data.games.length }), ok: t('restoreBtn'),
+    });
+    if (!ok) return;
     db = normalize(data);
     save();
     render();
     toast(t('restored'));
   } catch {
-    alert(t('badBackup'));
+    notify(t('badBackup'));
   }
 });
 
