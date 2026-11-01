@@ -361,5 +361,6 @@ label.inline input { width: 90px; min-height: 40px; }
 .score-row .side:first-child { text-align: right; }
 .score-row .side:last-child { text-align: left; }
 .score.big { font-size: 3.2rem; }
-.score-actions .btn { flex: 1; max-width: 220px; }
+.score-actions { margin-top: 2px; }
+.score-actions .btn { font-size: .85rem; font-weight: 600; min-height: 34px; padding: 0 14px; }
 .scoreboard.overtime .clock { color: var(--warn); }

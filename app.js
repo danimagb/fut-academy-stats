@@ -59,7 +59,7 @@ const I18N = {
     errField: 'Set the number of field players.', errPeriods: 'Set the number of periods and minutes per period.',
     errDate: 'Set the game date.', errStarters: 'Pick exactly {need} starters (1 GK + {field}). You have {n}.',
     errGk: 'Tap 🧤 to choose the goalkeeper among the starters.',
-    kickoff: '▶ Kick off', pause: '⏸ Pause', resume: '▶ Resume', fullTimeBtn: '🏁 Full time', fullTime: 'Full time',
+    kickoff: '▶ Kick off', resume: '▶ Resume', fullTimeBtn: '🏁 Full time', fullTime: 'Full time',
     endPeriod: 'End {p}', startPeriod: '▶ Start {p}', viewReport: '📋 View report',
     notStarted: 'Not started · {n} × {m} min', paused: 'paused', breakAfter: 'Break after {p}',
     autoStoppedToast: '⏱ {p} auto-stopped at +{m} min', fixTimes: 'Fix times',
@@ -119,7 +119,7 @@ const I18N = {
     errField: 'Indica o número de jogadores de campo.', errPeriods: 'Indica o número de partes e os minutos por parte.',
     errDate: 'Indica a data do jogo.', errStarters: 'Escolhe exatamente {need} titulares (1 GR + {field}). Tens {n}.',
     errGk: 'Toca em 🧤 para escolher o guarda-redes entre os titulares.',
-    kickoff: '▶ Início', pause: '⏸ Pausa', resume: '▶ Retomar', fullTimeBtn: '🏁 Fim do jogo', fullTime: 'Fim do jogo',
+    kickoff: '▶ Início', resume: '▶ Retomar', fullTimeBtn: '🏁 Fim do jogo', fullTime: 'Fim do jogo',
     endPeriod: 'Terminar {p}', startPeriod: '▶ Iniciar {p}', viewReport: '📋 Ver relatório',
     notStarted: 'Por começar · {n} × {m} min', paused: 'em pausa', breakAfter: 'Intervalo após {p}',
     autoStoppedToast: '⏱ {p} parada automaticamente aos +{m} min', fixTimes: 'Corrigir tempos',
@@ -895,7 +895,7 @@ function saveGame() {
 
 function clockButtons(g) {
   const c = g.clock;
-  const b = (action, label, cls = '') => `<button class="btn ${cls}" data-action="${action}">${label}</button>`;
+  const b = (action, label, cls = '') => `<button class="btn small ${cls}" data-action="${action}">${label}</button>`;
   switch (g.status) {
     case 'scheduled': return b('kickoff', t('kickoff'), 'primary');
     case 'live':
@@ -974,7 +974,7 @@ function viewGame(id) {
       ${statusPill(g)}
       <div class="clock-line">
         <span class="clock" id="clock">${fmtNow(g)}</span>
-        ${g.status === 'live' ? `<button class="icon-btn ${g.clock.running ? '' : 'on'}" data-action="${g.clock.running ? 'pause' : 'resume'}" aria-label="${g.clock.running ? t('pause') : t('resume')}">${g.clock.running ? '⏸' : '▶'}</button>` : ''}
+        ${g.status === 'live' && !g.clock.running ? `<button class="icon-btn on" data-action="resume" aria-label="${t('resume')}">▶</button>` : ''}
       </div>
       <div class="muted small" id="period">${periodLabel(g)}</div>
       <div class="score-row">
@@ -985,7 +985,7 @@ function viewGame(id) {
       ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
         <div class="row center"><button class="btn small" data-action="fix-open">${t('fixTimesBtn')}</button></div></div>` : ''}
       <div class="row gap center wrap score-actions">
-        ${g.status === 'live' ? `<button class="btn ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
+        ${g.status === 'live' ? `<button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
         ${clockButtons(g)}
       </div>
       ${pitch(g, d)}
@@ -1512,7 +1512,6 @@ const actions = {
     save();
     render();
   },
-  pause: () => { const g = currentGame(); stopClock(g); save(); render(); },
   resume: () => { const g = currentGame(); startClock(g); save(); render(); },
   'end-period': () => {
     const g = currentGame();
