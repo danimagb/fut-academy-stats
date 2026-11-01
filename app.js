@@ -1884,7 +1884,7 @@ document.addEventListener('submit', (e) => {
 // or onto another pitch player / empty spot to swap positions.
 // A quick swipe still scrolls the page; a plain tap still opens the player sheet.
 
-const drag = { timer: null, active: false, moved: false, from: null, x0: 0, y0: 0, ghost: null, target: null, suppressClick: false };
+const drag = { timer: null, active: false, moved: false, from: null, x0: 0, y0: 0, dx: 0, dy: 0, ghost: null, target: null, suppressClick: false };
 
 function chipAt(x, y) {
   const el = document.elementFromPoint(x, y)?.closest('.chip');
@@ -1908,10 +1908,16 @@ function dragStart(chip, x, y) {
   drag.timer = setTimeout(() => {
     drag.active = true;
     buzz();
+    // Keep the point where the player was grabbed under the finger (a pitch token's circle is
+    // at its top, so centring the token on the finger would make the circle jump up).
     const r = chip.getBoundingClientRect();
+    drag.dx = x - r.left;
+    drag.dy = y - r.top;
     const ghost = chip.cloneNode(true);
     ghost.className += ' ghost';
-    Object.assign(ghost.style, { width: `${r.width}px`, left: `${x - r.width / 2}px`, top: `${y - r.height / 2}px` });
+    Object.assign(ghost.style, {
+      width: `${chip.offsetWidth}px`, left: `${r.left}px`, top: `${r.top}px`, transformOrigin: `${drag.dx}px ${drag.dy}px`,
+    });
     document.body.appendChild(ghost);
     drag.ghost = ghost;
     chip.classList.add('dragging');
@@ -1927,9 +1933,8 @@ function dragMove(x, y, e) {
   }
   e.preventDefault();
   drag.moved = true;
-  const r = drag.ghost.getBoundingClientRect();
-  drag.ghost.style.left = `${x - r.width / 2}px`;
-  drag.ghost.style.top = `${y - r.height / 2}px`;
+  drag.ghost.style.left = `${x - drag.dx}px`;
+  drag.ghost.style.top = `${y - drag.dy}px`;
   const t = chipAt(x, y);
   const valid = t && t !== drag.from && dropKind(drag.from, t);
   drag.target?.classList.remove('drop');

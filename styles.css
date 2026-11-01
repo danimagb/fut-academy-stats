@@ -330,7 +330,7 @@ label.inline input { width: 90px; min-height: 40px; }
 .chip.slot-empty .shirt { background: transparent; border: 2px dashed rgba(255, 255, 255, .45); }
 
 /* Dragging round tokens: highlight the shirt, not the whole token */
-.chip.round.ghost { transform: scale(1.08); box-shadow: none; }
+.chip.round.ghost { position: fixed; transform: scale(1.08); box-shadow: none; }
 .is-dragging.from-on .chip.round, .is-dragging.from-bench .chip.round { outline: none; }
 .is-dragging.from-bench .chip.tok .shirt,
 .is-dragging.from-on .chip.round:not(.dragging):not(.off) .shirt { outline: 2px dashed #fff; outline-offset: 3px; }
