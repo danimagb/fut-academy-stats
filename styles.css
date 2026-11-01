@@ -1,10 +1,10 @@
 :root {
-  --bg: #0b2a1d;
-  --panel: #12382a;
-  --panel-2: #194634;
-  --line: #24543f;
-  --text: #eef6f1;
-  --muted: #9dbcad;
+  --bg: #0e0f12;
+  --panel: #1a1c20;
+  --panel-2: #25282d;
+  --line: #31343a;
+  --text: #f2f3f5;
+  --muted: #9a9fa8;
   --accent: #3ddc84;
   --accent-ink: #062014;
   --warn: #ffb547;
@@ -88,7 +88,7 @@ form.add-player { display: grid; gap: 8px; margin: 10px 0; }
   padding: 10px 12px;
 }
 .item.start { border-color: var(--accent); }
-.item.bench { border-color: #4f7d68; }
+.item.bench { border-color: #4a5a52; }
 .score { font-weight: 800; font-variant-numeric: tabular-nums; }
 .score.big { font-size: 2.6rem; line-height: 1.1; }
 
@@ -291,10 +291,10 @@ label.inline input { width: 90px; min-height: 40px; }
 .pitch {
   position: relative; aspect-ratio: 100 / 130; width: min(100%, calc(72vh / 1.3)); margin: 0 auto;
   border-radius: 10px; overflow: hidden;
-  background: repeating-linear-gradient(to bottom, #1c6a3e 0 10%, #207445 10% 20%);
+  background: repeating-linear-gradient(to bottom, #2e8a4e 0 10%, #2b8349 10% 20%);
 }
 .pitch-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
-.pitch-lines * { fill: none; stroke: rgba(255, 255, 255, .38); stroke-width: .5; }
+.pitch-lines * { fill: none; stroke: rgba(255, 255, 255, .5); stroke-width: .5; }
 .pitch-lines .dot { fill: rgba(255, 255, 255, .5); }
 .pitch-corner {
   position: absolute; top: 8px; z-index: 1; min-height: 32px; padding: 0 10px; display: grid; place-items: center;
@@ -315,7 +315,7 @@ label.inline input { width: 90px; min-height: 40px; }
   grid-row: auto; width: 44px; min-width: 44px; height: 44px; border-radius: 50%;
   background: var(--panel-2); border: 2px solid rgba(255, 255, 255, .85); font-size: 1.05rem;
 }
-.chip.round.on .shirt { background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
+.chip.round.on .shirt { background: #23733f; color: #fff; border-color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
 .chip.round.gk .shirt { background: var(--gk); color: #2b2200; }
 .chip.round .pname { max-width: 100%; font-size: .78rem; line-height: 1.25; padding: 1px 6px; border-radius: 6px; }
 .chip.round .meta { font-size: .72rem; white-space: nowrap; }
@@ -339,3 +339,27 @@ label.inline input { width: 90px; min-height: 40px; }
 .chip.round.drop .shirt { background: #fff; color: var(--accent-ink); outline: 3px solid var(--accent); }
 .chip.round.drop .meta { color: var(--muted); }
 .chip.tok.drop .meta { color: #e6f3ec; }
+
+/* Scoreboard: status pill, small clock, big score with team names */
+.scoreboard { gap: 4px; padding: 14px 12px 12px; }
+.pill {
+  font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 12px; border-radius: 999px; background: var(--panel-2); color: var(--muted);
+}
+.pill.live { background: #ef4444; color: #fff; }
+.pill.paused, .pill.break { background: var(--warn); color: #2b1a00; }
+.clock-line { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.scoreboard .clock { font-size: 1.15rem; font-weight: 600; color: var(--muted); }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; padding: 0;
+  font: inherit; font-size: .9rem; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); cursor: pointer;
+}
+.icon-btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.icon-btn:active { transform: scale(.94); }
+.score-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; margin: 4px 0 6px; }
+.score-row .side { font-weight: 600; font-size: .95rem; overflow-wrap: anywhere; }
+.score-row .side:first-child { text-align: right; }
+.score-row .side:last-child { text-align: left; }
+.score.big { font-size: 3.2rem; }
+.score-actions .btn { flex: 1; max-width: 220px; }
+.scoreboard.overtime .clock { color: var(--warn); }

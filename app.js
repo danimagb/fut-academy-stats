@@ -899,8 +899,7 @@ function clockButtons(g) {
   switch (g.status) {
     case 'scheduled': return b('kickoff', t('kickoff'), 'primary');
     case 'live':
-      return (c.running ? b('pause', t('pause')) : b('resume', t('resume'), 'primary')) +
-        b('end-period', c.period >= g.periods ? t('fullTimeBtn') : t('endPeriod', { p: periodName(g, c.period) }), 'warn');
+      return b('end-period', c.period >= g.periods ? t('fullTimeBtn') : t('endPeriod', { p: periodName(g, c.period) }), 'warn');
     case 'break': return b('next-period', t('startPeriod', { p: periodName(g, c.period + 1) }), 'primary');
     default: return `<a class="btn primary" href="#/report/${g.id}">${t('viewReport')}</a>`;
   }
@@ -940,6 +939,12 @@ function pitch(g, d) {
   }).join('')}</div>`;
 }
 
+// LIVE / PAUSED / BREAK / … pill on top of the scoreboard.
+function statusPill(g) {
+  const paused = g.status === 'live' && !g.clock.running;
+  return `<span class="pill ${paused ? 'paused' : g.status}">${paused ? t('paused') : t(`st_${g.status}`)}</span>`;
+}
+
 function viewGame(id) {
   const g = getGame(id);
   if (!g) return notFound();
@@ -953,6 +958,9 @@ function viewGame(id) {
   const last = g.events[g.events.length - 1];
   const canEdit = g.status === 'scheduled' && g.events.length === 0;
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
+  const us = g.team || g.club || t('unnamedTeam');
+  const them = g.opponent || t('opponent');
+  const [home, away] = g.home === false ? [them, us] : [us, them];
 
   main.innerHTML = `
     ${bar(esc(matchTitle(g)), '#/games', `
@@ -963,14 +971,23 @@ function viewGame(id) {
       ${g.status !== 'scheduled' ? `<button class="menu-item" role="menuitem" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
       <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`)}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
-      <div class="muted small">${formatLine(g)}</div>
-      <div class="score big">${d.us} – ${d.them}</div>
-      <div class="clock" id="clock">${fmtNow(g)}</div>
-      <div class="muted" id="period">${periodLabel(g)}</div>
+      ${statusPill(g)}
+      <div class="clock-line">
+        <span class="clock" id="clock">${fmtNow(g)}</span>
+        ${g.status === 'live' ? `<button class="icon-btn ${g.clock.running ? '' : 'on'}" data-action="${g.clock.running ? 'pause' : 'resume'}" aria-label="${g.clock.running ? t('pause') : t('resume')}">${g.clock.running ? '⏸' : '▶'}</button>` : ''}
+      </div>
+      <div class="muted small" id="period">${periodLabel(g)}</div>
+      <div class="score-row">
+        <span class="side">${esc(home)}</span>
+        <span class="score big">${g.home === false ? `${d.them} – ${d.us}` : `${d.us} – ${d.them}`}</span>
+        <span class="side">${esc(away)}</span>
+      </div>
       ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
         <div class="row center"><button class="btn small" data-action="fix-open">${t('fixTimesBtn')}</button></div></div>` : ''}
-      <div class="row gap center wrap">${clockButtons(g)}</div>
-      ${g.status === 'live' ? `<div class="row gap center wrap"><button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button></div>` : ''}
+      <div class="row gap center wrap score-actions">
+        ${g.status === 'live' ? `<button class="btn ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
+        ${clockButtons(g)}
+      </div>
       ${pitch(g, d)}
     </section>
 
