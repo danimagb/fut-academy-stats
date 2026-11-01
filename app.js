@@ -69,7 +69,6 @@ const I18N = {
     notFound: 'Not found', gameGone: 'This game no longer exists.', back: 'Back',
     autoStoppedAlert: '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
     oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
-    tapHint: 'Tap a player for subs, goals &amp; cards · hold and drag onto a bench player to sub, or onto a pitch player to swap positions',
     formation: 'Formation', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
     undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
@@ -130,7 +129,6 @@ const I18N = {
     notFound: 'Não encontrado', gameGone: 'Este jogo já não existe.', back: 'Voltar',
     autoStoppedAlert: '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
     oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
-    tapHint: 'Toca num jogador para substituições, golos e cartões · mantém e arrasta para um suplente para substituir, ou para outro jogador em campo para trocar posições',
     formation: 'Tática', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
     undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
@@ -910,21 +908,6 @@ function clockButtons(g) {
 
 const gkTag = () => ` <span class="tag">${t('gk')}</span>`;
 
-function chip(g, d, id, where) {
-  const s = d.stats[id];
-  const p = g.names[id];
-  const badges = [
-    s.goals ? `⚽${s.goals > 1 ? s.goals : ''}` : '',
-    '🟨'.repeat(s.yellow),
-    '🟥'.repeat(s.red),
-  ].join('');
-  return `<button class="chip ${where} ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" ${where === 'off' ? 'disabled' : ''}>
-    <span class="shirt">${esc(p.number) || '–'}</span>
-    <span class="pname">${esc(p.name)}${id === d.gk ? gkTag() : ''}</span>
-    <span class="meta"><span data-pt="${id}">${fmtMins(s.played)}</span> ${badges}</span>
-  </button>`;
-}
-
 const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-hidden="true">
   <rect x="3" y="3" width="94" height="124" rx="1"/>
   <line x1="3" y1="65" x2="97" y2="65"/><circle cx="50" cy="65" r="11"/><circle class="dot" cx="50" cy="65" r=".8"/>
@@ -933,19 +916,27 @@ const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-hidden=
   <path d="M40 22a11 11 0 0 0 20 0M40 108a11 11 0 0 1 20 0"/>
 </svg>`;
 
-// On-pitch players in formation. Tokens are chips too, so tap and drag work the same.
+// Round player token (shirt circle, name, minutes). They are chips too, so tap and drag work the same.
+// where: 'on' (pitch), 'bench' or 'off' (sent off).
+function token(g, d, id, where, attrs = '') {
+  const s = d.stats[id];
+  const badges = [s.goals ? `⚽${s.goals > 1 ? s.goals : ''}` : '', '🟨'.repeat(s.yellow), '🟥'.repeat(s.red)].join('');
+  return `<button class="chip round ${where} ${where === 'on' ? 'tok' : ''} ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" ${attrs} ${where === 'off' ? 'disabled' : ''}>
+    <span class="shirt">${esc(g.names[id].number) || '–'}</span>
+    <span class="pname">${esc(g.names[id].name)}</span>
+    <span class="meta"><span data-pt="${id}">${fmtMins(s.played)}</span>${badges ? ` ${badges}` : ''}</span>
+  </button>`;
+}
+
+// On-pitch players in formation, with the formation picker and player count in the top corners.
 function pitch(g, d) {
   const pts = slotCoords(formationOf(g));
-  return `<div class="pitch">${PITCH_LINES}${d.slots.map((id, i) => {
-    const pos = `style="left:${pts[i].x.toFixed(1)}%;top:${pts[i].y.toFixed(1)}%"`;
-    if (!id) return `<div class="chip slot-empty" data-slot="${i}" ${pos}><span class="shirt"></span></div>`;
-    const s = d.stats[id];
-    const badges = [s.goals ? `⚽${s.goals > 1 ? s.goals : ''}` : '', '🟨'.repeat(s.yellow)].join('');
-    return `<button class="chip on tok ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" data-slot="${i}" ${pos}>
-      <span class="shirt">${esc(g.names[id].number) || '–'}</span>
-      <span class="pname">${esc(g.names[id].name)}</span>
-      <span class="meta"><span data-pt="${id}">${fmtMins(s.played)}</span>${badges ? ` ${badges}` : ''}</span>
-    </button>`;
+  return `<div class="pitch">${PITCH_LINES}
+    ${formationsFor(g.field).length > 1 ? `<button class="pitch-corner left" data-action="formation" aria-label="${t('formation')}">${formationOf(g)} ▾</button>` : ''}
+    <span class="pitch-corner right" aria-label="${t('onPitch')}">${d.on.size}/${g.field + 1}</span>
+    ${d.slots.map((id, i) => {
+    const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${pts[i].y.toFixed(1)}%"`;
+    return id ? token(g, d, id, 'on', pos) : `<div class="chip round slot-empty" ${pos}><span class="shirt"></span></div>`;
   }).join('')}</div>`;
 }
 
@@ -969,32 +960,24 @@ function viewGame(id) {
         ? `<a class="menu-item" role="menuitem" href="#/edit/${g.id}">✎ ${t('edit')}</a>`
         : `<button class="menu-item" role="menuitem" data-action="edit-info">${t('gameInfo')}</button>`}
       ${g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : ''}
+      ${g.status !== 'scheduled' ? `<button class="menu-item" role="menuitem" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
       <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`)}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
       <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${d.us} – ${d.them}</div>
       <div class="clock" id="clock">${fmtNow(g)}</div>
       <div class="muted" id="period">${periodLabel(g)}</div>
-      ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}</div>` : ''}
+      ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
+        <div class="row center"><button class="btn small" data-action="fix-open">${t('fixTimesBtn')}</button></div></div>` : ''}
       <div class="row gap center wrap">${clockButtons(g)}</div>
-      <div class="row gap center wrap">
-        ${g.status === 'live' ? `<button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
-        ${g.status !== 'scheduled' ? `<button class="btn small ghost" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
-      </div>
+      ${g.status === 'live' ? `<div class="row gap center wrap"><button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button></div>` : ''}
+      ${pitch(g, d)}
     </section>
 
-    <p class="hint center-text">${t('tapHint')}</p>
-
-    <div class="pitch-head">
-      <h2>${t('onPitch')} <span class="muted small">${d.on.size}/${g.field + 1}</span></h2>
-      ${formationsFor(g.field).length > 1 ? `<button class="btn small ghost" data-action="formation" aria-label="${t('formation')}">⚙ ${formationOf(g)}</button>` : ''}
-    </div>
-    ${pitch(g, d)}
-
     <h2>${t('bench')}</h2>
-    ${benchIds.length ? `<div class="grid">${benchIds.map((p) => chip(g, d, p, 'bench')).join('')}</div>` : `<p class="empty small">${t('noSubs')}</p>`}
+    ${benchIds.length ? `<div class="round-row">${benchIds.map((p) => token(g, d, p, 'bench')).join('')}</div>` : `<p class="empty small">${t('noSubs')}</p>`}
 
-    ${offIds.length ? `<h2>${t('sentOff')}</h2><div class="grid">${offIds.map((p) => chip(g, d, p, 'off')).join('')}</div>` : ''}
+    ${offIds.length ? `<h2>${t('sentOff')}</h2><div class="round-row">${offIds.map((p) => token(g, d, p, 'off')).join('')}</div>` : ''}
 
     <h2>${t('timeline')}</h2>
     ${last ? `<button class="btn small ghost" data-action="undo">${t('undoX', { x: describe(g, last) })}</button>` : ''}

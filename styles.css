@@ -286,42 +286,56 @@ label.inline input { width: 90px; min-height: 40px; }
 .sub-out { color: var(--danger); }
 .nw { white-space: nowrap; }
 
-/* Pitch view: on-pitch players in formation */
-.pitch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 22px 0 8px; }
-.pitch-head h2 { margin: 0; }
+/* Pitch view: on-pitch players in formation, as a continuation of the scoreboard card */
+.scoreboard .pitch { margin-top: 8px; }
 .pitch {
   position: relative; aspect-ratio: 100 / 130; width: min(100%, calc(72vh / 1.3)); margin: 0 auto;
-  border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden;
   background: repeating-linear-gradient(to bottom, #1c6a3e 0 10%, #207445 10% 20%);
 }
 .pitch-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pitch-lines * { fill: none; stroke: rgba(255, 255, 255, .38); stroke-width: .5; }
 .pitch-lines .dot { fill: rgba(255, 255, 255, .5); }
+.pitch-corner {
+  position: absolute; top: 8px; z-index: 1; min-height: 32px; padding: 0 10px; display: grid; place-items: center;
+  font: inherit; font-size: .85rem; font-weight: 700; color: #fff;
+  background: rgba(0, 0, 0, .35); border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px;
+}
+.pitch-corner.left { left: 8px; cursor: pointer; }
+.pitch-corner.left:active { background: rgba(0, 0, 0, .55); }
+.pitch-corner.right { right: 8px; font-weight: 600; color: rgba(255, 255, 255, .85); }
 
-.chip.tok, .chip.slot-empty {
-  position: absolute; transform: translate(-50%, -50%);
+/* Round player tokens (pitch, bench, sent off) */
+.chip.round {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   width: 80px; min-height: 0; padding: 0; text-align: center;
   background: transparent; border: 0; border-radius: 0;
 }
-.chip.tok:active { transform: translate(-50%, -50%) scale(.94); }
-.chip.tok .shirt {
-  grid-row: auto; width: 42px; min-width: 42px; height: 42px; border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, .9); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); font-size: 1.05rem;
+.chip.round .shirt {
+  grid-row: auto; width: 44px; min-width: 44px; height: 44px; border-radius: 50%;
+  background: var(--panel-2); border: 2px solid rgba(255, 255, 255, .85); font-size: 1.05rem;
 }
-.chip.tok .pname {
-  max-width: 100%; font-size: .78rem; line-height: 1.25; padding: 1px 6px; border-radius: 6px;
-  background: rgba(0, 0, 0, .55);
-}
-.chip.tok .meta { font-size: .72rem; color: #e6f3ec; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); white-space: nowrap; }
-.chip.slot-empty { cursor: default; }
-.chip.slot-empty .shirt { width: 42px; height: 42px; border-radius: 50%; background: transparent; border: 2px dashed rgba(255, 255, 255, .45); }
+.chip.round.on .shirt { background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
+.chip.round.gk .shirt { background: var(--gk); color: #2b2200; }
+.chip.round .pname { max-width: 100%; font-size: .78rem; line-height: 1.25; padding: 1px 6px; border-radius: 6px; }
+.chip.round .meta { font-size: .72rem; white-space: nowrap; }
+.chip.round.off .shirt { border-color: var(--danger); }
+.round-row { display: flex; flex-wrap: wrap; gap: 10px 4px; }
 
-/* Dragging on the pitch: highlight the shirt, not the whole token */
-.chip.tok.ghost { transform: scale(1.08); box-shadow: none; }
-.is-dragging.from-bench .chip.tok, .is-dragging.from-on .chip.tok, .is-dragging.from-on .chip.slot-empty { outline: none; }
+.chip.tok, .chip.slot-empty { position: absolute; transform: translate(-50%, -50%); }
+.chip.tok:active { transform: translate(-50%, -50%) scale(.94); }
+.chip.tok .pname { background: rgba(0, 0, 0, .55); }
+.chip.tok .meta { color: #e6f3ec; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }
+.chip.slot-empty { cursor: default; }
+.chip.slot-empty .shirt { background: transparent; border: 2px dashed rgba(255, 255, 255, .45); }
+
+/* Dragging round tokens: highlight the shirt, not the whole token */
+.chip.round.ghost { transform: scale(1.08); box-shadow: none; }
+.is-dragging.from-on .chip.round, .is-dragging.from-bench .chip.round { outline: none; }
 .is-dragging.from-bench .chip.tok .shirt,
-.is-dragging.from-on .chip.tok:not(.dragging) .shirt { outline: 2px dashed #fff; outline-offset: 3px; }
-.chip.tok.drop, .chip.slot-empty.drop { background: transparent; transform: translate(-50%, -50%) scale(1.12); }
-.chip.tok.drop .shirt, .chip.slot-empty.drop .shirt { background: #fff; color: var(--accent-ink); outline: 3px solid var(--accent); }
+.is-dragging.from-on .chip.round:not(.dragging):not(.off) .shirt { outline: 2px dashed #fff; outline-offset: 3px; }
+.chip.round.drop { background: transparent; color: var(--text); transform: scale(1.12); }
+.chip.tok.drop, .chip.slot-empty.drop { transform: translate(-50%, -50%) scale(1.12); }
+.chip.round.drop .shirt { background: #fff; color: var(--accent-ink); outline: 3px solid var(--accent); }
+.chip.round.drop .meta { color: var(--muted); }
 .chip.tok.drop .meta { color: #e6f3ec; }
