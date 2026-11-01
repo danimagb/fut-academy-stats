@@ -1484,10 +1484,15 @@ const actions = {
     save();
     location.hash = `#/team/${tm.id}`;
   },
-  'delete-team': () => {
+  'delete-team': async () => {
     const id = route().id;
-    if (teamPlayers(id).length) return alert(t('teamHasPlayers'));
-    if (!confirm(t('confirmDeleteTeam'))) return;
+    if (teamPlayers(id).length) {
+      return askConfirm({ title: t('deleteTeam'), message: t('teamHasPlayers'), ok: t('ok'), cancel: false });
+    }
+    const ok = await askConfirm({
+      title: t('confirmDeleteTeam'), message: esc(teamLabel(getTeam(id))), ok: t('deleteBtn'), danger: true,
+    });
+    if (!ok) return;
     db.teams = db.teams.filter((x) => x.id !== id);
     save();
     location.hash = '#/teams';
