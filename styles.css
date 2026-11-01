@@ -382,3 +382,8 @@ label.inline input { width: 90px; min-height: 40px; }
 .tab.on { color: var(--accent); }
 .tab:active { transform: scale(.95); }
 .tab svg .f { fill: currentColor; }
+
+/* Team filter on the games page */
+.pick-row.filter { flex-wrap: nowrap; overflow-x: auto; margin: 12px -14px 0; padding: 0 14px 2px; scrollbar-width: none; }
+.pick-row.filter::-webkit-scrollbar { display: none; }
+.pick-row.filter .pick { flex: none; min-height: 36px; font-size: .9rem; }

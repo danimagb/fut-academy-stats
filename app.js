@@ -4,6 +4,7 @@
 
 const STORE_KEY = 'fut-academy-stats.v1';
 const LANG_KEY = 'fut-academy-stats.lang';
+const GAMES_TEAM_KEY = 'fut-academy-stats.gamesTeam'; // team filter on the games page ('' = all)
 
 const FORMATS = [
   { id: 'U7', field: 3, periods: 2, periodMin: 20 },
@@ -71,6 +72,7 @@ const I18N = {
     oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
     formation: 'Formation',
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
+    allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
     soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
@@ -134,6 +136,7 @@ const I18N = {
     oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
     formation: 'Tática',
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
+    allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
     soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
@@ -700,17 +703,28 @@ function notFound() {
 
 // ---------- Views: games list ----------
 
+// Team shown on the games page, or '' for all (only when there's more than one team).
+function gamesTeam() {
+  const id = localStorage.getItem(GAMES_TEAM_KEY) || '';
+  return db.teams.length > 1 && getTeam(id) ? id : '';
+}
+
 function viewGames() {
-  const games = [...db.games].sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
+  const team = gamesTeam();
+  const games = db.games.filter((g) => !team || g.teamId === team).sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
   main.innerHTML = `
     ${bar('⚽ Fut Academy Stats')}
     <div class="row gap">
       <a class="btn primary grow" href="#/new">${t('newGame')}</a>
       <a class="btn" href="#/teams">${t('teamsBtn', { n: db.teams.length })}</a>
     </div>
+    ${db.teams.length > 1 ? `<div class="pick-row filter" role="tablist">
+      ${[['', t('allTeams')], ...db.teams.map((tm) => [tm.id, esc(teamLabel(tm))])].map(([id, label]) =>
+        `<button class="pick ${id === team ? 'on' : ''}" role="tab" aria-selected="${id === team}" data-action="games-team" data-id="${id}">${label}</button>`).join('')}
+    </div>` : ''}
     ${games.length
       ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
-      : `<p class="empty">${t('noGames')}</p>`}
+      : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`}
     <div class="row gap foot">
       <button class="btn small ghost" data-action="backup">${t('exportBackup')}</button>
       <label class="btn small ghost">${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
@@ -788,7 +802,7 @@ function viewTeam(id) {
 // ---------- Views: new / edit game ----------
 
 function defaultTeamId() {
-  return getTeam(db.lastTeamId)?.id ?? db.teams[0]?.id ?? null;
+  return getTeam(gamesTeam())?.id ?? getTeam(db.lastTeamId)?.id ?? db.teams[0]?.id ?? null;
 }
 
 function newDraft(id) {
@@ -1473,6 +1487,10 @@ async function exportPdf(g) {
 
 const actions = {
   'close-sheet': () => closeSheet(),
+  'games-team': ({ id }) => {
+    localStorage.setItem(GAMES_TEAM_KEY, id);
+    render();
+  },
   soon: ({ v }) => askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
   lang: ({ v }) => {
