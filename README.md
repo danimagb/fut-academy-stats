@@ -16,6 +16,7 @@ It's plain HTML/CSS/JS with no build step and no server code. Data is saved on t
      - Tapping a pitch player lists the bench, with fewest minutes played first.
      - Tapping a bench player lists the pitch, with most minutes played first.
    - **Hold and drag** a player onto one in the other group to substitute in one move.
+   - **Pitch view**: players on the pitch are shown in formation (GK at the bottom). Tap **⚙ formation** to pick another preset for your team size (e.g. 2-1, 1-2-1, 2-3-1, 3-3-2, 4-4-2). A sub takes the position of the player going off; drag one pitch player onto another (or onto an empty spot after a red card) to swap positions, and drag onto the goal to change the GK. Before kick-off this just edits the starting lineup.
    - Every action shows a toast with **Undo**. There's also an "Undo" button above the timeline.
    - A red card takes the player off; they can't come back and the team plays one short. If the GK is sent off, tap another player and choose 🧤 To goal.
    - The screen stays on while the game is live, where the browser supports it.

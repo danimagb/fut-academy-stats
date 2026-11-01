@@ -16,6 +16,20 @@ const FORMATS = [
   { id: 'Custom', field: 4, periods: 2, periodMin: 20 },
 ];
 
+// Formations per number of outfield players (defence → attack). The first one is the default.
+const FORMATIONS = {
+  1: ['1'],
+  2: ['1-1', '2'],
+  3: ['2-1', '1-2', '1-1-1'],
+  4: ['1-2-1', '2-2', '2-1-1', '3-1'],
+  5: ['2-2-1', '2-1-2', '1-2-2', '3-2'],
+  6: ['2-3-1', '3-2-1', '2-1-2-1', '3-1-2'],
+  7: ['3-3-1', '2-3-2', '3-2-2', '2-4-1'],
+  8: ['3-3-2', '3-4-1', '2-4-2', '3-2-3'],
+  9: ['4-3-2', '3-4-2', '4-4-1', '3-3-3'],
+  10: ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '4-1-4-1'],
+};
+
 // ---------- Language ----------
 
 const I18N = {
@@ -55,7 +69,8 @@ const I18N = {
     notFound: 'Not found', gameGone: 'This game no longer exists.', back: 'Back',
     autoStoppedAlert: '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
     oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
-    tapHint: 'Tap a player for subs, goals &amp; cards · hold and drag onto another player to sub',
+    tapHint: 'Tap a player for subs, goals &amp; cards · hold and drag onto a bench player to sub, or onto a pitch player to swap positions',
+    formation: 'Formation', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
     undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
     goalBtn: 'Goal', yellowBtn: 'Yellow', redBtn: 'Red', toGoal: 'To goal', benchState: 'Bench', played: '{t} played',
@@ -115,7 +130,8 @@ const I18N = {
     notFound: 'Não encontrado', gameGone: 'Este jogo já não existe.', back: 'Voltar',
     autoStoppedAlert: '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
     oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
-    tapHint: 'Toca num jogador para substituições, golos e cartões · mantém e arrasta para outro jogador para substituir',
+    tapHint: 'Toca num jogador para substituições, golos e cartões · mantém e arrasta para um suplente para substituir, ou para outro jogador em campo para trocar posições',
+    formation: 'Tática', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
     undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
     goalBtn: 'Golo', yellowBtn: 'Amarelo', redBtn: 'Vermelho', toGoal: 'Para a baliza', benchState: 'Suplente', played: '{t} jogados',
@@ -402,12 +418,50 @@ function applyFix(g, endMin, startedMinAgo) {
   save();
 }
 
+// ---------- Pitch positions ----------
+// A lineup is one id (or null) per slot: slot 0 is the goal, slots 1..field follow the
+// formation from defence to attack, left to right. Changing formation keeps the slots.
+
+const formationsFor = (n) => FORMATIONS[n] || [String(n)];
+
+function formationOf(g) {
+  const list = formationsFor(g.field);
+  if (list.includes(g.formation)) return g.formation;
+  const last = db.formations?.[g.field];
+  return list.includes(last) ? last : list[0];
+}
+
+// Slot positions in % of the pitch (own goal at the bottom).
+function slotCoords(formation) {
+  const rows = formation.split('-').map(Number);
+  const pts = [{ x: 50, y: 91 }];
+  rows.forEach((n, r) => {
+    const y = rows.length === 1 ? 55 : 74 - r * (56 / (rows.length - 1));
+    for (let i = 0; i < n; i++) pts.push({ x: 50 + ((i + 1) / (n + 1) - 0.5) * 115, y });
+  });
+  return pts;
+}
+
+// Keep players where they were, put the GK in goal and fill the gaps in shirt order.
+function fitLineup(prev, starters, gkId, size) {
+  const slots = Array(size).fill(null);
+  slots[0] = starters.includes(gkId) ? gkId : null;
+  const rest = starters.filter((id) => id !== slots[0]);
+  (prev || []).forEach((id, i) => { if (i > 0 && i < size && rest.includes(id)) slots[i] = id; });
+  const left = rest.filter((id) => !slots.includes(id));
+  for (let i = 1; i < size; i++) if (!slots[i]) slots[i] = left.shift() ?? null;
+  return slots;
+}
+
+const startLineup = (g) => fitLineup(g.lineup, sortIds(g, g.starters), g.gkId, g.field + 1);
+
 // ---------- Game state (derived from events) ----------
 
 function derive(g) {
   const on = new Set(g.starters);
   const sentOff = new Set();
   let gk = g.gkId;
+  const slots = startLineup(g);
   let us = 0;
   let them = 0;
   const stats = {};
@@ -428,6 +482,8 @@ function derive(g) {
         close(s, e.t);
         stats[e.inId].open = e.t;
         if (gk === e.playerId) gk = e.inId;
+        if (slots.includes(e.playerId)) slots[slots.indexOf(e.playerId)] = e.inId;
+        else if (slots.includes(null)) slots[slots.indexOf(null)] = e.inId;
         break;
       case 'goal': s.goals++; us++; break;
       case 'oppgoal': them++; break;
@@ -438,8 +494,19 @@ function derive(g) {
         sentOff.add(e.playerId);
         if (on.delete(e.playerId)) close(s, e.t);
         if (gk === e.playerId) gk = null;
+        if (slots.includes(e.playerId)) slots[slots.indexOf(e.playerId)] = null;
         break;
-      case 'gk': gk = e.playerId; break;
+      case 'gk': {
+        gk = e.playerId;
+        const i = slots.indexOf(e.playerId);
+        if (i > 0) [slots[0], slots[i]] = [e.playerId, slots[0]];
+        break;
+      }
+      case 'pos': { // move an outfield player to another outfield slot, swapping with whoever is there
+        const i = slots.indexOf(e.playerId);
+        if (i > 0 && e.slot > 0 && e.slot < slots.length) [slots[i], slots[e.slot]] = [slots[e.slot], e.playerId];
+        break;
+      }
     }
   }
 
@@ -450,7 +517,7 @@ function derive(g) {
     s.intervals = s.intervals.filter(([a, b]) => b > a || g.status === 'scheduled');
     s.played = s.intervals.reduce((sum, [a, b]) => sum + (b - a), 0);
   }
-  return { on, sentOff, gk, us, them, stats };
+  return { on, sentOff, gk, us, them, stats, slots };
 }
 
 function addEvent(g, e) {
@@ -467,6 +534,30 @@ function doSub(g, out, inn) {
   toast({ html: subLine(esc(pname(g, inn)), esc(pname(g, out))) }, undoBtn(id));
 }
 
+// Move a pitch player to a slot (swapping with whoever is there). Moving into or out of
+// goal changes the goalkeeper. Before kick-off this just edits the starting lineup.
+function movePlayer(g, id, slot) {
+  const d = derive(g);
+  const from = d.slots.indexOf(id);
+  if (from < 0 || from === slot) return;
+  const other = d.slots[slot];
+  const newGk = slot === 0 ? id : from === 0 ? other : null;
+  if (from === 0 && !other) return; // the GK can't leave the goal empty
+  if (g.status === 'scheduled' && !g.events.length) {
+    const s = [...d.slots];
+    [s[from], s[slot]] = [s[slot], s[from]];
+    g.lineup = s;
+    g.gkId = s[0];
+    save();
+    buzz();
+    render();
+    return;
+  }
+  const eid = newGk ? addEvent(g, { type: 'gk', playerId: newGk }) : addEvent(g, { type: 'pos', playerId: id, slot });
+  render();
+  toast(newGk ? t('inGoalToast', { p: g.names[newGk].name }) : t('posToast', { p: g.names[id].name }), undoBtn(eid));
+}
+
 // Substitution line: green ▲ for the player coming on, red ▼ for the one going off.
 // Names must already be escaped.
 const subLine = (inName, outName) =>
@@ -480,6 +571,7 @@ function describe(g, e) {
     case 'yellow': return t('evYellow', { p: esc(pname(g, e.playerId)) });
     case 'red': return t('evRed', { p: esc(pname(g, e.playerId)) });
     case 'gk': return t('evGk', { p: esc(pname(g, e.playerId)) });
+    case 'pos': return t('evPos', { p: esc(pname(g, e.playerId)) });
     case 'start': return t('evStart', { p: periodName(g, e.period) });
     case 'end': return t('evEnd', { p: periodName(g, e.period) });
   }
@@ -794,6 +886,8 @@ function saveGame() {
     field, periods, periodMin, maxExtra, squad, starters, gkId: draft.gkId, names,
     teamId: team.id, club: team.club, team: team.name, home: draft.home, round: round >= 1 ? String(round) : '',
   });
+  g.formation = formationOf(g);
+  g.lineup = startLineup(g);
   db.lastTeamId = team.id;
   save();
   location.hash = `#/game/${g.id}`;
@@ -831,17 +925,40 @@ function chip(g, d, id, where) {
   </button>`;
 }
 
+const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-hidden="true">
+  <rect x="3" y="3" width="94" height="124" rx="1"/>
+  <line x1="3" y1="65" x2="97" y2="65"/><circle cx="50" cy="65" r="11"/><circle class="dot" cx="50" cy="65" r=".8"/>
+  <rect x="24" y="3" width="52" height="19"/><rect x="37" y="3" width="26" height="7"/>
+  <rect x="24" y="108" width="52" height="19"/><rect x="37" y="120" width="26" height="7"/>
+  <path d="M40 22a11 11 0 0 0 20 0M40 108a11 11 0 0 1 20 0"/>
+</svg>`;
+
+// On-pitch players in formation. Tokens are chips too, so tap and drag work the same.
+function pitch(g, d) {
+  const pts = slotCoords(formationOf(g));
+  return `<div class="pitch">${PITCH_LINES}${d.slots.map((id, i) => {
+    const pos = `style="left:${pts[i].x.toFixed(1)}%;top:${pts[i].y.toFixed(1)}%"`;
+    if (!id) return `<div class="chip slot-empty" data-slot="${i}" ${pos}><span class="shirt"></span></div>`;
+    const s = d.stats[id];
+    const badges = [s.goals ? `⚽${s.goals > 1 ? s.goals : ''}` : '', '🟨'.repeat(s.yellow)].join('');
+    return `<button class="chip on tok ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" data-slot="${i}" ${pos}>
+      <span class="shirt">${esc(g.names[id].number) || '–'}</span>
+      <span class="pname">${esc(g.names[id].name)}</span>
+      <span class="meta"><span data-pt="${id}">${fmtMins(s.played)}</span>${badges ? ` ${badges}` : ''}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
 function viewGame(id) {
   const g = getGame(id);
   if (!g) return notFound();
   const d = derive(g);
-  const onIds = sortIds(g, d.on).sort((a, b) => (b === d.gk) - (a === d.gk));
   const benchIds = g.squad
     .filter((p) => !d.on.has(p) && !d.sentOff.has(p))
     .sort((a, b) => d.stats[a].played - d.stats[b].played || byNumber(g.names[a], g.names[b]));
   const offIds = sortIds(g, [...d.sentOff].filter((p) => !d.on.has(p)));
 
-  const timeline = [...g.events, ...g.marks].sort((a, b) => a.t - b.t || (a.wall || 0) - (b.wall || 0)).reverse();
+  const timeline = [...g.events.filter((e) => e.type !== 'pos'), ...g.marks].sort((a, b) => a.t - b.t || (a.wall || 0) - (b.wall || 0)).reverse();
   const last = g.events[g.events.length - 1];
   const canEdit = g.status === 'scheduled' && g.events.length === 0;
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
@@ -868,8 +985,11 @@ function viewGame(id) {
 
     <p class="hint center-text">${t('tapHint')}</p>
 
-    <h2>${t('onPitch')} <span class="muted small">${d.on.size}/${g.field + 1}</span></h2>
-    <div class="grid">${onIds.map((p) => chip(g, d, p, 'on')).join('')}</div>
+    <div class="pitch-head">
+      <h2>${t('onPitch')} <span class="muted small">${d.on.size}/${g.field + 1}</span></h2>
+      ${formationsFor(g.field).length > 1 ? `<button class="btn small ghost" data-action="formation" aria-label="${t('formation')}">⚙ ${formationOf(g)}</button>` : ''}
+    </div>
+    ${pitch(g, d)}
 
     <h2>${t('bench')}</h2>
     ${benchIds.length ? `<div class="grid">${benchIds.map((p) => chip(g, d, p, 'bench')).join('')}</div>` : `<p class="empty small">${t('noSubs')}</p>`}
@@ -1440,10 +1560,26 @@ const actions = {
     toast(wasGk ? t('gkSentOff') : t('evRed', { p: g.names[id].name }), undoBtn(eid));
   },
   'make-gk': ({ id }) => {
+    closeSheet();
+    movePlayer(currentGame(), id, 0);
+  },
+  formation: () => {
     const g = currentGame();
-    const eid = addEvent(g, { type: 'gk', playerId: id });
+    const cur = formationOf(g);
+    openSheet(`
+      <h3>${t('formation')}</h3>
+      ${formationsFor(g.field).map((f) => `<button class="opt ${f === cur ? 'current' : ''}" data-action="set-formation" data-v="${f}">
+        <span>${f}</span>${f === cur ? '<span>✓</span>' : ''}
+      </button>`).join('')}
+      <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
+  },
+  'set-formation': ({ v }) => {
+    const g = currentGame();
+    g.formation = v;
+    db.formations = { ...db.formations, [g.field]: v };
+    save();
+    closeSheet();
     render();
-    toast(t('inGoalToast', { p: g.names[id].name }), undoBtn(eid));
   },
   'opp-goal': () => {
     const g = currentGame();
@@ -1683,7 +1819,8 @@ document.addEventListener('submit', (e) => {
 });
 
 // ---------- Drag a player onto another to substitute ----------
-// Hold a player briefly, then drag onto a player in the other group (bench <-> pitch).
+// Hold a player briefly, then drag onto a player in the other group (bench <-> pitch) to sub,
+// or onto another pitch player / empty spot to swap positions.
 // A quick swipe still scrolls the page; a plain tap still opens the player sheet.
 
 const drag = { timer: null, active: false, moved: false, from: null, x0: 0, y0: 0, ghost: null, target: null, suppressClick: false };
@@ -1693,8 +1830,19 @@ function chipAt(x, y) {
   return el && !el.disabled ? el : null;
 }
 
+// 'sub' (bench <-> pitch), 'move' (pitch -> pitch spot) or null.
+function dropKind(from, to) {
+  const spot = (el) => el.classList.contains('tok') || el.classList.contains('slot-empty');
+  if (spot(from) && spot(to)) {
+    if (to.classList.contains('slot-empty') && from.classList.contains('gk')) return null;
+    return 'move';
+  }
+  if (to.classList.contains('slot-empty')) return null;
+  return from.classList.contains('on') !== to.classList.contains('on') ? 'sub' : null;
+}
+
 function dragStart(chip, x, y) {
-  if (chip.disabled || route().view !== 'game') return;
+  if (chip.disabled || !chip.dataset.id || route().view !== 'game') return;
   Object.assign(drag, { from: chip, x0: x, y0: y, moved: false, target: null });
   drag.timer = setTimeout(() => {
     drag.active = true;
@@ -1722,7 +1870,7 @@ function dragMove(x, y, e) {
   drag.ghost.style.left = `${x - r.width / 2}px`;
   drag.ghost.style.top = `${y - r.height / 2}px`;
   const t = chipAt(x, y);
-  const valid = t && t !== drag.from && t.classList.contains('on') !== drag.from.classList.contains('on');
+  const valid = t && t !== drag.from && dropKind(drag.from, t);
   drag.target?.classList.remove('drop');
   drag.target = valid ? t : null;
   drag.target?.classList.add('drop');
@@ -1736,7 +1884,9 @@ function dragEnd() {
   drag.suppressClick = true;
   setTimeout(() => (drag.suppressClick = false), 400);
   const g = currentGame();
-  if (target) {
+  if (target && dropKind(from, target) === 'move') {
+    movePlayer(g, from.dataset.id, Number(target.dataset.slot));
+  } else if (target) {
     const fromOn = from.classList.contains('on');
     const [out, inn] = fromOn ? [from.dataset.id, target.dataset.id] : [target.dataset.id, from.dataset.id];
     doSub(g, out, inn);
