@@ -69,7 +69,9 @@ const I18N = {
     notFound: 'Not found', gameGone: 'This game no longer exists.', back: 'Back',
     autoStoppedAlert: '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
     oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
-    formation: 'Formation', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
+    formation: 'Formation',
+    tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
+    soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
     undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
     goalBtn: 'Goal', yellowBtn: 'Yellow', redBtn: 'Red', toGoal: 'To goal', benchState: 'Bench', played: '{t} played',
@@ -129,7 +131,9 @@ const I18N = {
     notFound: 'Não encontrado', gameGone: 'Este jogo já não existe.', back: 'Voltar',
     autoStoppedAlert: '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
     oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
-    formation: 'Tática', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
+    formation: 'Tática',
+    tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
+    soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
     undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
     goalBtn: 'Golo', yellowBtn: 'Amarelo', redBtn: 'Vermelho', toGoal: 'Para a baliza', benchState: 'Suplente', played: '{t} jogados',
@@ -602,7 +606,29 @@ function render() {
     new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport,
   };
   (views[view] || viewGames)(id);
+  renderTabbar(view);
   updateWakeLock();
+}
+
+// ---------- Bottom tab bar ----------
+
+const TAB_ICONS = {
+  team: '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/>',
+  matches: '<circle cx="12" cy="12" r="9"/><path class="f" d="M12 7.5l4.3 3.1-1.6 5h-5.4l-1.6-5z"/><path d="M12 3v4.5M20.6 9.2l-4.3 1.4M17.3 19.4l-2.6-3.8M6.7 19.4l2.6-3.8M3.4 9.2l4.3 1.4"/>',
+  stats: '<path d="M5 20V12M10 20V5M15 20V9M20 20V14"/>',
+  profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+};
+
+function renderTabbar(view) {
+  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : 'matches';
+  const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
+  const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
+  const tab = (k, label, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
+  $('#tabbar').innerHTML =
+    tab('team', t('tabTeam'), `href="${myTeam}"`) +
+    tab('matches', t('tabMatches'), 'href="#/games"') +
+    tab('stats', t('tabStats'), 'data-action="soon" data-v="tabStats"') +
+    tab('profile', t('tabProfile'), 'data-action="soon" data-v="tabProfile"');
 }
 
 window.addEventListener('hashchange', () => {
@@ -628,7 +654,7 @@ function closeMenus() {
 }
 
 // A styled replacement for confirm(): resolves true only when the user taps the confirm button.
-function askConfirm({ title, message, ok, danger = false }) {
+function askConfirm({ title, message, ok, danger = false, cancel = true }) {
   return new Promise((resolve) => {
     const el = document.createElement('div');
     el.className = 'dialog';
@@ -638,7 +664,7 @@ function askConfirm({ title, message, ok, danger = false }) {
         <h3 id="dialog-title">${title}</h3>
         ${message ? `<p class="muted">${message}</p>` : ''}
         <div class="row gap">
-          <button class="btn ghost grow" data-v="0">${t('cancel')}</button>
+          ${cancel ? `<button class="btn ghost grow" data-v="0">${t('cancel')}</button>` : ''}
           <button class="btn grow ${danger ? 'danger-fill' : 'primary'}" data-v="1">${ok}</button>
         </div>
       </div>`;
@@ -659,7 +685,7 @@ function askConfirm({ title, message, ok, danger = false }) {
     document.addEventListener('keydown', onKey, true);
     window.addEventListener('hashchange', onHash);
     document.body.appendChild(el);
-    el.querySelector('[data-v="0"].btn').focus({ preventScroll: true });
+    el.querySelector('.dialog-box .btn').focus({ preventScroll: true });
   });
 }
 
@@ -1442,6 +1468,7 @@ async function exportPdf(g) {
 
 const actions = {
   'close-sheet': () => closeSheet(),
+  soon: ({ v }) => askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
   lang: ({ v }) => {
     lang = v;
