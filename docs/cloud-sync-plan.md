@@ -13,9 +13,9 @@ branch is merged into `main` only once everything works end to end.
 |---|------|--------|----|
 | 1 | Plan | ✅ merged | danimagb/fut-academy-stats#10 |
 | – | Persistent storage (shipped on `main`, outside the feature branch) | ✅ merged | danimagb/fut-academy-stats#11 |
-| 2 | Local data groundwork | 🔄 in review | danimagb/fut-academy-stats#12 |
-| 3 | Database (tables, RLS, tests) + Supabase setup guide | ⏳ next | – |
-| 4 | Sign-in (email code) | ⏳ | – |
+| 2 | Local data groundwork | ✅ merged | danimagb/fut-academy-stats#12 |
+| 3 | Database (tables, RLS, tests) + Supabase setup guide | 🔄 in review | (this PR) |
+| 4 | Sign-in (email code) | ⏳ next | – |
 | 5 | Sync engine | ⏳ | – |
 | 6 | Directors, coaches and invites; read-only coach view | ⏳ | – |
 | 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ | – |
@@ -29,9 +29,31 @@ branch is merged into `main` only once everything works end to end.
   clear `dirty` and drop sent tombstones. It must write those changes **without** going
   through `trackChanges()`, or the cleared flags will look like edits: write the store
   directly and refresh the `saved` snapshot with `snapshotOf(db)`.
-- Next (step 3): the maintainer creates the Supabase project (EU region) and gives the
-  project URL and the anon key. Nothing in the app talks to Supabase yet.
-- Supabase project: not created yet.
+- Done in step 3:
+  - `supabase/migrations/20261102000000_cloud_sync_schema.sql`: tables `teams`,
+    `team_members`, `players`, `games`, `ping`; triggers; RLS. See `supabase/README.md`.
+  - RLS tests in `supabase/tests/rls.test.sql` (pgTAP, 114 checks), run locally with
+    `bash supabase/tests/local/run.sh` (uses the container's Postgres 16 + pgTAP and a stub
+    of Supabase's roles and `auth` schema). Run it after any schema change.
+  - `docs/supabase-setup.md`: what the maintainer does in the dashboard.
+- Things the next steps need to know about the database:
+  - Column names are snake_case (`full_name`, `updated_at`, `deleted_at`, `team_id`); the
+    app uses camelCase (`fullName`, `teamId`). The sync engine maps between them.
+  - `updated_at`, `created_by` and `games.updated_by` are set by the server; values sent by
+    the client are ignored. Ids can't be changed (error 23514).
+  - Deleting = update `deleted_at` (soft delete), so other phones see it.
+  - Upserts that RLS refuses fail with error 42501 (not 0 rows); plain updates/deletes that
+    RLS refuses affect 0 rows silently.
+  - When pulling `updated_at > last_sync`, keep a few seconds of overlap (a long transaction
+    can commit a row with an older `updated_at`).
+  - A team's creator becomes its director automatically (trigger). Members are added only by
+    the service role (dashboard or the step 6 Edge Function). The last director of a team
+    can't be removed, demoted or leave.
+  - Any signed-in user can create a team (and is its director). Open question for step 6:
+    restrict that, e.g. coaches can't create teams.
+- Next (step 4): sign-in. Needs the project URL and publishable/anon key from the
+  maintainer (setup guide, step 8).
+- Supabase project: not created yet (maintainer, following `docs/supabase-setup.md`).
 
 ## Goals
 
