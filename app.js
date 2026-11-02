@@ -471,12 +471,14 @@ function formationOf(g) {
   return list.includes(last) ? last : list[0];
 }
 
-// Slot positions in % of the pitch (own goal at the bottom).
+// Slot positions in % of the pitch (own goal at the bottom). The GK's `y` is a CSS length:
+// a fixed distance from the bottom edge, so its name and minutes always fit inside the
+// pitch however small the pitch gets (it shrinks with the screen height).
 function slotCoords(formation) {
   const rows = formation.split('-').map(Number);
-  const pts = [{ x: 50, y: 91 }];
+  const pts = [{ x: 50, y: 'calc(100% - 50px)' }];
   rows.forEach((n, r) => {
-    const y = rows.length === 1 ? 55 : 74 - r * (56 / (rows.length - 1));
+    const y = rows.length === 1 ? 52 : 70 - r * (54 / (rows.length - 1));
     for (let i = 0; i < n; i++) pts.push({ x: 50 + ((i + 1) / (n + 1) - 0.5) * 115, y });
   });
   return pts;
@@ -1038,7 +1040,7 @@ function pitch(g, d) {
     ${formationsFor(g.field).length > 1 ? `<button class="pitch-corner left" data-action="formation" aria-label="${t('formation')}">${formationOf(g)} ▾</button>` : ''}
     <span class="pitch-corner right" aria-label="${t('onPitch')}">${d.on.size}/${g.field + 1}</span>
     ${d.slots.map((id, i) => {
-    const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${pts[i].y.toFixed(1)}%"`;
+    const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${typeof pts[i].y === 'number' ? `${pts[i].y.toFixed(1)}%` : pts[i].y}"`;
     return id ? token(g, d, id, 'on', pos) : `<div class="chip round slot-empty" ${pos}><span class="shirt"></span></div>`;
   }).join('')}</div>`;
 }
