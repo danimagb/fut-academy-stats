@@ -49,8 +49,8 @@ branch is merged into `main` only once everything works end to end.
   - A team's creator becomes its director automatically (trigger). Members are added only by
     the service role (dashboard or the step 6 Edge Function). The last director of a team
     can't be removed, demoted or leave.
-  - Any signed-in user can create a team (and is its director). Open question for step 6:
-    restrict that, e.g. coaches can't create teams.
+  - Accounts model (admin / director / coach accounts, directors adding coaches by email)
+    added in this PR too: see "Authentication, accounts and team access".
 - Next (step 4): sign-in. Needs the project URL and publishable/anon key from the
   maintainer (setup guide, step 8).
 - Supabase project: not created yet (maintainer, following `docs/supabase-setup.md`).
@@ -59,8 +59,8 @@ branch is merged into `main` only once everything works end to end.
 
 - Data survives losing or changing the phone.
 - The same team can be used from more than one phone, and by more than one coach.
-- **Invite-only**: nobody can create an account on their own. Access is given per team, by
-  email invitation from a team director.
+- **Invite-only**: nobody can create an account on their own. Only the **admin** gives
+  people access; team directors then decide who sees their own teams.
 - The app keeps working **offline at the pitch** exactly as today; syncing happens when there
   is signal.
 - Using the app **without an account** keeps working (local only, as today).
@@ -85,7 +85,7 @@ branch is merged into `main` only once everything works end to end.
  │          sync engine  ── supabase-js ─────┼──> Supabase (EU region)
  └─────────────────────────────────────────┘      ├─ Auth (email OTP, sign-ups OFF)
                                                    ├─ Postgres + Row Level Security
-                                                   └─ Edge Function: invite-coach
+                                                   └─ Edge Function: admin (accounts)
 ```
 
 - **Keys**: the app ships only the project URL and the *anon* (public) key in `config.js`.
@@ -95,37 +95,76 @@ branch is merged into `main` only once everything works end to end.
 - **supabase-js** is vendored into the repo (a pinned version) and cached by the service
   worker, so the app still loads offline.
 
-## Authentication and invitations
+## Authentication, accounts and team access
+
+There are two separate levels:
+
+1. **Accounts**: who can use the cloud at all, and of which kind. Managed **only by the admin**.
+2. **Team membership**: who sees which cloud team, with which role. Managed by that team's
+   directors (coaches only) and by the admin (anyone, any role).
+
+### Sign-in
 
 - Supabase Auth: **"Allow new users to sign up" is turned off.**
-- Sign-in: the user types their email, then receives a **6-digit code** by email and types it
-  in the app (`signInWithOtp({ shouldCreateUser: false })` + `verifyOtp`). An email that
-  wasn't invited gets no code. A code is used instead of a magic link because on iPhone the
-  link would open in Safari, not in the home-screen app, so the app wouldn't be signed in.
+- The user types their email, then receives a **6-digit code** by email and types it in the
+  app (`signInWithOtp({ shouldCreateUser: false })` + `verifyOtp`). An email without an
+  account gets no code. A code is used instead of a magic link because on iPhone the link
+  would open in Safari, not in the home-screen app, so the app wouldn't be signed in.
 - The session is kept on the phone and refreshed automatically; you stay signed in.
-- **First account (bootstrap)**: the project admin (you) creates their own user in the
-  Supabase dashboard (Authentication → Add user).
-- **Inviting someone** (in the app, team screen → Coaches → Invite):
-  1. A director enters an email and a role (`director` or `coach`).
-  2. The app calls the `invite-coach` Edge Function with the director's session.
-  3. The function checks the caller is a **director of that team**, creates the auth user if
-     it doesn't exist yet (using the service role key), and adds a `team_members` row.
-  4. The invitee opens the app, signs in with their email and the code, and sees the team.
-- Removing a coach deletes their `team_members` row; on their next sync the team disappears
-  from their phone.
-- Roles:
-  - `director`: full access. Edits the team and players, creates and runs games (lineups,
-    subs, goals, cards, clock), invites and removes coaches, deletes the team. The person who
-    creates a team in the cloud becomes its director.
-  - `coach`: **read-only**. Sees the team, the games list, the game page and the report
-    (and can share the PDF), but can't create games or change anything: no subs, goals,
-    cards, clock, lineup or team/player edits. The app hides or disables those controls,
-    and the database refuses the writes anyway (RLS).
-- **Other sign-in options (later, optional)**: Google, Apple or Microsoft sign-in through
-  Supabase. Still invite-only: with sign-ups off, only someone already invited (same
-  email) can use it. On iPhone home-screen apps the provider's redirect may come back in
-  Safari instead of the app, so this needs testing on a real iPhone; the email code stays
-  as the reliable option.
+- **Other sign-in options (later, optional)**: Google, Apple or Microsoft through Supabase.
+  Still invite-only: with sign-ups off, only someone who already has an account (same email)
+  can use them. On iPhone home-screen apps the provider's redirect may come back in Safari
+  instead of the app, so this needs testing on a real iPhone; the email code stays as the
+  reliable option.
+
+### Accounts (admin only)
+
+- Table `accounts`: one row per person with access, with their email and **kind**:
+  - `director` account: may create cloud teams (and upload local teams to the cloud).
+  - `coach` account: may not create cloud teams; only sees the teams they were added to.
+  - plus an `is_admin` flag. The admin is the maintainer; it can only be set in the Supabase
+    dashboard (SQL), never from the app.
+- **Bootstrap**: the maintainer creates their own user in the dashboard and marks it as admin
+  with one SQL statement (see `docs/supabase-setup.md`). The admin also has a director account.
+- **Giving access** (app → Admin page, visible only to the admin): email + kind. The app calls
+  the `admin` Edge Function, which checks the caller is admin and, with the service role,
+  creates the auth user and the `accounts` row. The person then signs in with the code.
+- The admin can also list accounts, change an account's kind, and remove access (deletes
+  the user; their memberships go with it).
+
+### Team membership
+
+- Table `team_members`: (team, user, role), role `director` or `coach`. The per-team role is
+  separate from the account kind (the admin may make a coach-account director of a team).
+- Whoever creates a cloud team becomes its director automatically.
+- **Directors** of a team can add **coaches** to it by email, but only people who already
+  have an account. An email without one gets "this person doesn't have access yet, ask the
+  admin". Directors can also remove coaches from their team. They can't add or remove
+  directors, change roles, or create accounts.
+- The **admin** can add, remove or change the role of anyone in any team, and sees all teams
+  and their members (but not their players and games, unless they're a member).
+- Anyone can leave a team, except the last director (a team always keeps one director).
+- Removing someone from a team: on their next sync the team disappears from their phone.
+
+### What each role can do in a cloud team
+
+- `director`: full access. Edits the team and players, creates and runs games (lineups, subs,
+  goals, cards, clock), adds and removes coaches, deletes the team.
+- `coach`: **read-only**. Sees the team, the games list, the game page and the report (and
+  can share the PDF), but can't create games or change anything: no subs, goals, cards,
+  clock, lineup or team/player edits. The app hides or disables those controls, and the
+  database refuses the writes anyway (RLS).
+
+### Local teams and cloud teams
+
+- Every team is either **on this phone** (local) or **in the cloud** (synced and shared).
+- Local teams work exactly as today for everyone (no account, coach or director accounts):
+  create teams, players and games freely. Nothing is uploaded.
+- Only **director accounts** can create cloud teams or upload a local team to the cloud. A
+  coach's own local teams stay on their phone (they can be uploaded later if the account
+  becomes a director).
+- The read-only coach view applies to cloud teams where the role is `coach` only.
+- The team list and team screen show which kind each team is ("On this phone" / "Synced").
 
 ## Data model (Postgres)
 
@@ -134,6 +173,7 @@ New records use `crypto.randomUUID()`.
 
 | table          | columns (main)                                                                 |
 |----------------|--------------------------------------------------------------------------------|
+| `accounts`     | `user_id`, `email`, `kind` (`director`/`coach`), `is_admin`, `created_at`, `created_by` |
 | `teams`        | `id`, `club`, `name`, `created_by`, `updated_at`, `deleted_at`                 |
 | `team_members` | `team_id`, `user_id`, `role` (`director`/`coach`), `invited_by`, `created_at`  |
 | `players`      | `id`, `team_id`, `number`, `name`, `full_name`, `updated_at`, `deleted_at`     |
@@ -149,12 +189,14 @@ New records use `crypto.randomUUID()`.
 
 - Every table has RLS **enabled** and no access for the `anon` role.
 - `teams`, `players`, `games`: a signed-in user can **read** rows only for teams they are a
-  member of (`exists (select 1 from team_members where team_id = … and user_id = auth.uid())`),
-  and **write** them only if their role in that team is `director`.
-- Deleting a team and managing members: directors only.
-- `team_members`: members can see the members of their own teams; only directors can remove
-  them; inserts happen through the Edge Function (and on team creation, via a database
-  function that adds the creator as director).
+  member of, and **write** them only if their role in that team is `director`. Creating a
+  team also needs a director (or admin) account. The admin can read all `teams` rows.
+- `team_members`: members see the members of their own teams; the admin sees all. Directors
+  add coaches through the `add_team_coach(team, email)` function and can remove coaches;
+  the admin can do anything; anyone can leave; the last director can't be removed.
+- `accounts`: you see your own row and those of people who share a team with you; the admin
+  sees all and can change `kind`. Rows are created only by the `admin` Edge Function (service
+  role) or in the dashboard; `is_admin` can't be changed through the API.
 - **Tests**: SQL tests (pgTAP, run with `supabase test db`) that sign in as different users
   and check that a non-member can't read or change anything, a coach can read but not change
   anything (teams, players, games, members),
@@ -172,8 +214,11 @@ New records use `crypto.randomUUID()`.
 - When: on app start, when the app comes back to the foreground, when the network returns,
   a few seconds after a change, and with a "Sync now" button on Profile.
 - A small status on Profile: "Synced 2 min ago" / "Offline, 3 changes waiting" / errors.
-- **First sign-in**: the app shows the local teams and asks which ones to upload. Uploaded
-  teams are created in the cloud with you as director. Teams already in the cloud are downloaded.
+- Only **cloud teams** (and their players and games) are synced; local teams never leave
+  the phone.
+- **First sign-in** (director accounts): the app shows the local teams and asks which ones
+  to upload. Uploaded teams become cloud teams with you as director. Teams you're a member of
+  in the cloud are downloaded. Coach accounts just download their teams.
 
 ### Conflicts
 
@@ -225,8 +270,10 @@ New records use `crypto.randomUUID()`.
 4. **Sign-in**: Profile → Account: email + 6-digit code, sign out, signed-in status. Vendored
    supabase-js and `config.js`.
 5. **Sync engine**: push/pull, offline queue, status and "Sync now", first sign-in upload.
-6. **Coaches and invites**: `invite-coach` Edge Function, coaches list on the team screen,
-   invite and remove, roles. The read-only `coach` view (controls hidden or disabled).
+6. **Accounts and team access**: `admin` Edge Function and the Admin page (give access,
+   change kind, remove access, manage any team); team screen → members list, directors add
+   coaches by email and remove them; leave a team; the read-only `coach` view (controls
+   hidden or disabled) for cloud teams.
 7. **Finishing**: `keep-alive` workflow, privacy note, delete-cloud-data option, README, test the whole flow on two
    phones. Then merge `feature/cloud-sync` into `main`.
 
@@ -234,7 +281,10 @@ Each PR is tested on its own. PRs 2–4 change nothing for someone who doesn't s
 
 ## Decisions
 
-- Roles: `director` (full access) and `coach` (read-only). More can be added later.
+- Two levels: **accounts** (admin only; kinds `director` and `coach`) and **team membership**
+  (roles `director` = full access, `coach` = read-only). Directors add and remove coaches on
+  their own teams, but only people who already have an account (option B).
+- Teams are local or cloud; only director accounts create cloud teams.
 - The app keeps working without an account (local storage only, as today); signing in adds
   cloud sync.
 - The Supabase account is owned by the maintainer.

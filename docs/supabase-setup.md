@@ -50,13 +50,13 @@ In **Authentication → URL Configuration**:
 - Site URL: `https://danimagb.github.io/fut-academy-stats/`
 - Additional redirect URLs: the same URL (needed later for Google/Apple sign-in, if ever added).
 
-## 5. Email sending (needed before inviting other coaches)
+## 5. Email sending (needed before giving other people access)
 
 Supabase's built-in email service is only for testing: it sends very few emails per hour and
 may only deliver to the addresses of your Supabase organization's members. That's enough
-for you to sign in yourself, but **not for invited coaches**.
+for you to sign in yourself, but **not for the people you give access to**.
 
-Before step 6 of the plan (invites), set up a free SMTP provider (e.g. Resend or Brevo):
+Before giving other people access (step 6 of the plan), set up a free SMTP provider (e.g. Resend or Brevo):
 create an account there, verify a sender address or domain, and enter its SMTP details in
 **Authentication → Emails → SMTP Settings**.
 
@@ -65,19 +65,30 @@ create an account there, verify a sender address or domain, and enter its SMTP d
 1. Open **SQL Editor → New query**.
 2. Paste the whole content of `supabase/migrations/20261102000000_cloud_sync_schema.sql`
    from this repo and click **Run**. It should finish with "Success. No rows returned".
-3. Check in **Table Editor** that `teams`, `team_members`, `players`, `games` and `ping`
+3. Check in **Table Editor** that `accounts`, `teams`, `team_members`, `players`, `games` and `ping`
    exist and each shows RLS as enabled.
 
 (With the Supabase CLI you could instead run `supabase link` and `supabase db push`.)
 
-## 7. Create your own user
+## 7. Create your own user and make it the admin
 
-In **Authentication → Users → Add user → Create new user**:
+1. In **Authentication → Users → Add user → Create new user**:
+   - Email: your email.
+   - Tick **Auto confirm user**. A password isn't needed: you'll sign in with a code.
+2. In **SQL Editor → New query**, run this (with your email), to give yourself a director
+   account with admin rights:
 
-- Email: your email.
-- Tick **Auto confirm user**. A password isn't needed: you'll sign in with a code.
+   ```sql
+   insert into public.accounts (user_id, email, kind, is_admin)
+   select id, lower(email), 'director', true
+   from auth.users
+   where email = 'your@email.com';
+   ```
 
-You'll become a team's director automatically when you upload or create that team from the app.
+   It should say "1 row affected". This is the only time you need SQL: from then on you give
+   other people access from the app's Admin page.
+
+You become a team's director automatically when you create or upload that team from the app.
 
 ## 8. Send the app's connection details
 
