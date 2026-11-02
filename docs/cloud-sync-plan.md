@@ -8,7 +8,7 @@ branch. The feature branch is merged into `main` only once everything works end 
 - Data survives losing or changing the phone.
 - The same team can be used from more than one phone, and by more than one coach.
 - **Invite-only**: nobody can create an account on their own. Access is given per team, by
-  email invitation from a team owner.
+  email invitation from a team director.
 - The app keeps working **offline at the pitch** exactly as today; syncing happens when there
   is signal.
 - Using the app **without an account** keeps working (local only, as today).
@@ -53,16 +53,27 @@ branch. The feature branch is merged into `main` only once everything works end 
 - The session is kept on the phone and refreshed automatically; you stay signed in.
 - **First account (bootstrap)**: the project admin (you) creates their own user in the
   Supabase dashboard (Authentication → Add user).
-- **Inviting a coach** (in the app, team screen → Coaches → Invite):
-  1. An owner enters an email and a role.
-  2. The app calls the `invite-coach` Edge Function with the owner's session.
-  3. The function checks the caller is an **owner of that team**, creates the auth user if
+- **Inviting someone** (in the app, team screen → Coaches → Invite):
+  1. A director enters an email and a role (`director` or `coach`).
+  2. The app calls the `invite-coach` Edge Function with the director's session.
+  3. The function checks the caller is a **director of that team**, creates the auth user if
      it doesn't exist yet (using the service role key), and adds a `team_members` row.
   4. The invitee opens the app, signs in with their email and the code, and sees the team.
 - Removing a coach deletes their `team_members` row; on their next sync the team disappears
   from their phone.
-- Roles: `owner` (edit everything, invite and remove coaches, delete the team) and `coach`
-  (edit players and games). The person who creates a team in the cloud becomes its owner.
+- Roles:
+  - `director`: full access. Edits the team and players, creates and runs games (lineups,
+    subs, goals, cards, clock), invites and removes coaches, deletes the team. The person who
+    creates a team in the cloud becomes its director.
+  - `coach`: **read-only**. Sees the team, the games list, the game page and the report
+    (and can share the PDF), but can't create games or change anything: no subs, goals,
+    cards, clock, lineup or team/player edits. The app hides or disables those controls,
+    and the database refuses the writes anyway (RLS).
+- **Other sign-in options (later, optional)**: Google, Apple or Microsoft sign-in through
+  Supabase. Still invite-only: with sign-ups off, only someone already invited (same
+  email) can use it. On iPhone home-screen apps the provider's redirect may come back in
+  Safari instead of the app, so this needs testing on a real iPhone; the email code stays
+  as the reliable option.
 
 ## Data model (Postgres)
 
@@ -72,7 +83,7 @@ New records use `crypto.randomUUID()`.
 | table          | columns (main)                                                                 |
 |----------------|--------------------------------------------------------------------------------|
 | `teams`        | `id`, `club`, `name`, `created_by`, `updated_at`, `deleted_at`                 |
-| `team_members` | `team_id`, `user_id`, `role` (`owner`/`coach`), `invited_by`, `created_at`     |
+| `team_members` | `team_id`, `user_id`, `role` (`director`/`coach`), `invited_by`, `created_at`  |
 | `players`      | `id`, `team_id`, `number`, `name`, `full_name`, `updated_at`, `deleted_at`     |
 | `games`        | `id`, `team_id`, `date`, `status`, `data` (jsonb: the full game object), `updated_at`, `updated_by`, `deleted_at` |
 
@@ -85,14 +96,16 @@ New records use `crypto.randomUUID()`.
 ### Row Level Security (the part that must be right)
 
 - Every table has RLS **enabled** and no access for the `anon` role.
-- `teams`, `players`, `games`: a signed-in user can read and write rows **only for teams they
-  are a member of** (`exists (select 1 from team_members where team_id = … and user_id = auth.uid())`).
-- Deleting a team and managing members: owners only.
-- `team_members`: members can see the members of their own teams; only owners can remove
+- `teams`, `players`, `games`: a signed-in user can **read** rows only for teams they are a
+  member of (`exists (select 1 from team_members where team_id = … and user_id = auth.uid())`),
+  and **write** them only if their role in that team is `director`.
+- Deleting a team and managing members: directors only.
+- `team_members`: members can see the members of their own teams; only directors can remove
   them; inserts happen through the Edge Function (and on team creation, via a database
-  function that adds the creator as owner).
+  function that adds the creator as director).
 - **Tests**: SQL tests (pgTAP, run with `supabase test db`) that sign in as different users
-  and check that a non-member can't read or change anything, a coach can't manage members,
+  and check that a non-member can't read or change anything, a coach can read but not change
+  anything (teams, players, games, members),
   and anonymous requests get nothing. These run before each schema PR is merged.
 
 ## Sync
@@ -106,7 +119,7 @@ New records use `crypto.randomUUID()`.
   a few seconds after a change, and with a "Sync now" button on Profile.
 - A small status on Profile: "Synced 2 min ago" / "Offline, 3 changes waiting" / errors.
 - **First sign-in**: the app shows the local teams and asks which ones to upload. Uploaded
-  teams are created in the cloud with you as owner. Teams already in the cloud are downloaded.
+  teams are created in the cloud with you as director. Teams already in the cloud are downloaded.
 
 ### Conflicts
 
@@ -121,16 +134,29 @@ New records use `crypto.randomUUID()`.
 - Supabase project in an **EU region**.
 - Only what the app already stores: shirt name and number, optional full name, match events.
   No photos, birth dates or contacts.
-- Owners can delete a team, which deletes its players and games in the cloud.
+- Directors can delete a team, which deletes its players and games in the cloud.
 - A short note in the app saying what is stored, where, and who can see it. The club should
   confirm it is happy with this (GDPR; parental consent where needed).
 
-## Hosting and costs
+## Hosting, costs and the free-tier pause
 
+- The Supabase project is owned by the app's maintainer (personal account), in an EU region.
 - The Supabase free tier is plenty for the data volume.
 - Free projects are **paused after about a week without activity** and have to be restored
-  from the dashboard. The app keeps working offline meanwhile and syncs again once the
-  project is restored. If that becomes annoying, the Pro plan avoids it.
+  from the dashboard.
+- **Keeping it awake**: a scheduled GitHub Actions workflow (`keep-alive`) runs every
+  2–3 days and makes a real, harmless read request to the project (a tiny `ping` table that
+  anyone may read, nothing else). This kind of keep-alive is common, but Supabase decides
+  what counts as activity and could change that; the Pro plan removes the pause entirely.
+- **Getting notified**:
+  - If the request fails (project paused or down), the workflow fails and GitHub emails you.
+  - Supabase also emails the account owner about inactive/paused projects.
+  - GitHub turns off scheduled workflows in repositories with no activity for 60 days and
+    emails before doing so; re-enabling is one click.
+- **Invisible for users**: the app is local-first, so a paused project doesn't stop anyone
+  at the pitch. Changes wait on the phone and upload once the project is back. Sync problems
+  only show as a quiet status on Profile ("Couldn't sync, will try again"), never as popups.
+  What does stop while paused: other phones seeing new changes, and signing in on a new phone.
 
 ## Pull requests (into `feature/cloud-sync`)
 
@@ -145,15 +171,16 @@ New records use `crypto.randomUUID()`.
    supabase-js and `config.js`.
 5. **Sync engine**: push/pull, offline queue, status and "Sync now", first sign-in upload.
 6. **Coaches and invites**: `invite-coach` Edge Function, coaches list on the team screen,
-   invite and remove, roles.
-7. **Finishing**: privacy note, delete-cloud-data option, README, test the whole flow on two
+   invite and remove, roles. The read-only `coach` view (controls hidden or disabled).
+7. **Finishing**: `keep-alive` workflow, privacy note, delete-cloud-data option, README, test the whole flow on two
    phones. Then merge `feature/cloud-sync` into `main`.
 
 Each PR is tested on its own. PRs 2–4 change nothing for someone who doesn't sign in.
 
-## Decisions to confirm
+## Decisions
 
-- Roles `owner` and `coach` are enough? (A read-only "viewer" role, e.g. for parents, could be
-  added later.)
-- Is the app also used without an account, or will everyone sign in? (Plan: both work.)
-- Who owns the Supabase account: you personally, or the club?
+- Roles: `director` (full access) and `coach` (read-only). More can be added later.
+- The app keeps working without an account (local storage only, as today); signing in adds
+  cloud sync.
+- The Supabase account is owned by the maintainer.
+- Sign-in: email code first. Google/Apple/Microsoft are optional extras, after testing on iPhone.
