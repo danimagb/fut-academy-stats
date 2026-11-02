@@ -431,6 +431,6 @@ label.inline input { width: 90px; min-height: 40px; }
 .card.game.loss { --res: var(--loss); }
 .card.game.draw { --res: var(--draw); }
 .card.game .score { font-size: 1.15rem; }
-.card.game .score .us { color: var(--win); }
-.card.game .score .them { color: var(--loss); }
+.score .us { color: var(--win); }
+.score .them { color: var(--loss); }
 .badge.result { font-weight: 700; color: var(--res); background: color-mix(in srgb, var(--res) 15%, transparent); }
