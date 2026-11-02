@@ -39,6 +39,8 @@ const I18N = {
     newGame: '+ New game', teamsBtn: 'Teams ({n})',
     noGames: 'No games yet.<br>Create your team and its players, then create a game.',
     exportBackup: 'Export backup', importBackup: 'Import backup', backupTitle: 'Backup',
+    storageKept: 'This browser keeps the app\'s data stored (it won\'t clear it on its own).',
+    storageNotKept: 'This browser may clear the app\'s data if it runs short of space or the app isn\'t used for a while. Export a backup regularly; adding the app to the home screen helps.',
     backupHint: 'Your teams and games are saved only on this phone. Export a backup now and then, and import it to restore or move to another phone.',
     opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
     res_win: 'Win', res_draw: 'Draw', res_loss: 'Loss', roundN: 'Round {n}',
@@ -107,6 +109,8 @@ const I18N = {
     newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
     noGames: 'Ainda não há jogos.<br>Cria a tua equipa com os jogadores e depois um jogo.',
     exportBackup: 'Exportar cópia', importBackup: 'Importar cópia', backupTitle: 'Cópia de segurança',
+    storageKept: 'Este navegador mantém os dados da app guardados (não os apaga por iniciativa própria).',
+    storageNotKept: 'Este navegador pode apagar os dados da app se ficar sem espaço ou se a app não for usada durante algum tempo. Exporta uma cópia com regularidade; adicionar a app ao ecrã principal ajuda.',
     backupHint: 'As equipas e os jogos ficam guardados só neste telemóvel. Exporta uma cópia de vez em quando e importa-a para restaurar ou passar para outro telemóvel.',
     opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
     res_win: 'Vitória', res_draw: 'Empate', res_loss: 'Derrota', roundN: 'Jornada {n}',
@@ -199,7 +203,13 @@ const locale = () => (lang === 'pt' ? 'pt-PT' : 'en-GB');
 
 // ---------- Storage ----------
 
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+// Random ids that are unique across phones (needed once data is shared). Older records keep
+// their shorter ids; both are plain strings.
+const uid = () => (crypto.randomUUID ? crypto.randomUUID()
+  : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+
+// Synced record types (per-phone settings like db.formations and db.lastTeamId are not records).
+const RECORD_KINDS = ['teams', 'players', 'games'];
 
 let db = load();
 
@@ -220,6 +230,13 @@ function normalize(data) {
     for (const p of orphans) p.teamId = data.teams[0].id;
   }
   syncGameTeams(data);
+  if (!Array.isArray(data.deleted)) data.deleted = [];
+  // Records from before change tracking: mark them as changed so a first sync uploads them.
+  for (const kind of RECORD_KINDS) {
+    for (const r of data[kind]) {
+      if (r.updatedAt == null) Object.assign(r, { updatedAt: 0, dirty: true });
+    }
+  }
   return data;
 }
 
@@ -234,8 +251,58 @@ function syncGameTeams(data, teamId = null) {
   }
 }
 
+// ---------- Change tracking (groundwork for cloud sync) ----------
+// Every save compares each team, player and game with how it was at the last save. A record
+// that changed gets `updatedAt` (ms) and `dirty: true` ("not uploaded yet"); a record that
+// disappeared leaves a tombstone in `db.deleted`, so a later sync can delete it elsewhere.
+// The rest of the app just edits `db` and calls save(), as before.
+
+const recordKey = ({ updatedAt, dirty, ...rest }) => JSON.stringify(rest);
+
+function snapshotOf(data) {
+  return Object.fromEntries(RECORD_KINDS.map((kind) => [kind, new Map(data[kind].map((r) => [r.id, recordKey(r)]))]));
+}
+
+let saved = snapshotOf(db);
+
+function trackChanges(now = Date.now()) {
+  const next = snapshotOf(db);
+  for (const kind of RECORD_KINDS) {
+    const before = saved[kind];
+    const after = next[kind];
+    for (const r of db[kind]) {
+      if (before.get(r.id) !== after.get(r.id)) Object.assign(r, { updatedAt: now, dirty: true });
+    }
+    for (const id of before.keys()) {
+      if (!after.has(id)) db.deleted.push({ kind, id, deletedAt: now });
+    }
+    // A record that is back (e.g. restored from a backup) is no longer deleted.
+    db.deleted = db.deleted.filter((d) => d.kind !== kind || !after.has(d.id));
+  }
+  saved = next;
+}
+
 function save() {
+  trackChanges();
   localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  requestPersistence();
+}
+
+// Ask the browser not to clear our storage when space runs low or the site isn't used for a
+// while (Safari can otherwise remove website data after ~7 days without a visit). Asked once
+// there is data to protect. `persisted` is null where the browser doesn't support it.
+let persisted = null;
+let persistAsked = false;
+async function requestPersistence() {
+  const st = navigator.storage;
+  if (persistAsked || !st?.persist || !(db.teams.length || db.games.length)) return;
+  persistAsked = true;
+  try {
+    persisted = (await st.persisted()) || (await st.persist());
+  } catch {
+    persisted = false;
+  }
+  if (route().view === 'profile') render();
 }
 
 // ---------- Helpers ----------
@@ -792,6 +859,7 @@ function viewProfile() {
     <p class="hint">${t('themeHint')}</p>
     <h2>${t('backupTitle')}</h2>
     <p class="hint">${t('backupHint')}</p>
+    ${persisted === null ? '' : `<p class="hint ${persisted ? 'ok' : 'warn'}">${persisted ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
     <div class="row gap">
       <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
       <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
@@ -2104,4 +2172,5 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 
 render();
+requestPersistence();
 tick(); // apply any auto-stop that was due while the app was closed

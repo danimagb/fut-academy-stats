@@ -1,7 +1,37 @@
 # Cloud sync plan (Supabase, invite-only)
 
-Status: planning. Work happens on the `feature/cloud-sync` branch, in small PRs into that
-branch. The feature branch is merged into `main` only once everything works end to end.
+Work happens on the `feature/cloud-sync` branch, in small PRs into that branch. The feature
+branch is merged into `main` only once everything works end to end.
+
+> **Every PR for this feature updates the "Progress" section below** (status, what was done,
+> anything the next step needs to know). It's how the next PR, or the next Claude session,
+> knows where things stand.
+
+## Progress
+
+| # | Step | Status | PR |
+|---|------|--------|----|
+| 1 | Plan | ✅ merged | danimagb/fut-academy-stats#10 |
+| – | Persistent storage (shipped on `main`, outside the feature branch) | ✅ merged | danimagb/fut-academy-stats#11 |
+| 2 | Local data groundwork | 🔄 in review | danimagb/fut-academy-stats#12 |
+| 3 | Database (tables, RLS, tests) + Supabase setup guide | ⏳ next | – |
+| 4 | Sign-in (email code) | ⏳ | – |
+| 5 | Sync engine | ⏳ | – |
+| 6 | Directors, coaches and invites; read-only coach view | ⏳ | – |
+| 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ | – |
+
+**Where things stand (update this with every PR):**
+
+- Done in step 2: `save()` tracks changes. Every team/player/game in `db` has `updatedAt` (ms,
+  `0` for records from before tracking) and `dirty` (`true` = not uploaded yet). Removed
+  records leave `{ kind, id, deletedAt }` in `db.deleted`. New ids are `crypto.randomUUID()`.
+  The sync engine (step 5) should push records with `dirty: true` plus `db.deleted`, then
+  clear `dirty` and drop sent tombstones. It must write those changes **without** going
+  through `trackChanges()`, or the cleared flags will look like edits: write the store
+  directly and refresh the `saved` snapshot with `snapshotOf(db)`.
+- Next (step 3): the maintainer creates the Supabase project (EU region) and gives the
+  project URL and the anon key. Nothing in the app talks to Supabase yet.
+- Supabase project: not created yet.
 
 ## Goals
 
@@ -111,7 +141,9 @@ New records use `crypto.randomUUID()`.
 ## Sync
 
 - The UI keeps reading and writing the local store, so nothing changes offline.
-- Each local record gets `updatedAt` and a `dirty` flag; deletes leave a tombstone.
+- Each local record gets `updatedAt` and a `dirty` flag; deletes leave a tombstone. This is
+  done automatically in `save()` by comparing every record with the last saved version, so
+  the rest of the app keeps editing `db` as today.
 - **Push**: dirty records are upserted to Supabase; on success the flag is cleared.
 - **Pull**: fetch rows with `updated_at` newer than the last sync, for the user's teams, and
   merge them into the local store.
@@ -158,12 +190,13 @@ New records use `crypto.randomUUID()`.
   only show as a quiet status on Profile ("Couldn't sync, will try again"), never as popups.
   What does stop while paused: other phones seeing new changes, and signing in on a new phone.
 
-## Pull requests (into `feature/cloud-sync`)
+## Pull requests (into `feature/cloud-sync`): details
 
 1. **Plan** (this document).
-2. **Local data groundwork**, no visible change: record metadata (`updatedAt`, tombstones,
-   UUIDs for new records), all changes go through a few store helpers instead of editing
-   `db` directly, ask the browser for persistent storage (`navigator.storage.persist()`).
+2. **Local data groundwork**, no visible change: change tracking inside `save()` (each
+   changed team/player/game gets `updatedAt` and `dirty`, removed ones leave a tombstone in
+   `db.deleted`), UUIDs for new records. Persistent storage (`navigator.storage.persist()`)
+   already shipped separately on `main`.
 3. **Database**: `supabase/` folder with SQL migrations (tables, triggers, RLS) and RLS tests,
    plus a setup guide (create the project in the EU, turn off sign-ups, enable email OTP,
    create your user). *You create the Supabase project here.*
