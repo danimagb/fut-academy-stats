@@ -14,6 +14,9 @@
   --sub-in: #2fbf6f;
   --tabbar-bg: rgba(20, 21, 25, .96);
   --alert-bg: rgba(255, 181, 71, .12);
+  --win: #3ddc84;
+  --loss: #ff6b6b;
+  --draw: #9a9fa8;
   --radius: 14px;
   color-scheme: dark;
 }
@@ -35,6 +38,9 @@
   --sub-in: #0f8a45;
   --tabbar-bg: rgba(255, 255, 255, .97);
   --alert-bg: rgba(224, 138, 0, .14);
+  --win: #0f8a45;
+  --loss: #c62828;
+  --draw: #6b727c;
   color-scheme: light;
 }
 
@@ -414,3 +420,17 @@ label.inline input { width: 90px; min-height: 40px; }
 /* Profile / settings page */
 .settings .item { flex-wrap: wrap; min-height: 64px; }
 .settings .seg.big button { padding: 0 12px; }
+
+/* Games list: result of finished games (stripe on the left + pill), coloured score */
+.card.game { position: relative; overflow: hidden; }
+.card.game.win, .card.game.loss, .card.game.draw { padding-left: 16px; }
+.card.game.win::before, .card.game.loss::before, .card.game.draw::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--res);
+}
+.card.game.win { --res: var(--win); }
+.card.game.loss { --res: var(--loss); }
+.card.game.draw { --res: var(--draw); }
+.card.game .score { font-size: 1.15rem; }
+.card.game .score .us { color: var(--win); }
+.card.game .score .them { color: var(--loss); }
+.badge.result { font-weight: 700; color: var(--res); background: color-mix(in srgb, var(--res) 15%, transparent); }

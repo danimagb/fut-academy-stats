@@ -41,6 +41,7 @@ const I18N = {
     exportBackup: 'Export backup', importBackup: 'Import backup', backupTitle: 'Backup',
     backupHint: 'Your teams and games are saved only on this phone. Export a backup now and then, and import it to restore or move to another phone.',
     opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
+    res_win: 'Win', res_draw: 'Draw', res_loss: 'Loss', roundN: 'Round {n}',
     st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
     teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
     playersCount: '{n} players', unnamedTeam: 'My team',
@@ -108,6 +109,7 @@ const I18N = {
     exportBackup: 'Exportar cópia', importBackup: 'Importar cópia', backupTitle: 'Cópia de segurança',
     backupHint: 'As equipas e os jogos ficam guardados só neste telemóvel. Exporta uma cópia de vez em quando e importa-a para restaurar ou passar para outro telemóvel.',
     opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
+    res_win: 'Vitória', res_draw: 'Empate', res_loss: 'Derrota', roundN: 'Jornada {n}',
     st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
     teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
     playersCount: '{n} jogadores', unnamedTeam: 'A minha equipa',
@@ -775,14 +777,26 @@ function viewProfile() {
 function gameCard(g) {
   const d = derive(g);
   const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
-  return `<li><a class="card" href="${href}">
+  // Result of a finished game: win / draw / loss, shown as a coloured stripe and a pill.
+  const res = g.status === 'finished' ? (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw') : '';
+  // Score in the same order as the title (home team first); our goals green, theirs red, both neutral on a draw.
+  const cls = (who) => (d.us === d.them ? '' : who === 'us' ? 'us' : 'them');
+  const goals = (who) => `<span class="${cls(who)}">${who === 'us' ? d.us : d.them}</span>`;
+  const score = g.home === false ? `${goals('them')}–${goals('us')}` : `${goals('us')}–${goals('them')}`;
+  // Only what helps pick a game out of the list: team (when there are several), date and round.
+  const meta = [
+    db.teams.length > 1 && g.team ? esc(g.team) : '',
+    esc(fmtDate(g)),
+    g.round ? t('roundN', { n: esc(g.round) }) : '',
+  ].filter(Boolean).join(' · ');
+  return `<li><a class="card game ${res}" href="${href}">
     <div class="grow">
       <strong>${esc(matchTitle(g))}</strong>
-      <div class="muted">${g.team ? `${esc(g.team)} · ` : ''}${formatLine(g)}</div>
+      <div class="muted small">${meta}</div>
     </div>
     <div class="right">
-      ${g.status !== 'scheduled' ? `<div class="score">${d.us}–${d.them}</div>` : ''}
-      <span class="badge ${g.status}">${t(`st_${g.status}`)}</span>
+      ${g.status !== 'scheduled' ? `<div class="score">${score}</div>` : ''}
+      ${res ? `<span class="badge result ${res}">${t(`res_${res}`)}</span>` : `<span class="badge ${g.status}">${t(`st_${g.status}`)}</span>`}
     </div>
   </a></li>`;
 }
