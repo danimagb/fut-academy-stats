@@ -4,6 +4,7 @@
 
 const STORE_KEY = 'fut-academy-stats.v1';
 const LANG_KEY = 'fut-academy-stats.lang';
+const THEME_KEY = 'fut-academy-stats.theme'; // 'light' | 'dark' | 'auto' (follow the device)
 const GAMES_TEAM_KEY = 'fut-academy-stats.gamesTeam'; // team filter on the games page ('' = all)
 
 const FORMATS = [
@@ -74,6 +75,8 @@ const I18N = {
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
+    settings: 'Settings', language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'Auto',
+    themeHint: 'Light is easier to read outdoors in sunlight. Auto follows your phone\'s setting.',
     soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
     undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
@@ -138,6 +141,8 @@ const I18N = {
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
+    settings: 'Definições', language: 'Idioma', theme: 'Tema', themeLight: 'Claro', themeDark: 'Escuro', themeAuto: 'Auto',
+    themeHint: 'O tema claro lê-se melhor ao ar livre, com sol. Auto segue a definição do telemóvel.',
     soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
     undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
@@ -171,6 +176,20 @@ function t(key, vars = {}) {
   const s = I18N[lang][key] ?? I18N.en[key] ?? key;
   return s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
 }
+
+// ---------- Theme ----------
+
+let theme = localStorage.getItem(THEME_KEY) || 'auto';
+const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+
+function applyTheme() {
+  const resolved = theme === 'auto' ? (darkMq.matches ? 'dark' : 'light') : theme;
+  document.documentElement.dataset.theme = resolved;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = resolved === 'light' ? '#eef0f3' : '#0e0f12';
+}
+applyTheme();
+darkMq.addEventListener?.('change', () => { if (theme === 'auto') applyTheme(); });
 
 const locale = () => (lang === 'pt' ? 'pt-PT' : 'en-GB');
 
@@ -608,7 +627,7 @@ function render() {
   const { view, id } = route();
   const views = {
     games: viewGames, teams: viewTeams, players: viewTeams, team: viewTeam,
-    new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport,
+    new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport, profile: viewProfile,
   };
   (views[view] || viewGames)(id);
   renderTabbar(view);
@@ -625,7 +644,7 @@ const TAB_ICONS = {
 };
 
 function renderTabbar(view) {
-  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : 'matches';
+  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : view === 'profile' ? 'profile' : 'matches';
   const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
   const tab = (k, label, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
@@ -633,7 +652,7 @@ function renderTabbar(view) {
     tab('team', t('tabTeam'), `href="${myTeam}"`) +
     tab('matches', t('tabMatches'), 'href="#/games"') +
     tab('stats', t('tabStats'), 'data-action="soon" data-v="tabStats"') +
-    tab('profile', t('tabProfile'), 'data-action="soon" data-v="tabProfile"');
+    tab('profile', t('tabProfile'), 'href="#/profile"');
 }
 
 window.addEventListener('hashchange', () => {
@@ -728,11 +747,25 @@ function viewGames() {
     <div class="row gap foot">
       <button class="btn small ghost" data-action="backup">${t('exportBackup')}</button>
       <label class="btn small ghost">${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
-      <span class="seg lang">
-        <button class="${lang === 'en' ? 'on' : ''}" data-action="lang" data-v="en">EN</button>
-        <button class="${lang === 'pt' ? 'on' : ''}" data-action="lang" data-v="pt">PT</button>
-      </span>
     </div>`;
+}
+
+// ---------- Views: profile / settings ----------
+// App settings live here; add new sections as more settings appear.
+
+function viewProfile() {
+  const seg = (action, current, options) => `<span class="seg big" role="group">${options.map(([v, label]) =>
+    `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`).join('')}</span>`;
+  main.innerHTML = `
+    ${bar(t('tabProfile'))}
+    <h2>${t('settings')}</h2>
+    <ul class="list settings">
+      <li class="item"><span class="grow">${t('language')}</span>
+        ${seg('lang', lang, [['en', 'English'], ['pt', 'Português']])}</li>
+      <li class="item wrap"><span class="grow">${t('theme')}</span>
+        ${seg('theme', theme, [['light', `☀️ ${t('themeLight')}`], ['dark', `🌙 ${t('themeDark')}`], ['auto', t('themeAuto')]])}</li>
+    </ul>
+    <p class="hint">${t('themeHint')}</p>`;
 }
 
 function gameCard(g) {
@@ -1492,6 +1525,13 @@ const actions = {
     render();
   },
   soon: ({ v }) => askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
+
+  theme: ({ v }) => {
+    theme = v;
+    localStorage.setItem(THEME_KEY, v);
+    applyTheme();
+    render();
+  },
 
   lang: ({ v }) => {
     lang = v;
