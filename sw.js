@@ -1,6 +1,6 @@
 // Offline support: serve from cache, refresh the cache in the background.
 // Bump CACHE when shipping changes so old files get cleaned up.
-const CACHE = 'fut-academy-stats-v32';
+const CACHE = 'fut-academy-stats-v33';
 const ASSETS = [
   './',
   './index.html',

@@ -111,7 +111,9 @@ New records use `crypto.randomUUID()`.
 ## Sync
 
 - The UI keeps reading and writing the local store, so nothing changes offline.
-- Each local record gets `updatedAt` and a `dirty` flag; deletes leave a tombstone.
+- Each local record gets `updatedAt` and a `dirty` flag; deletes leave a tombstone. This is
+  done automatically in `save()` by comparing every record with the last saved version, so
+  the rest of the app keeps editing `db` as today.
 - **Push**: dirty records are upserted to Supabase; on success the flag is cleared.
 - **Pull**: fetch rows with `updated_at` newer than the last sync, for the user's teams, and
   merge them into the local store.
@@ -161,9 +163,10 @@ New records use `crypto.randomUUID()`.
 ## Pull requests (into `feature/cloud-sync`)
 
 1. **Plan** (this document).
-2. **Local data groundwork**, no visible change: record metadata (`updatedAt`, tombstones,
-   UUIDs for new records), all changes go through a few store helpers instead of editing
-   `db` directly, ask the browser for persistent storage (`navigator.storage.persist()`).
+2. **Local data groundwork**, no visible change: change tracking inside `save()` (each
+   changed team/player/game gets `updatedAt` and `dirty`, removed ones leave a tombstone in
+   `db.deleted`), UUIDs for new records. Persistent storage (`navigator.storage.persist()`)
+   already shipped separately on `main`.
 3. **Database**: `supabase/` folder with SQL migrations (tables, triggers, RLS) and RLS tests,
    plus a setup guide (create the project in the EU, turn off sign-ups, enable email OTP,
    create your user). *You create the Supabase project here.*

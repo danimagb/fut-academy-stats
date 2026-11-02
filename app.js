@@ -203,7 +203,13 @@ const locale = () => (lang === 'pt' ? 'pt-PT' : 'en-GB');
 
 // ---------- Storage ----------
 
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+// Random ids that are unique across phones (needed once data is shared). Older records keep
+// their shorter ids; both are plain strings.
+const uid = () => (crypto.randomUUID ? crypto.randomUUID()
+  : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+
+// Synced record types (per-phone settings like db.formations and db.lastTeamId are not records).
+const RECORD_KINDS = ['teams', 'players', 'games'];
 
 let db = load();
 
@@ -224,6 +230,13 @@ function normalize(data) {
     for (const p of orphans) p.teamId = data.teams[0].id;
   }
   syncGameTeams(data);
+  if (!Array.isArray(data.deleted)) data.deleted = [];
+  // Records from before change tracking: mark them as changed so a first sync uploads them.
+  for (const kind of RECORD_KINDS) {
+    for (const r of data[kind]) {
+      if (r.updatedAt == null) Object.assign(r, { updatedAt: 0, dirty: true });
+    }
+  }
   return data;
 }
 
@@ -238,7 +251,39 @@ function syncGameTeams(data, teamId = null) {
   }
 }
 
+// ---------- Change tracking (groundwork for cloud sync) ----------
+// Every save compares each team, player and game with how it was at the last save. A record
+// that changed gets `updatedAt` (ms) and `dirty: true` ("not uploaded yet"); a record that
+// disappeared leaves a tombstone in `db.deleted`, so a later sync can delete it elsewhere.
+// The rest of the app just edits `db` and calls save(), as before.
+
+const recordKey = ({ updatedAt, dirty, ...rest }) => JSON.stringify(rest);
+
+function snapshotOf(data) {
+  return Object.fromEntries(RECORD_KINDS.map((kind) => [kind, new Map(data[kind].map((r) => [r.id, recordKey(r)]))]));
+}
+
+let saved = snapshotOf(db);
+
+function trackChanges(now = Date.now()) {
+  const next = snapshotOf(db);
+  for (const kind of RECORD_KINDS) {
+    const before = saved[kind];
+    const after = next[kind];
+    for (const r of db[kind]) {
+      if (before.get(r.id) !== after.get(r.id)) Object.assign(r, { updatedAt: now, dirty: true });
+    }
+    for (const id of before.keys()) {
+      if (!after.has(id)) db.deleted.push({ kind, id, deletedAt: now });
+    }
+    // A record that is back (e.g. restored from a backup) is no longer deleted.
+    db.deleted = db.deleted.filter((d) => d.kind !== kind || !after.has(d.id));
+  }
+  saved = next;
+}
+
 function save() {
+  trackChanges();
   localStorage.setItem(STORE_KEY, JSON.stringify(db));
   requestPersistence();
 }
