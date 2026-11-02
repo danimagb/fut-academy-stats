@@ -1083,7 +1083,7 @@ function viewGame(id) {
       <div class="muted small" id="period">${periodLabel(g)}</div>
       <div class="score-row">
         <span class="side">${esc(home)}</span>
-        <span class="score big">${scoreHtml(g, d, ' – ')}</span>
+        <span class="score big">${scoreHtml(g, d, ' – ', true)}</span>
         <span class="side">${esc(away)}</span>
       </div>
       ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
@@ -1334,7 +1334,7 @@ function viewReport(id) {
     <section class="scoreboard">
       <strong>${esc(matchTitle(g))}</strong>
       <div class="muted small">${formatLine(g)}</div>
-      <div class="score big">${scoreHtml(g, d, ' – ')}</div>
+      <div class="score big">${scoreHtml(g, d, ' – ', true)}</div>
       <div class="muted">${t('gameTime', { t: fmtNow(g) })}${g.status === 'finished' ? '' : ` · <span class="warn">${t('inProgress')}</span>`}</div>
     </section>
 
