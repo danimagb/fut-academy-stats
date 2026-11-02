@@ -38,7 +38,8 @@ const I18N = {
   en: {
     newGame: '+ New game', teamsBtn: 'Teams ({n})',
     noGames: 'No games yet.<br>Create your team and its players, then create a game.',
-    exportBackup: 'Export backup', importBackup: 'Import backup',
+    exportBackup: 'Export backup', importBackup: 'Import backup', backupTitle: 'Backup',
+    backupHint: 'Your teams and games are saved only on this phone. Export a backup now and then, and import it to restore or move to another phone.',
     opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
     st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
     teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
@@ -104,7 +105,8 @@ const I18N = {
   pt: {
     newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
     noGames: 'Ainda não há jogos.<br>Cria a tua equipa com os jogadores e depois um jogo.',
-    exportBackup: 'Exportar cópia', importBackup: 'Importar cópia',
+    exportBackup: 'Exportar cópia', importBackup: 'Importar cópia', backupTitle: 'Cópia de segurança',
+    backupHint: 'As equipas e os jogos ficam guardados só neste telemóvel. Exporta uma cópia de vez em quando e importa-a para restaurar ou passar para outro telemóvel.',
     opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
     st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
     teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
@@ -743,11 +745,7 @@ function viewGames() {
     </div>` : ''}
     ${games.length
       ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
-      : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`}
-    <div class="row gap foot">
-      <button class="btn small ghost" data-action="backup">${t('exportBackup')}</button>
-      <label class="btn small ghost">${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
-    </div>`;
+      : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`}`;
 }
 
 // ---------- Views: profile / settings ----------
@@ -765,7 +763,13 @@ function viewProfile() {
       <li class="item wrap"><span class="grow">${t('theme')}</span>
         ${seg('theme', theme, [['light', `☀️ ${t('themeLight')}`], ['dark', `🌙 ${t('themeDark')}`], ['auto', t('themeAuto')]])}</li>
     </ul>
-    <p class="hint">${t('themeHint')}</p>`;
+    <p class="hint">${t('themeHint')}</p>
+    <h2>${t('backupTitle')}</h2>
+    <p class="hint">${t('backupHint')}</p>
+    <div class="row gap">
+      <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
+      <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
+    </div>`;
 }
 
 function gameCard(g) {

@@ -24,7 +24,7 @@ It's plain HTML/CSS/JS with no build step and no server code. Data is saved on t
 5. **Profile** (bottom tab) holds the app settings:
    - **Language**: English | Português (Portuguese is the default on phones set to Portuguese). The PDF follows the app language.
    - **Theme**: ☀️ Light | 🌙 Dark | Auto. Light has stronger contrast and is easier to read outdoors in sunlight; Auto follows the phone's setting (the default).
-6. **Backup**: Export/Import on the home screen, since data lives only on that phone.
+   - **Backup**: Export/Import, since data lives only on that phone.
 
 ### Game clock and extra time
 
