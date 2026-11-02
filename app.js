@@ -219,7 +219,19 @@ function normalize(data) {
     if (!data.teams.length) data.teams.push({ id: uid(), club: '', name: '' });
     for (const p of orphans) p.teamId = data.teams[0].id;
   }
+  syncGameTeams(data);
   return data;
+}
+
+// Games keep a copy of their team's club and name (used in titles, the report and the PDF).
+// Keep that copy in line with the team, so renaming a team updates its games too. Games
+// whose team was deleted keep the names they had.
+function syncGameTeams(data, teamId = null) {
+  for (const g of data.games) {
+    if (teamId && g.teamId !== teamId) continue;
+    const tm = data.teams.find((x) => x.id === g.teamId);
+    if (tm) Object.assign(g, { club: tm.club, team: tm.name });
+  }
 }
 
 function save() {
@@ -1870,6 +1882,7 @@ document.addEventListener('input', (e) => {
   if (teamKey) {
     const tm = getTeam(route().id);
     tm[teamKey] = e.target.value.trim();
+    syncGameTeams(db, tm.id);
     save();
     $('.bar h1').textContent = teamLabel(tm);
     return;
