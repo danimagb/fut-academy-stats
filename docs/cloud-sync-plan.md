@@ -30,9 +30,10 @@ branch is merged into `main` only once everything works end to end.
   through `trackChanges()`, or the cleared flags will look like edits: write the store
   directly and refresh the `saved` snapshot with `snapshotOf(db)`.
 - Done in step 3:
-  - `supabase/migrations/20261102000000_cloud_sync_schema.sql`: tables `teams`,
-    `team_members`, `players`, `games`, `ping`; triggers; RLS. See `supabase/README.md`.
-  - RLS tests in `supabase/tests/rls.test.sql` (pgTAP, 114 checks), run locally with
+  - `supabase/migrations/20261102000000_cloud_sync_schema.sql`: tables `accounts`, `teams`,
+    `team_members`, `players`, `games`, `ping`; triggers; RLS; `add_team_coach()`. See
+    `supabase/README.md`.
+  - RLS tests in `supabase/tests/rls.test.sql` (pgTAP, 173 checks), run locally with
     `bash supabase/tests/local/run.sh` (uses the container's Postgres 16 + pgTAP and a stub
     of Supabase's roles and `auth` schema). Run it after any schema change.
   - `docs/supabase-setup.md`: what the maintainer does in the dashboard.
@@ -51,6 +52,16 @@ branch is merged into `main` only once everything works end to end.
     can't be removed, demoted or leave.
   - Accounts model (admin / director / coach accounts, directors adding coaches by email)
     added in this PR too: see "Authentication, accounts and team access".
+  - `team_members.user_id` references `accounts`, so only people with an account can be
+    members; deleting an account removes their memberships (a team can then be left without
+    a director, for the admin to fix).
+  - Directors add coaches only via `rpc('add_team_coach', { _team_id, _email })`, which
+    returns `added` / `already_member` / `no_account` (error 42501 if not allowed). Adding
+    members directly and changing roles are admin-only.
+  - `teams_insert` also accepts an upsert from an existing director of that team, so a coach
+    account made director of a team by the admin can still sync it.
+  - The admin sees all teams and members but can't edit teams, players or games they don't
+    direct.
 - Next (step 4): sign-in. Needs the project URL and publishable/anon key from the
   maintainer (setup guide, step 8).
 - Supabase project: not created yet (maintainer, following `docs/supabase-setup.md`).

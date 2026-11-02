@@ -5,19 +5,38 @@
 -- the JWT claims that auth.uid() reads. `reset role` goes back to the superuser for set-up and
 -- for checking what really is in the tables. Everything is rolled back at the end.
 --
---   A  00000000-0000-0000-0000-00000000000a  creates team t1 (director)
---   B  00000000-0000-0000-0000-00000000000b  second director of t1 (added later)
---   C  00000000-0000-0000-0000-00000000000c  coach of t1 (read-only)
---   O  00000000-0000-0000-0000-00000000000f  outsider (creates their own team t3)
+--   user  id                                    account kind        role in the tests
+--   A     00000000-0000-0000-0000-00000000000a  director            creates team t1 (director)
+--   B     00000000-0000-0000-0000-00000000000b  director            second director of t1 (later)
+--   C     00000000-0000-0000-0000-00000000000c  coach               coach of t1 (read-only)
+--   O     00000000-0000-0000-0000-00000000000f  director            outsider (creates team t3)
+--   D     00000000-0000-0000-0000-00000000000d  coach + is_admin    the admin (creates team td)
+--   E     00000000-0000-0000-0000-00000000000e  coach               added by email; director of td
+--   G     00000000-0000-0000-0000-000000000007  coach               account deleted by the admin
+--   N     00000000-0000-0000-0000-000000000009  (no account)        auth user without cloud access
 
 begin;
-select plan(114);
+select plan(173);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@example.com'),
   ('00000000-0000-0000-0000-00000000000b', 'b@example.com'),
   ('00000000-0000-0000-0000-00000000000c', 'c@example.com'),
-  ('00000000-0000-0000-0000-00000000000f', 'o@example.com');
+  ('00000000-0000-0000-0000-00000000000f', 'o@example.com'),
+  ('00000000-0000-0000-0000-00000000000d', 'd@example.com'),
+  ('00000000-0000-0000-0000-00000000000e', 'e@example.com'),
+  ('00000000-0000-0000-0000-000000000007', 'g@example.com'),
+  ('00000000-0000-0000-0000-000000000009', 'n@example.com');
+
+-- Accounts are created by the admin (service role / SQL editor). E's email is given in mixed case.
+insert into public.accounts (user_id, email, kind, is_admin) values
+  ('00000000-0000-0000-0000-00000000000a', 'a@example.com', 'director', false),
+  ('00000000-0000-0000-0000-00000000000b', 'b@example.com', 'director', false),
+  ('00000000-0000-0000-0000-00000000000c', 'c@example.com', 'coach',    false),
+  ('00000000-0000-0000-0000-00000000000f', 'o@example.com', 'director', false),
+  ('00000000-0000-0000-0000-00000000000d', 'd@example.com', 'coach',    true),
+  ('00000000-0000-0000-0000-00000000000e', ' E@Example.COM', 'coach',   false),
+  ('00000000-0000-0000-0000-000000000007', 'g@example.com', 'coach',    false);
 
 -- =============================================================================================
 -- Anonymous (anon key, not signed in): nothing but ping
@@ -45,6 +64,50 @@ select throws_ok($$select public.is_team_member('t1')$$,
   '42501', null, 'anon: cannot execute is_team_member');
 select throws_ok($$select public.is_team_director('t1')$$,
   '42501', null, 'anon: cannot execute is_team_director');
+select throws_ok('select * from public.accounts', '42501', null, 'anon: cannot select accounts');
+select throws_ok('select public.is_admin()', '42501', null, 'anon: cannot execute is_admin');
+select throws_ok('select public.can_create_teams()', '42501', null, 'anon: cannot execute can_create_teams');
+select throws_ok($$select public.shares_team_with('00000000-0000-0000-0000-00000000000a')$$,
+  '42501', null, 'anon: cannot execute shares_team_with');
+select throws_ok($$select public.add_team_coach('t1', 'c@example.com')$$,
+  '42501', null, 'anon: cannot execute add_team_coach');
+
+reset role;
+
+-- =============================================================================================
+-- Accounts: own row only; nothing writable except by the admin; who may create teams
+-- =============================================================================================
+select is((select email from public.accounts where user_id = '00000000-0000-0000-0000-00000000000e'), 'e@example.com',
+  'accounts: email is stored lower-case and trimmed');
+select throws_ok($$insert into public.accounts (user_id, email, kind)
+                   values ('00000000-0000-0000-0000-000000000009', 'C@EXAMPLE.COM', 'coach')$$,
+  '23505', null, 'accounts: email is unique, ignoring case');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c","role":"authenticated"}';
+
+select is((select count(*)::int from public.accounts), 1, 'C: sees only their own account (no teams yet)');
+select is((select kind from public.accounts), 'coach', 'C: can read their own account');
+with u as (update public.accounts set kind = 'director' where user_id = '00000000-0000-0000-0000-00000000000c' returning 1)
+select is(count(*)::int, 0, 'C: cannot change their own account kind') from u;
+select throws_ok($$update public.accounts set is_admin = true where user_id = '00000000-0000-0000-0000-00000000000c'$$,
+  '42501', null, 'C: cannot make themselves admin');
+with d as (delete from public.accounts where user_id = '00000000-0000-0000-0000-00000000000c' returning 1)
+select is(count(*)::int, 0, 'C: cannot delete their own account') from d;
+select ok(not public.can_create_teams() and not public.is_admin(),
+  'C: a coach account cannot create teams and is not admin');
+select throws_ok($$insert into public.teams (id, club, name) values ('tc', 'x', 'x')$$,
+  '42501', null, 'C: a coach account cannot create a team');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000009","role":"authenticated"}';
+
+select is((select count(*)::int from public.accounts), 0, 'N: without an account, sees no accounts');
+select throws_ok($$insert into public.accounts (user_id, email, kind)
+                   values ('00000000-0000-0000-0000-000000000009', 'n@example.com', 'director')$$,
+  '42501', null, 'N: cannot create their own account');
+select throws_ok($$insert into public.teams (id, club, name) values ('tn', 'x', 'x')$$,
+  '42501', null, 'N: a user without an account cannot create a team');
 
 reset role;
 
@@ -70,6 +133,7 @@ select is((select role from public.team_members
            where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000a'),
   'director', 'A: the creator is made director of the new team');
 select ok(public.is_team_director('t1'), 'A: is_team_director(t1) is true');
+select ok(public.can_create_teams(), 'A: a director account can create teams');
 
 with up as (
   insert into public.teams (id, club, name) values ('t1', 'Fut Academy', 'U12 A')
@@ -188,6 +252,8 @@ select is((select count(*)::int from public.teams), 1, 'C: sees only t1');
 select is((select count(*)::int from public.players), 1, 'C: sees the players of t1');
 select is((select count(*)::int from public.games), 1, 'C: sees the games of t1');
 select is((select count(*)::int from public.team_members), 2, 'C: sees the members of t1');
+select is((select string_agg(email, ',' order by email) from public.accounts),
+  'a@example.com,c@example.com', 'C: sees the accounts of teammates (and own), no others');
 select ok(public.is_team_member('t1') and not public.is_team_director('t1'),
   'C: is a member but not a director of t1');
 
@@ -231,9 +297,9 @@ $$, '42501', null, 'C: cannot upsert over an existing game');
 with d as (delete from public.team_members
            where user_id = '00000000-0000-0000-0000-00000000000a' returning 1)
 select is(count(*)::int, 0, 'C: cannot remove another member') from d;
-select throws_ok($$update public.team_members set role = 'director'
-                   where user_id = '00000000-0000-0000-0000-00000000000c'$$,
-  '42501', null, 'C: cannot promote themselves');
+with u as (update public.team_members set role = 'director'
+           where user_id = '00000000-0000-0000-0000-00000000000c' returning 1)
+select is(count(*)::int, 0, 'C: cannot change their own role (promote themselves)') from u;
 select throws_ok($$insert into public.team_members (team_id, user_id, role)
                    values ('t2', '00000000-0000-0000-0000-00000000000c', 'director')$$,
   '42501', null, 'C: cannot add themselves to another team');
@@ -258,6 +324,7 @@ select is((select count(*)::int from public.players), 0, 'O: sees no players');
 select is((select count(*)::int from public.games), 0, 'O: sees no games');
 select is((select count(*)::int from public.team_members), 0, 'O: sees no members');
 select ok(not public.is_team_member('t1'), 'O: is_team_member(t1) is false');
+select is((select count(*)::int from public.accounts), 1, 'O: sees only their own account');
 
 select throws_ok($$insert into public.players (id, team_id, name) values ('p9', 't1', 'x')$$,
   '42501', null, 'O: cannot insert a player into t1');
@@ -327,6 +394,130 @@ select is((select count(*)::int from public.games where team_id = 't3'), 0,
   'A: t3 still has no games');
 
 -- =============================================================================================
+-- Directors add coaches by email with add_team_coach(); no direct inserts or role changes
+-- =============================================================================================
+select is(public.add_team_coach('t1', '  E@EXAMPLE.com '), 'added',
+  'A: add_team_coach adds an existing account (email matched ignoring case)');
+select is((select role || '/' || invited_by from public.team_members
+           where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000e'),
+  'coach/00000000-0000-0000-0000-00000000000a', 'A: the new member is a coach, invited by A');
+select is(public.add_team_coach('t1', 'e@example.com'), 'already_member',
+  'A: add_team_coach on a current member returns already_member');
+select is(public.add_team_coach('t1', 'nobody@example.com'), 'no_account',
+  'A: add_team_coach with an unknown email returns no_account');
+select is(public.add_team_coach('t1', 'n@example.com'), 'no_account',
+  'A: add_team_coach for an auth user without an account returns no_account');
+select throws_ok($$insert into public.team_members (team_id, user_id, role)
+                   values ('t1', '00000000-0000-0000-0000-000000000007', 'coach')$$,
+  '42501', null, 'A: a director cannot insert members directly (only through add_team_coach)');
+select throws_ok($$insert into public.team_members (team_id, user_id, role)
+                   values ('t1', '00000000-0000-0000-0000-000000000007', 'director')$$,
+  '42501', null, 'A: a director cannot add a director');
+with u as (update public.team_members set role = 'director'
+           where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000e' returning 1)
+select is(count(*)::int, 0, 'A: a director cannot change roles') from u;
+with d as (delete from public.team_members where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000e' returning 1)
+select is(count(*)::int, 1, 'A: a director can remove a coach from their team') from d;
+select is(public.add_team_coach('t1', 'e@example.com'), 'added',
+  'A: a removed coach can be added again');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c","role":"authenticated"}';
+select throws_ok($$select public.add_team_coach('t1', 'g@example.com')$$,
+  '42501', null, 'C: a coach of the team cannot add coaches');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000f","role":"authenticated"}';
+select throws_ok($$select public.add_team_coach('t1', 'g@example.com')$$,
+  '42501', null, 'O: a director of another team cannot add coaches to t1');
+select is(public.add_team_coach('t3', 'g@example.com'), 'added', 'O: can add a coach to their own team');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000009","role":"authenticated"}';
+select throws_ok($$select public.add_team_coach('t1', 'n@example.com')$$,
+  '42501', null, 'N: a user without an account cannot add coaches');
+
+-- =============================================================================================
+-- Admin D: sees all teams, members and accounts (not players/games); manages any membership
+-- =============================================================================================
+reset role;
+do $$ begin
+  perform set_config('test.n_teams',    (select count(*)::text from public.teams), true);
+  perform set_config('test.n_members',  (select count(*)::text from public.team_members), true);
+  perform set_config('test.n_accounts', (select count(*)::text from public.accounts), true);
+end $$;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000d","role":"authenticated"}';
+
+select is((select count(*)::int from public.teams), current_setting('test.n_teams')::int,
+  'D (admin): sees all teams');
+select is((select count(*)::int from public.team_members), current_setting('test.n_members')::int,
+  'D (admin): sees all team members');
+select is((select count(*)::int from public.accounts), current_setting('test.n_accounts')::int,
+  'D (admin): sees all accounts');
+select is((select count(*)::int from public.players) + (select count(*)::int from public.games), 0,
+  'D (admin): sees no players or games of teams they are not a member of');
+with u as (update public.teams set name = 'hacked' where id = 't1' returning 1)
+select is(count(*)::int, 0, 'D (admin): cannot edit a team they do not direct') from u;
+
+select lives_ok($$insert into public.teams (id, club, name) values ('td', 'Admin FC', 'U8')$$,
+  'D (admin): can create a team (even with a coach account kind)');
+select is(public.add_team_coach('td', 'e@example.com'), 'added', 'D (admin): adds E to td');
+with u as (update public.team_members set role = 'director'
+           where team_id = 'td' and user_id = '00000000-0000-0000-0000-00000000000e' returning 1)
+select is(count(*)::int, 1, 'D (admin): can promote a member to director') from u;
+select is(public.add_team_coach('t3', 'b@example.com'), 'added',
+  'D (admin): can use add_team_coach on a team they are not in');
+with u as (update public.team_members set role = 'director'
+           where team_id = 't3' and user_id = '00000000-0000-0000-0000-00000000000b' returning 1)
+select is(count(*)::int, 1, 'D (admin): can change a role in any team') from u;
+with d as (delete from public.team_members where team_id = 't3' and user_id = '00000000-0000-0000-0000-00000000000b' returning 1)
+select is(count(*)::int, 1, 'D (admin): can remove a director from any team') from d;
+select lives_ok($$insert into public.team_members (team_id, user_id, role)
+                  values ('t2', '00000000-0000-0000-0000-000000000007', 'director')$$,
+  'D (admin): can insert a membership directly, as director');
+with d as (delete from public.team_members where team_id = 't2' and user_id = '00000000-0000-0000-0000-000000000007' returning 1)
+select is(count(*)::int, 1, 'D (admin): can remove that membership') from d;
+select throws_ok($$delete from public.team_members where team_id = 't3' and user_id = '00000000-0000-0000-0000-00000000000f'$$,
+  '23514', null, 'D (admin): cannot remove the last director of a team');
+select throws_ok($$update public.team_members set role = 'coach'
+                   where team_id = 't3' and user_id = '00000000-0000-0000-0000-00000000000f'$$,
+  '23514', null, 'D (admin): cannot demote the last director of a team');
+
+with u as (update public.accounts set kind = 'director' where user_id = '00000000-0000-0000-0000-00000000000c' returning kind)
+select is(min(kind), 'director', 'D (admin): can change the kind of an account') from u;
+with u as (update public.accounts set kind = 'coach' where user_id = '00000000-0000-0000-0000-00000000000c' returning kind)
+select is(min(kind), 'coach', 'D (admin): can change it back') from u;
+select throws_ok($$update public.accounts set is_admin = true where user_id = '00000000-0000-0000-0000-00000000000c'$$,
+  '42501', null, 'D (admin): cannot set is_admin through the API');
+select throws_ok($$update public.accounts set email = 'x@example.com' where user_id = '00000000-0000-0000-0000-00000000000c'$$,
+  '42501', null, 'D (admin): cannot change an email through the API');
+with d as (delete from public.accounts where user_id = '00000000-0000-0000-0000-00000000000d' returning 1)
+select is(count(*)::int, 0, 'D (admin): cannot delete their own account') from d;
+with d as (delete from public.accounts where user_id = '00000000-0000-0000-0000-000000000007' returning 1)
+select is(count(*)::int, 1, 'D (admin): can delete another account') from d;
+
+reset role;
+select is((select count(*)::int from public.team_members where user_id = '00000000-0000-0000-0000-000000000007'), 0,
+  'account delete: the user''s memberships are removed');
+
+-- A coach-kind account made director of td by the admin can sync (upsert) td, but not create teams.
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000e","role":"authenticated"}';
+with up as (
+  insert into public.teams (id, club, name) values ('td', 'Admin FC', 'U8 E')
+  on conflict (id) do update set name = excluded.name
+  returning name
+)
+select is(min(name), 'U8 E', 'E: as director of td (coach account), can upsert td') from up;
+select throws_ok($$insert into public.teams (id, club, name) values ('te', 'x', 'x')$$,
+  '42501', null, 'E: a coach account still cannot create a new team');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+
+-- =============================================================================================
 -- Members: a team always keeps a director; members can leave
 -- =============================================================================================
 select throws_ok($$delete from public.team_members
@@ -359,7 +550,16 @@ select is(min(created_by::text)::uuid, '00000000-0000-0000-0000-00000000000a'::u
   'B: can upsert the team (even sending created_by); created_by stays A') from up;
 with d as (delete from public.team_members
            where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000a' returning 1)
-select is(count(*)::int, 1, 'B: with two directors, B can remove A') from d;
+select is(count(*)::int, 0, 'B: a director cannot remove another director') from d;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000d","role":"authenticated"}';
+with d as (delete from public.team_members
+           where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000a' returning 1)
+select is(count(*)::int, 1, 'D (admin): with two directors, the admin can remove one (A)') from d;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
 select throws_ok($$delete from public.team_members
                    where team_id = 't1' and user_id = '00000000-0000-0000-0000-00000000000b'$$,
   '23514', null, 'B: now the last director, B cannot leave');
@@ -413,7 +613,7 @@ select is((select count(*)::int from public.team_members
 -- service_role (Edge Functions) bypasses RLS.
 set local role service_role;
 set local request.jwt.claims = '{"role":"service_role"}';
-select is((select count(*)::int from public.teams), 2, 'service_role: sees all teams');
+select is((select count(*)::int from public.teams), 3, 'service_role: sees all teams');
 select lives_ok($$insert into public.team_members (team_id, user_id, role, invited_by)
                   values ('t1', '00000000-0000-0000-0000-00000000000c', 'coach',
                           '00000000-0000-0000-0000-00000000000b')$$,

@@ -1,5 +1,12 @@
--- Fut Academy Stats: cloud sync schema (teams, members, players, games) with Row Level Security.
--- See docs/cloud-sync-plan.md ("Data model", "Row Level Security").
+-- Fut Academy Stats: cloud sync schema (accounts, teams, members, players, games) with Row Level
+-- Security. See docs/cloud-sync-plan.md ("Data model", "Row Level Security").
+--
+-- Two levels of access:
+--  1. Accounts (public.accounts): who may use the cloud at all. Managed only by the admin
+--     (rows are created with the service role or the SQL editor). kind 'director' may create
+--     teams; kind 'coach' only sees teams they were added to. is_admin may see every team and
+--     its members (not its players or games) and manage any team's members and any account's kind.
+--  2. Team membership (public.team_members): who sees which team, with which role.
 --
 -- Roles per team (team_members.role):
 --   director: reads and writes the team, its players and games; removes members; deletes the team.
@@ -11,6 +18,16 @@
 -- ---------------------------------------------------------------------------------------------
 -- Tables
 -- ---------------------------------------------------------------------------------------------
+
+-- Created before the other tables: team_members references it.
+create table if not exists public.accounts (
+  user_id     uuid primary key references auth.users on delete cascade,
+  email       text not null unique,              -- stored lower-case (trigger below)
+  kind        text not null check (kind in ('director', 'coach')),
+  is_admin    boolean not null default false,
+  created_at  timestamptz default now(),
+  created_by  uuid references auth.users on delete set null
+);
 
 create table if not exists public.teams (
   id          text primary key,                -- app id (old short id or UUID string), from the client
@@ -25,7 +42,9 @@ create table if not exists public.teams (
 
 create table if not exists public.team_members (
   team_id     text references public.teams on delete cascade,
-  user_id     uuid references auth.users on delete cascade,
+  -- References accounts (not auth.users): only users with an account can be members, and
+  -- deleting an account row removes the user's memberships too.
+  user_id     uuid references public.accounts on delete cascade,
   role        text not null check (role in ('director', 'coach')),
   invited_by  uuid references auth.users on delete set null,
   created_at  timestamptz default now(),
@@ -66,10 +85,12 @@ create index if not exists games_team_updated_idx   on public.games (team_id, up
 -- "Which teams am I in?" (the primary key already covers lookups by team_id).
 create index if not exists team_members_user_idx    on public.team_members (user_id);
 
+comment on table public.accounts is
+  'Who may use the cloud: kind director (may create teams) or coach (only sees teams they are added to); is_admin manages accounts and all team memberships. Written by the service role / SQL editor; the admin may change kind or delete rows.';
 comment on table public.teams is
   'A team (club + name). Visible to its members; written by its directors. Soft-deleted via deleted_at.';
 comment on table public.team_members is
-  'Who can access a team and how: director (read/write) or coach (read-only). Rows are added by the team-creation trigger or the invite-coach Edge Function (service role).';
+  'Who can access a team and how: director (read/write) or coach (read-only). Rows are added by the team-creation trigger, by directors through add_team_coach() (coaches only), or by the admin.';
 comment on table public.players is
   'Players of a team. Visible to team members; written by team directors. Soft-deleted via deleted_at.';
 comment on table public.games is
@@ -122,6 +143,54 @@ set search_path = ''
 as $$
   select exists (select 1 from public.team_members m where m.team_id = _team_id);
 $$;
+
+-- The signed-in user's account flags.
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.accounts a where a.user_id = auth.uid() and a.is_admin);
+$$;
+
+create or replace function public.can_create_teams()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.accounts a
+    where a.user_id = auth.uid() and (a.kind = 'director' or a.is_admin)
+  );
+$$;
+
+-- True if the signed-in user and _user_id are both members of some team (to show teammates'
+-- emails in a team's member list).
+create or replace function public.shares_team_with(_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.team_members mine
+    join public.team_members theirs on theirs.team_id = mine.team_id
+    where mine.user_id = auth.uid() and theirs.user_id = _user_id
+  );
+$$;
+
+revoke execute on function public.is_admin()              from public, anon;
+revoke execute on function public.can_create_teams()      from public, anon;
+revoke execute on function public.shares_team_with(uuid)  from public, anon;
+grant  execute on function public.is_admin()              to authenticated, service_role;
+grant  execute on function public.can_create_teams()      to authenticated, service_role;
+grant  execute on function public.shares_team_with(uuid)  to authenticated, service_role;
 
 revoke execute on function public.is_team_member(text)   from public, anon;
 revoke execute on function public.is_team_director(text) from public, anon;
@@ -209,8 +278,9 @@ create trigger add_creator_as_director after insert on public.teams
   for each row execute function public.add_team_creator_as_director();
 
 -- A team always keeps at least one director: refuse to delete the last director's membership
--- or to change it (role, team or user). Skipped when the team or the user itself is being
--- deleted (the cascade from teams / auth.users), so deleting a team or a user still works.
+-- or to change it (role, team or user), for everyone including the admin. Skipped when the team
+-- or the user's account is being deleted (the cascade from teams / accounts / auth.users), so
+-- deleting a team, an account or a user still works (the admin then fixes the team).
 create or replace function public.keep_last_director()
 returns trigger
 language plpgsql
@@ -225,7 +295,7 @@ begin
      and new.team_id = old.team_id and new.user_id = old.user_id then
     return new;
   end if;
-  if not exists (select 1 from auth.users u where u.id = old.user_id) then
+  if not exists (select 1 from public.accounts a where a.user_id = old.user_id) then
     return coalesce(new, old);
   end if;
 
@@ -251,10 +321,65 @@ drop trigger if exists keep_last_director on public.team_members;
 create trigger keep_last_director before delete or update on public.team_members
   for each row execute function public.keep_last_director();
 
+-- Emails are stored lower-case and trimmed, so lookups by email are case-insensitive.
+create or replace function public.normalise_account_email()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.email := lower(btrim(new.email));
+  return new;
+end;
+$$;
+
+drop trigger if exists normalise_email on public.accounts;
+create trigger normalise_email before insert or update of email on public.accounts
+  for each row execute function public.normalise_account_email();
+
 -- Trigger functions can't be called directly, but keep them off the API surface anyway.
 revoke execute on function public.set_row_metadata()             from public, anon, authenticated;
 revoke execute on function public.add_team_creator_as_director() from public, anon, authenticated;
 revoke execute on function public.keep_last_director()           from public, anon, authenticated;
+revoke execute on function public.normalise_account_email()      from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- Adding a coach to a team by email
+-- ---------------------------------------------------------------------------------------------
+-- Directors have no insert policy on team_members: they add people only through this function,
+-- which can only add an existing account, and only as 'coach' (the admin can also use it, for
+-- any team). Returns 'added', 'already_member' or 'no_account'.
+create or replace function public.add_team_coach(_team_id text, _email text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  _user_id uuid;
+begin
+  if not (public.is_team_director(_team_id) or public.is_admin()) then
+    raise exception 'only a director of the team can add coaches'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  select a.user_id into _user_id from public.accounts a where a.email = lower(btrim(_email));
+  if _user_id is null then
+    return 'no_account';
+  end if;
+
+  insert into public.team_members (team_id, user_id, role, invited_by)
+  values (_team_id, _user_id, 'coach', auth.uid())
+  on conflict (team_id, user_id) do nothing;
+  if not found then
+    return 'already_member';
+  end if;
+  return 'added';
+end;
+$$;
+
+revoke execute on function public.add_team_coach(text, text) from public, anon;
+grant  execute on function public.add_team_coach(text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------------------------
 -- Grants
@@ -262,14 +387,17 @@ revoke execute on function public.keep_last_director()           from public, an
 -- Supabase's default privileges grant everything (including TRUNCATE, which ignores RLS) on new
 -- tables to anon and authenticated, so start from nothing and grant only what is needed.
 
-revoke all on public.teams, public.team_members, public.players, public.games, public.ping
-  from public, anon, authenticated;
+revoke all on public.accounts, public.teams, public.team_members, public.players, public.games,
+  public.ping from public, anon, authenticated;
 
 grant select, insert, update, delete on public.teams, public.players, public.games to authenticated;
-grant select, delete on public.team_members to authenticated;  -- inserts: trigger / service role
+-- Column-level update grants: only accounts.kind and team_members.role can ever be changed
+-- through the API (is_admin, email, user ids can't), and RLS limits that to the admin.
+grant select, delete, update (kind) on public.accounts to authenticated;
+grant select, insert, delete, update (role) on public.team_members to authenticated;
 grant select on public.ping to anon, authenticated;
-grant all on public.teams, public.team_members, public.players, public.games, public.ping
-  to service_role;  -- Edge Functions; service_role bypasses RLS
+grant all on public.accounts, public.teams, public.team_members, public.players, public.games,
+  public.ping to service_role;  -- Edge Functions; service_role bypasses RLS
 
 -- ---------------------------------------------------------------------------------------------
 -- Row Level Security
@@ -282,17 +410,37 @@ grant all on public.teams, public.team_members, public.players, public.games, pu
 --  * Plain UPDATE / DELETE silently skip rows that fail USING (0 rows affected).
 --  * (select auth.uid()) is evaluated once per statement instead of once per row.
 
+alter table public.accounts     enable row level security;
 alter table public.teams        enable row level security;
 alter table public.team_members enable row level security;
 alter table public.players      enable row level security;
 alter table public.games        enable row level security;
 alter table public.ping         enable row level security;
 
+-- accounts (no insert policy: rows come from the service role / SQL editor)
+drop policy if exists accounts_select on public.accounts;
+create policy accounts_select on public.accounts for select to authenticated
+  using (
+    user_id = (select auth.uid())
+    or public.is_admin()
+    or public.shares_team_with(user_id)
+  );
+
+drop policy if exists accounts_update on public.accounts;
+create policy accounts_update on public.accounts for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists accounts_delete on public.accounts;
+create policy accounts_delete on public.accounts for delete to authenticated
+  using (public.is_admin() and user_id <> (select auth.uid()));  -- not their own row
+
 -- teams
 drop policy if exists teams_select on public.teams;
 create policy teams_select on public.teams for select to authenticated
   using (
     public.is_team_member(id)
+    or public.is_admin()  -- to manage memberships; players and games stay member-only
     -- The creator, during the insert statement only (before the trigger makes them director),
     -- so that "insert ... returning" / upsert with return=representation works.
     or (created_by = (select auth.uid()) and not public.team_has_members(id))
@@ -300,7 +448,16 @@ create policy teams_select on public.teams for select to authenticated
 
 drop policy if exists teams_insert on public.teams;
 create policy teams_insert on public.teams for insert to authenticated
-  with check (created_by = (select auth.uid()));
+  with check (
+    created_by = (select auth.uid())
+    and (
+      public.can_create_teams()
+      -- An upsert checks this policy on the proposed row even when the team exists and the
+      -- statement becomes an update. This lets a director of an existing team (e.g. a
+      -- coach-kind account the admin made director) upsert it; a new id can't match here.
+      or public.is_team_director(id)
+    )
+  );
 
 drop policy if exists teams_update on public.teams;
 create policy teams_update on public.teams for update to authenticated
@@ -311,14 +468,28 @@ drop policy if exists teams_delete on public.teams;
 create policy teams_delete on public.teams for delete to authenticated
   using (public.is_team_director(id));
 
--- team_members (no insert/update policies: rows come from the trigger or the service role)
+-- team_members. Directors add coaches through add_team_coach(); direct inserts and role
+-- changes are for the admin only. The last-director trigger applies to everyone.
 drop policy if exists team_members_select on public.team_members;
 create policy team_members_select on public.team_members for select to authenticated
-  using (public.is_team_member(team_id));
+  using (public.is_team_member(team_id) or public.is_admin());
+
+drop policy if exists team_members_insert on public.team_members;
+create policy team_members_insert on public.team_members for insert to authenticated
+  with check (public.is_admin());
+
+drop policy if exists team_members_update on public.team_members;
+create policy team_members_update on public.team_members for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
 
 drop policy if exists team_members_delete on public.team_members;
 create policy team_members_delete on public.team_members for delete to authenticated
-  using (public.is_team_director(team_id) or user_id = (select auth.uid()));  -- or leave a team
+  using (
+    public.is_admin()
+    or user_id = (select auth.uid())                              -- leave a team
+    or (role = 'coach' and public.is_team_director(team_id))      -- a director removes a coach
+  );
 
 -- players
 drop policy if exists players_select on public.players;
