@@ -287,6 +287,16 @@ function matchTitle(g) {
   return g.home === false ? `${them} x ${us}` : `${us} x ${them}`;
 }
 
+// Score in the same order as matchTitle (home side first). With `colour`, our goals are
+// wrapped in .us and theirs in .them (no colour on a draw).
+function scoreHtml(g, d, sep = '–', colour = false) {
+  const goals = (who) => {
+    const n = who === 'us' ? d.us : d.them;
+    return colour && d.us !== d.them ? `<span class="${who}">${n}</span>` : `${n}`;
+  };
+  return g.home === false ? `${goals('them')}${sep}${goals('us')}` : `${goals('us')}${sep}${goals('them')}`;
+}
+
 // Optional button HTML (e.g. Undo) is shown next to the message.
 // `msg` is plain text; pass { html } instead for already-escaped markup.
 function toast(msg, button = '') {
@@ -779,10 +789,8 @@ function gameCard(g) {
   const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
   // Result of a finished game: win / draw / loss, shown as a coloured stripe and a pill.
   const res = g.status === 'finished' ? (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw') : '';
-  // Score in the same order as the title (home team first); our goals green, theirs red, both neutral on a draw.
-  const cls = (who) => (d.us === d.them ? '' : who === 'us' ? 'us' : 'them');
-  const goals = (who) => `<span class="${cls(who)}">${who === 'us' ? d.us : d.them}</span>`;
-  const score = g.home === false ? `${goals('them')}–${goals('us')}` : `${goals('us')}–${goals('them')}`;
+  // Our goals green, theirs red, both neutral on a draw.
+  const score = scoreHtml(g, d, '–', true);
   // Only what helps pick a game out of the list: team (when there are several), date and round.
   const meta = [
     db.teams.length > 1 && g.team ? esc(g.team) : '',
@@ -1075,7 +1083,7 @@ function viewGame(id) {
       <div class="muted small" id="period">${periodLabel(g)}</div>
       <div class="score-row">
         <span class="side">${esc(home)}</span>
-        <span class="score big">${g.home === false ? `${d.them} – ${d.us}` : `${d.us} – ${d.them}`}</span>
+        <span class="score big">${scoreHtml(g, d, ' – ')}</span>
         <span class="side">${esc(away)}</span>
       </div>
       ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
@@ -1326,7 +1334,7 @@ function viewReport(id) {
     <section class="scoreboard">
       <strong>${esc(matchTitle(g))}</strong>
       <div class="muted small">${formatLine(g)}</div>
-      <div class="score big">${d.us} – ${d.them}</div>
+      <div class="score big">${scoreHtml(g, d, ' – ')}</div>
       <div class="muted">${t('gameTime', { t: fmtNow(g) })}${g.status === 'finished' ? '' : ` · <span class="warn">${t('inProgress')}</span>`}</div>
     </section>
 
