@@ -85,15 +85,15 @@ const I18N = {
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
-    password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Create account',
+    password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Activate account',
     signUpIntro: 'Use the email the admin registered.',
     resetTitle: 'Reset your password', resetIntro: '',
     stepOf: 'Step {n} of 3', stepEmail: 'Your email', stepCode: 'Code from the email', stepPassword: 'Choose a password',
-    confirmCode: 'Confirm', createAccount: 'Create account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
+    confirmCode: 'Confirm', createAccount: 'Activate account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
     setPwTitle: 'Choose a password', setPwHint: 'At least 8 characters.',
     newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
     pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
-    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Create account".',
+    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Activate account".',
     tabAdmin: 'Admin', notSignedIn: 'Not signed in', backupSummary: 'Export or import a copy of your data',
     account: 'Account', accountHint: 'Only for people the admin gave access to.',
     email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'Sent to {email} (check spam too).',
@@ -153,7 +153,7 @@ const I18N = {
     lastDirector: 'A team must keep at least one director.',
     admin: 'Admin', adminHint: 'Give access, manage accounts and teams.', adminOnly: 'Only the admin can open this page.',
     giveAccess: 'Give access', accountKind: 'Account type',
-    giveAccessHint: 'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Create account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
+    giveAccessHint: 'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Activate account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
     accessGivenTitle: 'Access given', accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
     errExists: 'This email already has access.', errEmail: 'Check the email address.', errNotAdmin: 'Only the admin can do this.',
     errSession: 'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
@@ -213,15 +213,15 @@ const I18N = {
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
-    password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Criar conta',
+    password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Ativar conta',
     signUpIntro: 'Usa o email que o administrador registou.',
     resetTitle: 'Recuperar a palavra-passe', resetIntro: '',
     stepOf: 'Passo {n} de 3', stepEmail: 'O teu email', stepCode: 'Código do email', stepPassword: 'Escolhe uma palavra-passe',
-    confirmCode: 'Confirmar', createAccount: 'Criar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
+    confirmCode: 'Confirmar', createAccount: 'Ativar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
     setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'Pelo menos 8 caracteres.',
     newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
     pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
-    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Criar conta".',
+    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Ativar conta".',
     tabAdmin: 'Admin', notSignedIn: 'Sessão não iniciada', backupSummary: 'Exportar ou importar uma cópia dos dados',
     account: 'Conta', accountHint: 'Só para quem recebeu acesso do administrador.',
     email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviado para {email} (vê também o spam).',
@@ -281,7 +281,7 @@ const I18N = {
     lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
     admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas.', adminOnly: 'Só o administrador pode abrir esta página.',
     giveAccess: 'Dar acesso', accountKind: 'Tipo de conta',
-    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Criar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
+    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Ativar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
     accessGivenTitle: 'Acesso dado', accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
     errExists: 'Este email já tem acesso.', errEmail: 'Verifica o endereço de email.', errNotAdmin: 'Só o administrador pode fazer isto.',
     errSession: 'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
@@ -1158,7 +1158,7 @@ function accountSectionBody() {
   const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
   const busy = cloud.busy ? 'disabled' : '';
   if (cloud.session && cloud.needsPassword) {
-    // Step 3 of "Create account" / "Reset your password": nothing else until it's done.
+    // Step 3 of "Activate account" / "Reset your password": nothing else until it's done.
     return `${head}<section class="auth-steps">${cloud.pwMode === 'reset' ? `<p class="muted small">${t('resetTitle')}</p>` : ''}
       ${setPasswordForm(busy, err, false)}</section>`;
   }
@@ -2785,7 +2785,7 @@ const actions = {
     render();
   },
   'auth-mode': ({ v }) => {
-    // Keep a typed email when switching between Sign in / Create account / Reset.
+    // Keep a typed email when switching between Sign in / Activate account / Reset.
     const typed = $('main input[name="email"]')?.value.trim();
     Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
     render();
