@@ -482,3 +482,29 @@ select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; f
 .privacy p { margin: 0 0 10px; font-size: .92rem; }
 .tabbar.five { grid-template-columns: repeat(5, 1fr); }
 .tabbar.five .tab span { font-size: .68rem; }
+.auth-tabs { display: flex; margin: 4px 0 6px; }
+.auth-tabs button { flex: 1; }
+.step-label { margin: 10px 0 2px; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.auth-steps .sub-title { margin-top: 8px; }
+
+/* Profile accordion */
+.accordion { display: grid; gap: 10px; margin-top: 6px; }
+.acc { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.acc-head {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 64px; padding: 10px 14px;
+  font: inherit; color: var(--text); text-align: left; background: transparent; border: 0; cursor: pointer;
+}
+.acc-head:active { background: var(--panel-2); }
+.acc-title { display: block; font-weight: 700; font-size: 1.02rem; }
+.acc-sum { display: block; color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-head .grow { min-width: 0; }
+.acc .chev { flex: none; width: 20px; height: 20px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.acc.open .chev { transform: rotate(90deg); }
+.acc.open .acc-head .acc-sum { display: none; }
+.acc-body { padding: 0 14px 14px; border-top: 1px solid var(--line); }
+.acc-body > :first-child { margin-top: 12px; }
+/* inside a section, rows are plain lines instead of nested cards */
+.acc-body .list { gap: 0; margin: 8px 0; }
+.acc-body .list > .item { background: transparent; border: 0; border-radius: 0; padding: 10px 0; }
+.acc-body .list > .item + .item { border-top: 1px solid var(--line); }
+.acc-body .auth-tabs { margin-top: 12px; }
