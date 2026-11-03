@@ -508,3 +508,5 @@ select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; f
 .acc-body .list > .item { background: transparent; border: 0; border-radius: 0; padding: 10px 0; }
 .acc-body .list > .item + .item { border-top: 1px solid var(--line); }
 .acc-body .auth-tabs { margin-top: 12px; }
+.acct-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-actions { margin-top: 4px; }
