@@ -14,9 +14,9 @@ branch is merged into `main` only once everything works end to end.
 | 1 | Plan | ✅ merged | danimagb/fut-academy-stats#10 |
 | – | Persistent storage (shipped on `main`, outside the feature branch) | ✅ merged | danimagb/fut-academy-stats#11 |
 | 2 | Local data groundwork | ✅ merged | danimagb/fut-academy-stats#12 |
-| 3 | Database (tables, RLS, tests) + Supabase setup guide | 🔄 in review | (this PR) |
-| 4 | Sign-in (email code) | ⏳ next | – |
-| 5 | Sync engine | ⏳ | – |
+| 3 | Database (tables, RLS, tests) + Supabase setup guide | ✅ merged | danimagb/fut-academy-stats#13 |
+| 4 | Sign-in (email code) | 🔄 in review | (this PR) |
+| 5 | Sync engine | ⏳ next | – |
 | 6 | Directors, coaches and invites; read-only coach view | ⏳ | – |
 | 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ | – |
 
@@ -62,9 +62,26 @@ branch is merged into `main` only once everything works end to end.
     account made director of a team by the admin can still sync it.
   - The admin sees all teams and members but can't edit teams, players or games they don't
     direct.
-- Next (step 4): sign-in. Needs the project URL and publishable/anon key from the
-  maintainer (setup guide, step 8).
-- Supabase project: not created yet (maintainer, following `docs/supabase-setup.md`).
+- Done in step 4 (sign-in):
+  - `config.js` holds the project URL and publishable key (public by design). The Supabase
+    library is vendored as `vendor/supabase-js-2.118.0.js` (UMD, global `supabase`, MIT
+    licence next to it) and cached by the service worker.
+  - In `app.js` ("Cloud account" section): client `sb` (session kept in localStorage under
+    `fut-academy-stats.auth`, auto refresh), state `cloud` (`session`, `account`, sign-in
+    step). `refreshAccount()` loads the user's `accounts` row and caches it under
+    `fut-academy-stats.account` for offline display. `sb` is `null` if the library or config
+    is missing; the app then works as before.
+  - Profile → Account: email → `signInWithOtp({ shouldCreateUser: false })` → code →
+    `verifyOtp({ type: 'email' })`; shows email + account kind; sign out (`scope: 'local'`,
+    works offline). Error messages for no access, wrong/expired code, rate limit, offline.
+  - Tested in a browser with **simulated** Supabase responses only: this cloud environment's
+    network policy blocked `qttfytuptdrovwnedofy.supabase.co`. Test against the real project
+    once the host is allowed (sign in with the maintainer's email).
+- Next (step 5): sync engine. Sync only cloud teams; a team needs a "cloud" mark locally
+  (see "Local teams and cloud teams").
+- Supabase project: created by the maintainer (EU region), migration applied, admin account
+  set up, sign-ups off, custom SMTP through a dedicated Gmail account (app password).
+  Project URL: `https://qttfytuptdrovwnedofy.supabase.co`.
 
 ## Goals
 

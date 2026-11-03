@@ -20,5 +20,8 @@ that section.
   new colours need both.
 - Data lives in `localStorage` (`fut-academy-stats.v1`). Edit `db`, then call `save()`;
   `save()` tracks changed and deleted records for sync.
+- `config.js` has the Supabase URL and publishable key (public). Never commit a secret /
+  service_role key or passwords. `vendor/` holds pinned third-party files; list new ones in
+  `ASSETS` in `sw.js`.
 - Check changes in a browser at phone size (Playwright with Chromium is available in cloud
   sessions), in both themes when the change is visual.

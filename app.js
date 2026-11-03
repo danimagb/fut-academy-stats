@@ -79,6 +79,13 @@ const I18N = {
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
+    account: 'Account', accountHint: 'Sign in to sync your teams to the cloud. Only for people given access by the admin. Without an account the app works as before, on this phone only.',
+    email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'We sent a code to {email}. It can take a minute; check the spam folder too.',
+    otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out on this phone?', signedIn: 'Signed in',
+    acctDirector: 'Director account', acctCoach: 'Coach account', acctAdmin: 'Admin', acctNone: 'This user has no access set up yet. Ask the admin.',
+    authNoAccess: 'This email doesn\'t have access. Ask the admin.', authBadCode: 'Wrong or expired code. Try again or ask for a new one.',
+    authRateLimit: 'Too many attempts. Wait a minute and try again.', authOffline: 'No internet connection. Try again when you have signal.',
+    authFailed: 'Couldn\'t sign in ({msg}).', cloudUnavailable: 'Cloud sign-in isn\'t available on this device.',
     settings: 'Settings', language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'Auto',
     themeHint: 'Light is easier to read outdoors in sunlight. Auto follows your phone\'s setting.',
     soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
@@ -149,6 +156,13 @@ const I18N = {
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
+    account: 'Conta', accountHint: 'Entra para sincronizar as equipas na nuvem. Só para quem recebeu acesso do administrador. Sem conta, a app funciona como até agora, só neste telemóvel.',
+    email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviámos um código para {email}. Pode demorar um minuto; vê também a pasta de spam.',
+    otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão neste telemóvel?', signedIn: 'Sessão iniciada',
+    acctDirector: 'Conta de diretor', acctCoach: 'Conta de treinador', acctAdmin: 'Admin', acctNone: 'Este utilizador ainda não tem acesso configurado. Fala com o administrador.',
+    authNoAccess: 'Este email não tem acesso. Fala com o administrador.', authBadCode: 'Código errado ou expirado. Tenta outra vez ou pede um novo.',
+    authRateLimit: 'Demasiadas tentativas. Espera um minuto e tenta outra vez.', authOffline: 'Sem ligação à internet. Tenta outra vez quando tiveres rede.',
+    authFailed: 'Não foi possível entrar ({msg}).', cloudUnavailable: 'O início de sessão na nuvem não está disponível neste dispositivo.',
     settings: 'Definições', language: 'Idioma', theme: 'Tema', themeLight: 'Claro', themeDark: 'Escuro', themeAuto: 'Auto',
     themeHint: 'O tema claro lê-se melhor ao ar livre, com sol. Auto segue a definição do telemóvel.',
     soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
@@ -841,6 +855,125 @@ function viewGames() {
       : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`}`;
 }
 
+// ---------- Cloud account (Supabase sign-in) ----------
+// Sign-in only for now (cloud sync step 4). Invite-only: the email gets a code only if the
+// admin gave it an account; `shouldCreateUser: false` never creates users. Everything else in
+// the app keeps working without signing in.
+
+const ACCOUNT_KEY = 'fut-academy-stats.account'; // last known accounts row, for offline display
+const CLOUD = window.FAS_CONFIG || {};
+const sb = window.supabase?.createClient && CLOUD.supabaseUrl
+  ? window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'fut-academy-stats.auth' },
+  })
+  : null;
+
+const readJSON = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
+const cloud = { session: null, account: readJSON(ACCOUNT_KEY), step: 'email', email: '', busy: false, error: '' };
+
+const renderIfProfile = () => { if (route().view === 'profile') render(); };
+
+// Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline.
+async function refreshAccount() {
+  const uid = cloud.session?.user?.id;
+  if (!sb || !uid) return;
+  const { data, error } = await sb.from('accounts').select('email, kind, is_admin').eq('user_id', uid).maybeSingle();
+  if (error) return; // offline or transient: keep what we had
+  cloud.account = data ? { email: data.email, kind: data.kind, isAdmin: data.is_admin } : { none: true };
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(cloud.account));
+  renderIfProfile();
+}
+
+if (sb) {
+  sb.auth.getSession().then(({ data }) => {
+    cloud.session = data.session;
+    if (cloud.session) refreshAccount();
+    renderIfProfile();
+  });
+  sb.auth.onAuthStateChange((event, session) => {
+    cloud.session = session;
+    if (!session) {
+      cloud.account = null;
+      localStorage.removeItem(ACCOUNT_KEY);
+    }
+    // Supabase advises against calling it again from inside this callback.
+    if (event === 'SIGNED_IN') setTimeout(refreshAccount);
+    renderIfProfile();
+  });
+}
+
+function authMessage(error) {
+  const msg = `${error?.code || ''} ${error?.message || ''}`;
+  if (!navigator.onLine || error?.name === 'AuthRetryableFetchError' || error?.status === 0) return t('authOffline');
+  if (error?.status === 429 || /rate.?limit/i.test(msg)) return t('authRateLimit');
+  if (/otp_disabled|signup_disabled|user_not_found|signups not allowed/i.test(msg)) return t('authNoAccess');
+  if (/otp_expired|invalid|expired/i.test(msg)) return t('authBadCode');
+  return t('authFailed', { msg: esc(error?.message || error) });
+}
+
+async function cloudStep(fn) {
+  cloud.busy = true;
+  cloud.error = '';
+  renderIfProfile();
+  try {
+    await fn();
+  } catch (e) {
+    cloud.error = authMessage(e);
+  }
+  cloud.busy = false;
+  renderIfProfile();
+}
+
+const sendCode = (email) => cloudStep(async () => {
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  if (error) throw error;
+  Object.assign(cloud, { step: 'code', email });
+});
+
+const verifyCode = (token) => cloudStep(async () => {
+  const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
+  if (error) throw error;
+  Object.assign(cloud, { step: 'email', email: '' });
+  toast(t('signedIn'));
+});
+
+function accountSection() {
+  const head = `<h2>${t('account')}</h2>`;
+  if (!sb) return `${head}<p class="hint">${t('cloudUnavailable')}</p>`;
+  const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
+  const busy = cloud.busy ? 'disabled' : '';
+  if (cloud.session) {
+    const a = cloud.account;
+    const kind = a && !a.none ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')].filter(Boolean).join(' · ') : '';
+    return `${head}
+      <ul class="list settings">
+        <li class="item"><span class="grow"><strong>${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span>
+          <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></li>
+      </ul>
+      ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}${err}`;
+  }
+  if (cloud.step === 'code') {
+    return `${head}
+      <p class="hint">${t('codeSent', { email: `<b>${esc(cloud.email)}</b>` })}</p>
+      <form class="form" data-form="signin-code">
+        <label>${t('codeLabel')}<input name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10"></label>
+        <button class="btn primary" ${busy}>${t('signIn')}</button>
+      </form>
+      ${err}
+      <div class="row gap wrap signin-links">
+        <button class="btn small ghost" data-action="signin-back" ${busy}>${t('otherEmail')}</button>
+        <button class="btn small ghost" data-action="signin-resend" ${busy}>${t('resendCode')}</button>
+      </div>`;
+  }
+  return `${head}
+    <p class="hint">${t('accountHint')}</p>
+    <form class="form" data-form="signin-email">
+      <label>${t('email')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
+      <button class="btn primary" ${busy}>${t('sendCode')}</button>
+    </form>
+    ${err}`;
+}
+
 // ---------- Views: profile / settings ----------
 // App settings live here; add new sections as more settings appear.
 
@@ -849,6 +982,7 @@ function viewProfile() {
     `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`).join('')}</span>`;
   main.innerHTML = `
     ${bar(t('tabProfile'))}
+    ${accountSection()}
     <h2>${t('settings')}</h2>
     <ul class="list settings">
       <li class="item"><span class="grow">${t('language')}</span>
@@ -1634,6 +1768,13 @@ const actions = {
   },
   soon: ({ v }) => askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
+  'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
+  'signin-resend': () => sendCode(cloud.email),
+  'sign-out': async () => {
+    if (!(await askConfirm({ title: t('signOut'), message: t('signOutConfirm'), ok: t('signOut') }))) return;
+    await sb.auth.signOut({ scope: 'local' }); // local: works offline too
+  },
+
   theme: ({ v }) => {
     theme = v;
     localStorage.setItem(THEME_KEY, v);
@@ -1996,6 +2137,8 @@ document.addEventListener('submit', (e) => {
   if (!form) return;
   e.preventDefault();
   const data = new FormData(e.target);
+  if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
+  if (form === 'signin-code') return verifyCode(String(data.get('code')).replace(/\D/g, ''));
   if (form === 'game-info') {
     const g = currentGame();
     const tm = getTeam(data.get('teamId'));
