@@ -11,14 +11,19 @@ Database schema and security rules for cloud sync. The design is in
 - `tests/rls.test.sql`: pgTAP tests that act as anonymous, admin, director, coach, outsider
   and no-account users, and check what each can read and change.
 - `tests/local/`: runs the migration and the tests on a plain local Postgres, without Supabase.
+- `functions/admin/index.ts`: the `admin` Edge Function (Deno) used by the app's Admin page. It
+  checks that the caller is the admin and, with the service role, creates an account
+  (`create_account`: the auth user, if needed, and the `accounts` row) or removes one
+  (`delete_account`: deletes the auth user; the account and memberships go with it). How to
+  deploy it: step 9 of [`docs/supabase-setup.md`](../docs/supabase-setup.md).
 
 ## Who can do what
 
 There are two levels of access:
 
 1. **Accounts** (`accounts`): who may use the cloud at all. Only the admin manages them. Rows
-   are created with the service role (a future `admin` Edge Function that also creates the
-   auth user) or with SQL in the dashboard. `kind = 'director'` may create teams;
+   are created with the service role (the `admin` Edge Function, which also creates the auth
+   user) or with SQL in the dashboard. `kind = 'director'` may create teams;
    `kind = 'coach'` only sees the teams they were added to. `is_admin` can only be set with
    SQL or the service role. An admin sees every account, team and team member list (but not
    players or games of teams they aren't in), can change any account's `kind`, delete

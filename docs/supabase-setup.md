@@ -105,7 +105,8 @@ In **Authentication → URL Configuration**:
 
    It should say "1 row affected". If it says 0 rows, the user from step 1 doesn't exist (check
    **Authentication → Users**). This is the only time you need SQL: from then on you give
-   other people access from the app's Admin page.
+   other people access from the app's Admin page (once the `admin` function from step 9 is
+   deployed).
 
 You become a team's director automatically when you create or upload that team from the app.
 
@@ -121,3 +122,42 @@ Access is protected by the database's Row Level Security rules.
 
 **Never share or commit the `secret` / `service_role` key** or the database password. Those
 give full access and bypass all the rules.
+
+## 9. Deploy the `admin` Edge Function (for the app's Admin page)
+
+The app's Admin page gives people access and removes it through a small server function,
+`admin`, which runs inside Supabase with the service role key (Supabase provides that key to
+the function itself; you never copy it anywhere). Everything else on the Admin page goes
+straight to the database.
+
+**Before you give anyone else access**, make sure custom SMTP (step 3) works: the person signs
+in with a code sent by email, and the built-in sender may only email your own address.
+
+In the dashboard:
+
+1. Open **Edge Functions** → **Deploy a new function** → **Via Editor**.
+2. Name it exactly `admin` (the app calls it by that name).
+3. Delete the example code, paste the whole content of `supabase/functions/admin/index.ts` from
+   this repo, and click **Deploy function**.
+4. Leave **Verify JWT** (sometimes shown as "Enforce JWT verification" / "Verify JWT with legacy
+   secret", in the function's **Details** or settings) **on**, as it is by default. The app sends
+   your signed-in session (a JWT) with every call, so the check passes, and calls without a
+   session are rejected before the function runs. The function also checks the session itself
+   and that your account is the admin.
+   - If the Admin page says *"The admin function refused your sign-in (Invalid JWT)"* even
+     after signing out and in again, the project signs sessions with the newer JWT signing keys,
+     which that legacy check doesn't understand. Then turn **Verify JWT off** for this function
+     and save: it is still safe, because the function verifies the session and the admin flag on
+     its own.
+5. Test it: in the app, sign in with your admin account → **Profile → Account → Admin** →
+   **Give access** with a second email of yours (as a coach account). It should say the person
+   can now sign in; the email appears under **Accounts** (and in **Authentication → Users**).
+   Remove it again with ✕.
+
+If something fails, **Edge Functions → admin → Logs** shows the error.
+
+With the Supabase CLI instead: `supabase functions deploy admin` (from the repo root, after
+`supabase link`); add `--no-verify-jwt` only in the case described in point 4.
+
+Give access to people only from the Admin page. They then open the app, go to
+**Profile → Account**, type their email and the code they receive.
