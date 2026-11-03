@@ -137,6 +137,12 @@ branch is merged into `main` only once everything works end to end.
     button); paging by offset could skip a row if more than 1000 rows change during one pull;
     a coach's local edits of cloud teams are possible until step 6 makes them read-only (they
     are never sent and the cloud version comes back on the next sync).
+- Step 5 tested against the **real project** (browser with requests forwarded to Supabase,
+  two simulated phones, the maintainer's account): first-sign-in upload prompt; only the
+  chosen team uploaded, the user became its director; records clean after upload; second
+  phone downloaded it; rename and delete travelled phone 1 → cloud → phone 2; sign out removed
+  the synced team from the phone. Offline behaviour couldn't be simulated with that setup
+  (covered by the fake-server tests). Test data deleted afterwards.
 - Next (step 6): `admin` Edge Function + Admin page; team members list, directors add/remove
   coaches (`add_team_coach`), leave a team; read-only coach view for cloud teams where
   `db.sync.teams[id] === 'coach'` (hide/disable edit controls). New cloud teams: "+ New team"
