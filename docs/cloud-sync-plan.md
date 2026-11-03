@@ -17,8 +17,8 @@ branch is merged into `main` only once everything works end to end.
 | 3 | Database (tables, RLS, tests) + Supabase setup guide | ✅ merged | danimagb/fut-academy-stats#13 |
 | 4 | Sign-in (email code) | ✅ merged | danimagb/fut-academy-stats#14 |
 | 5 | Sync engine | ✅ merged | danimagb/fut-academy-stats#15 |
-| 6 | Directors, coaches and invites; read-only coach view | 🔄 in review | (this PR) |
-| 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ next | – |
+| 6 | Directors, coaches and invites; read-only coach view | ✅ merged | danimagb/fut-academy-stats#16 |
+| 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | 🔄 in review | (this PR) |
 
 **Where things stand (update this with every PR):**
 
@@ -181,10 +181,17 @@ branch is merged into `main` only once everything works end to end.
   `add_team_coach` returned `added` / `already_member` / `no_account`; the People section
   showed the coach. Test account and team deleted afterwards. Fixed on the way: long emails
   made People / Admin rows wider than the screen (grid items now `min-width: 0`).
-- Next (step 7): `keep-alive` GitHub Actions workflow (reads `ping`), privacy note in the app,
-  delete-cloud-data option, README (cloud sync, accounts, Admin page), deploy the `admin`
-  function and test the whole flow on two real phones (give access → sign in → director adds a
-  coach → coach sees it read-only), then merge `feature/cloud-sync` into `main`.
+- Done in step 7:
+  - `.github/workflows/keep-alive.yml`: reads `ping` every 2 days (and on demand); a failed
+    run makes GitHub email the owner. Scheduled workflows only run from the default branch,
+    so it starts once this is merged into `main`.
+  - Profile → Account → "How your data is handled": what is stored, where, who sees it, how
+    to delete (EN + PT). Backup hint updated for synced teams.
+  - README "Cloud sync (optional)" section and file list; CLAUDE.md points to this plan.
+- Remaining: test on two real phones after merging `feature/cloud-sync` into `main` (GitHub
+  Pages serves `main` only). Possible follow-ups: shared live logging on two phones (events as
+  rows), Google/Apple sign-in, a read-only viewer role for parents.
+
 - Supabase project: created by the maintainer (EU region), migration applied, admin account
   set up (user `danielmagalhaes4@gmail.com`), sign-ups off (verified), custom SMTP through a dedicated Gmail account (app password).
   Project URL: `https://qttfytuptdrovwnedofy.supabase.co`.
