@@ -17,6 +17,7 @@
   --win: #3ddc84;
   --loss: #ff6b6b;
   --draw: #9a9fa8;
+  --cloud: #6cb4ff;
   --radius: 14px;
   color-scheme: dark;
 }
@@ -41,6 +42,7 @@
   --win: #0f8a45;
   --loss: #c62828;
   --draw: #6b727c;
+  --cloud: #1559b0;
   color-scheme: light;
 }
 
@@ -116,6 +118,7 @@ form.add-player { display: grid; gap: 8px; margin: 10px 0; }
 
 /* Lists */
 .list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
+.list > *, .admin-team .members li { min-width: 0; } /* grid items: let long text (emails) shrink and ellipsize */
 .card, .item {
   display: flex; align-items: center; gap: 10px;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
@@ -129,6 +132,7 @@ form.add-player { display: grid; gap: 8px; margin: 10px 0; }
 .badge { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
 .badge.live { background: var(--accent); color: var(--accent-ink); }
 .badge.break { background: var(--warn); color: #2b1a00; }
+.badge.cloud { color: var(--cloud); background: color-mix(in srgb, var(--cloud) 15%, transparent); white-space: nowrap; }
 
 .shirt {
   flex: none; display: inline-grid; place-items: center;
@@ -440,3 +444,39 @@ label.inline input { width: 90px; min-height: 40px; }
 .score .us { color: var(--win); }
 .score .them { color: var(--loss); }
 .badge.result { font-weight: 700; color: var(--res); background: color-mix(in srgb, var(--res) 15%, transparent); }
+.signin-links { margin-top: 10px; }
+
+/* Cloud sync: team kind, upload */
+.team-kind { margin: -4px 0 10px; }
+.upload-team { margin-top: 12px; }
+.upload-team .hint { margin-top: 6px; }
+.check-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.check, .form .check {
+  display: flex; font-size: 1rem; color: var(--text); align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+}
+.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); flex: none; }
+.check .sub-line { display: block; }
+
+/* Team access: read-only coach view, People, Admin page (existing colour tokens only) */
+.badge.ro { flex: none; white-space: nowrap; background: transparent; border: 1px solid var(--line); color: var(--muted); font-weight: 600; }
+.badge.warn { color: var(--warn); background: var(--alert-bg); white-space: nowrap; }
+.ro-field { display: grid; gap: 2px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.ro-field div { font-weight: 600; min-height: 1.4em; }
+.pitch-corner.ro { cursor: default; }
+.people .item, .admin-accounts .item { min-height: 56px; }
+.email { overflow-wrap: anywhere; }
+.admin-accounts .item { row-gap: 6px; justify-content: flex-end; }
+.admin-accounts .item > .grow { flex-basis: 100%; }
+.admin-team .members .email, .people .email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; overflow-wrap: normal; }
+.people-section > .btn { margin-top: 4px; }
+.add-coach { margin-top: 12px; }
+select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; flex: none; }
+.admin-team { display: grid; gap: 8px; align-items: stretch; }
+.admin-team .members { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.admin-team .members li { padding: 6px 0; border-top: 1px solid var(--line); }
+.admin-team .add-member { margin: 4px 0 0; }
+.admin-team .add-member select.grow { min-height: 36px; font-size: .9rem; padding: 0 8px; }
+.admin-team .members select { width: auto; flex: none; min-height: 36px; font-size: .9rem; padding: 0 8px; }
+.link-btn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+.privacy p { margin: 0 0 10px; font-size: .92rem; }

@@ -1,0 +1,30 @@
+# Keeps the Supabase free-tier project from pausing (it pauses after ~1 week without activity)
+# by making a small read request every 2 days. If the request fails (project paused or down),
+# the run fails and GitHub emails the repository owner. Can also be run by hand:
+# Actions -> Supabase keep-alive -> Run workflow.
+#
+# The URL and key are the app's public ones (same as config.js); they only allow reading the
+# one-row `ping` table without signing in.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '37 5 */2 * *' # 05:37 UTC every 2nd day
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read the ping table
+        env:
+          SUPABASE_URL: https://qttfytuptdrovwnedofy.supabase.co
+          SUPABASE_KEY: sb_publishable_8HYlDeJvPGgzaE_FA9CmqQ_uCw-G0Q5
+        run: |
+          curl --fail-with-body -sS --retry 3 --retry-delay 20 --max-time 30 \
+            "$SUPABASE_URL/rest/v1/ping?select=id" \
+            -H "apikey: $SUPABASE_KEY"
+          echo
