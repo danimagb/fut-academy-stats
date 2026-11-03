@@ -16,9 +16,9 @@ branch is merged into `main` only once everything works end to end.
 | 2 | Local data groundwork | ✅ merged | danimagb/fut-academy-stats#12 |
 | 3 | Database (tables, RLS, tests) + Supabase setup guide | ✅ merged | danimagb/fut-academy-stats#13 |
 | 4 | Sign-in (email code) | ✅ merged | danimagb/fut-academy-stats#14 |
-| 5 | Sync engine | 🔄 in review | (this PR) |
-| 6 | Directors, coaches and invites; read-only coach view | ⏳ next | – |
-| 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ | – |
+| 5 | Sync engine | ✅ merged | danimagb/fut-academy-stats#15 |
+| 6 | Directors, coaches and invites; read-only coach view | 🔄 in review | (this PR) |
+| 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ next | – |
 
 **Where things stand (update this with every PR):**
 
@@ -47,8 +47,8 @@ branch is merged into `main` only once everything works end to end.
     RLS refuses affect 0 rows silently.
   - When pulling `updated_at > last_sync`, keep a few seconds of overlap (a long transaction
     can commit a row with an older `updated_at`).
-  - A team's creator becomes its director automatically (trigger). Members are added only by
-    the service role (dashboard or the step 6 Edge Function). The last director of a team
+  - A team's creator becomes its director automatically (trigger). Members are added by
+    directors (coaches only, via `add_team_coach`) and by the admin (directly). The last director of a team
     can't be removed, demoted or leave.
   - Accounts model (admin / director / coach accounts, directors adding coaches by email)
     added in this PR too: see "Authentication, accounts and team access".
@@ -134,20 +134,50 @@ branch is merged into `main` only once everything works end to end.
   - Known limitations: last write wins per record, so a live game logged on two phones at
     once overwrites itself (no warning yet); a director removed from a team loses changes not
     uploaded yet; the first-sign-in upload prompt is shown once (later: the team screen
-    button); paging by offset could skip a row if more than 1000 rows change during one pull;
-    a coach's local edits of cloud teams are possible until step 6 makes them read-only (they
-    are never sent and the cloud version comes back on the next sync).
+    button); paging by offset could skip a row if more than 1000 rows change during one pull.
+    (A coach's local edits of cloud teams were possible too; step 6 made those teams read-only.)
 - Step 5 tested against the **real project** (browser with requests forwarded to Supabase,
   two simulated phones, the maintainer's account): first-sign-in upload prompt; only the
   chosen team uploaded, the user became its director; records clean after upload; second
   phone downloaded it; rename and delete travelled phone 1 → cloud → phone 2; sign out removed
   the synced team from the phone. Offline behaviour couldn't be simulated with that setup
   (covered by the fake-server tests). Test data deleted afterwards.
-- Next (step 6): `admin` Edge Function + Admin page; team members list, directors add/remove
-  coaches (`add_team_coach`), leave a team; read-only coach view for cloud teams where
-  `db.sync.teams[id] === 'coach'` (hide/disable edit controls). New cloud teams: "+ New team"
-  still creates a local team; a director can upload it (decide in step 6 whether new teams of
-  a signed-in director should be cloud teams by default).
+- Done in step 6 (accounts and team access; no schema change):
+  - `supabase/functions/admin/index.ts` (Deno Edge Function, service role): checks the caller's
+    JWT (`auth.getUser`) and `accounts.is_admin`, then `create_account { email, kind }` (reuses
+    an existing auth user or creates one with `email_confirm`, inserts the `accounts` row; 409
+    `exists`; no email sent) and `delete_account { user_id }` (deletes the auth user;
+    memberships cascade; not yourself, not another admin). Errors are `{ error, message }`.
+    Deployment: step 9 of `docs/supabase-setup.md`. Type-checked, linted and unit-tested with
+    Deno against a mocked Supabase; **not yet deployed to the real project**.
+  - Admin page `#/admin` (Profile → Account → "Admin", only when `isAdmin`): give access (the
+    function), list accounts, change kind, remove access; all cloud teams with their members:
+    add (any account, any role), change role, remove. Everything except the function goes
+    straight through RLS. Online only ("Needs internet"), nothing cached.
+  - Team screen of a cloud team → "People": members with roles (loaded online); directors add
+    coaches by email (`add_team_coach`: added / already member / "doesn't have access yet") and
+    remove coaches; anyone can leave (then `syncNow()` removes the team from the phone). The
+    last-director error (23514) shows as "A team must keep at least one director".
+  - Read-only coach view (`readOnlyTeam(id)` / `readOnlyGame(g)`, role `coach`): team, game and
+    report screens hide every edit control and show a "Read-only" pill; tapping a player shows
+    an info sheet. A central guard in the click / submit / input handlers and at drag start
+    refuses anything on a read-only screen that isn't in `READ_ONLY_OK` / `READ_ONLY_FORMS`
+    (navigation, settings, account, sync, PDF, player info, People, new team), with a toast.
+    New games (and moving a game to another team) only offer teams that aren't read-only;
+    reminders and the auto-stop don't run for read-only games (the director's phone does).
+  - "+ New team" while signed in with a director (or admin) account creates a cloud team
+    (`uploadTeams`), with a note on its screen; signed out or with a coach account it's local.
+  - Fixed a step 5 bug: editing a cloud team's own record (e.g. renaming it) left a `moved`
+    tombstone that soft-deleted the team in the cloud (`trackChanges` compared `r.teamId`,
+    which team records don't have).
+  - Tested with Playwright against the fake Supabase (now with the admin function, the RPC and
+    member insert/update/delete with RLS and the last-director trigger): the 19 step 5 tests
+    plus 13 step 6 tests (admin, director and coach phones). Not yet tried against the real
+    project.
+- Next (step 7): `keep-alive` GitHub Actions workflow (reads `ping`), privacy note in the app,
+  delete-cloud-data option, README (cloud sync, accounts, Admin page), deploy the `admin`
+  function and test the whole flow on two real phones (give access → sign in → director adds a
+  coach → coach sees it read-only), then merge `feature/cloud-sync` into `main`.
 - Supabase project: created by the maintainer (EU region), migration applied, admin account
   set up (user `danielmagalhaes4@gmail.com`), sign-ups off (verified), custom SMTP through a dedicated Gmail account (app password).
   Project URL: `https://qttfytuptdrovwnedofy.supabase.co`.

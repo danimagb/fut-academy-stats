@@ -121,6 +121,32 @@ const I18N = {
     pdfTitle: 'Stats sheet', pdfSeason: 'Season', pdfGame: 'GAME:', pdfRound: 'ROUND:', pdfDate: 'DATE:',
     pdfNo: 'No.', pdfPlayer: 'Player', pdfShirt: 'Shirt', pdfStints: 'ON – OFF', pdfMinutes: 'MINUTES',
     pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarter: 'STARTER', pdfSub: 'SUB', fileRound: 'Round', fileStats: 'Stats',
+    readOnly: 'Read-only', readOnlyToast: 'Read-only: you\'re a coach on this team',
+    readOnlyHint: 'You\'re a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.',
+    newGameCoachOnly: 'You\'re a coach on these teams, so only their directors create games. To log games of your own, create a team on this phone.',
+    newTeamCloud: 'Saved to the cloud, as you\'re signed in with a director account. You can add coaches under People.',
+    people: 'People', loading: 'Loading…', needsInternet: 'Needs internet. Try again when you have signal.', tryAgain: 'Try again',
+    roleDirector: 'Director', roleCoach: 'Coach', you: 'you', peopleSignIn: 'Sign in to see who has access to this team.',
+    addCoach: 'Add coach', addCoachEmail: 'Add a coach by email',
+    addCoachHint: 'Only people the admin has given access. Coaches see the team, its games and reports, but can\'t change anything.',
+    coachAdded: '{email} was added as a coach.', coachAlready: '{email} is already in this team.',
+    coachNoAccount: 'This person doesn\'t have access yet. Ask the admin.',
+    notAllowed: 'You\'re not allowed to do that.', actionFailed: 'Couldn\'t do that ({msg}).',
+    removeFromTeam: 'Remove from team', removeMemberConfirm: 'Remove {email} from this team? The team disappears from their phone on its next sync.',
+    removed: 'Removed', leaveTeam: 'Leave team', leftTeam: 'You left the team',
+    leaveTeamConfirm: 'Leave this team? It disappears from this phone, and a director has to add you again to see it.',
+    lastDirector: 'A team must keep at least one director.',
+    admin: 'Admin', adminHint: 'Give people access, manage accounts and cloud teams.', adminOnly: 'Only the admin can open this page.',
+    giveAccess: 'Give access', accountKind: 'Account type',
+    giveAccessHint: 'Creates an account for this email. No email is sent: the person then signs in in the app (Profile → Account) with their email and a code. Email sending (SMTP) must be set up for the code to arrive.',
+    accessGivenTitle: 'Access given', accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
+    errExists: 'This email already has access.', errEmail: 'Check the email address.', errNotAdmin: 'Only the admin can do this.',
+    errSession: 'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
+    errSelf: 'You can\'t do that to your own account.', errIsAdmin: 'Admins can only be removed in the Supabase dashboard.',
+    accounts: 'Accounts', kindChanged: 'Account type changed', removeAccess: 'Remove access', accessRemoved: 'Access removed',
+    removeAccessConfirm: 'Remove access for {email}? They can\'t sign in any more and leave all their teams. Teams, players and games stay.',
+    cloudTeams: 'Teams in the cloud', noCloudTeams: 'No teams in the cloud yet.', noMembers: 'No members.', noDirector: 'No director',
+    addMember: 'Add', pickAccount: 'Choose an account…', roleChanged: 'Role changed', memberAdded: 'Added', teamsN: '{n} teams', teamsN1: '1 team',
   },
   pt: {
     newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
@@ -208,6 +234,32 @@ const I18N = {
     pdfTitle: 'Folha de estatísticas', pdfSeason: 'Época', pdfGame: 'JOGO:', pdfRound: 'JORNADA:', pdfDate: 'DATA:',
     pdfNo: 'Nº', pdfPlayer: 'Atleta', pdfShirt: 'Cam.', pdfStints: 'ENTRADA – SAÍDA', pdfMinutes: 'MINUTOS',
     pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarter: 'TITULAR', pdfSub: 'SUPLENTE', fileRound: 'Jornada', fileStats: 'Estatisticas',
+    readOnly: 'Só leitura', readOnlyToast: 'Só leitura: és treinador nesta equipa',
+    readOnlyHint: 'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
+    newGameCoachOnly: 'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa neste telemóvel.',
+    newTeamCloud: 'Guardada na nuvem, porque entraste com uma conta de diretor. Podes adicionar treinadores em Pessoas.',
+    people: 'Pessoas', loading: 'A carregar…', needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.', tryAgain: 'Tentar outra vez',
+    roleDirector: 'Diretor', roleCoach: 'Treinador', you: 'tu', peopleSignIn: 'Entra na tua conta para ver quem tem acesso a esta equipa.',
+    addCoach: 'Adicionar treinador', addCoachEmail: 'Adicionar um treinador por email',
+    addCoachHint: 'Só pessoas a quem o administrador deu acesso. Os treinadores veem a equipa, os jogos e os relatórios, mas não podem alterar nada.',
+    coachAdded: '{email} foi adicionado como treinador.', coachAlready: '{email} já está nesta equipa.',
+    coachNoAccount: 'Esta pessoa ainda não tem acesso. Fala com o administrador.',
+    notAllowed: 'Não tens permissão para fazer isso.', actionFailed: 'Não foi possível ({msg}).',
+    removeFromTeam: 'Remover da equipa', removeMemberConfirm: 'Remover {email} desta equipa? A equipa sai do telemóvel dessa pessoa na próxima sincronização.',
+    removed: 'Removido', leaveTeam: 'Sair da equipa', leftTeam: 'Saíste da equipa',
+    leaveTeamConfirm: 'Sair desta equipa? Ela sai deste telemóvel e só a voltas a ver se um diretor te adicionar outra vez.',
+    lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
+    admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas na nuvem.', adminOnly: 'Só o administrador pode abrir esta página.',
+    giveAccess: 'Dar acesso', accountKind: 'Tipo de conta',
+    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa entra depois na app (Perfil → Conta) com o seu email e um código. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
+    accessGivenTitle: 'Acesso dado', accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
+    errExists: 'Este email já tem acesso.', errEmail: 'Verifica o endereço de email.', errNotAdmin: 'Só o administrador pode fazer isto.',
+    errSession: 'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
+    errSelf: 'Não podes fazer isso à tua própria conta.', errIsAdmin: 'Os administradores só podem ser removidos no painel do Supabase.',
+    accounts: 'Contas', kindChanged: 'Tipo de conta alterado', removeAccess: 'Retirar acesso', accessRemoved: 'Acesso retirado',
+    removeAccessConfirm: 'Retirar o acesso a {email}? Deixa de poder entrar e sai de todas as equipas. As equipas, jogadores e jogos ficam.',
+    cloudTeams: 'Equipas na nuvem', noCloudTeams: 'Ainda não há equipas na nuvem.', noMembers: 'Sem membros.', noDirector: 'Sem diretor',
+    addMember: 'Adicionar', pickAccount: 'Escolhe uma conta…', roleChanged: 'Função alterada', memberAdded: 'Adicionado', teamsN: '{n} equipas', teamsN1: '1 equipa',
   },
 };
 
@@ -334,8 +386,10 @@ function trackChanges(now = Date.now()) {
       Object.assign(r, { updatedAt: now, dirty: true });
       // Moved from a cloud team to a team on this phone (a game's team was changed): delete it
       // from the cloud team. `moved` tombstones stay while the record is still local.
+      // (teamIdOf, not r.teamId: a team record is its own team, so editing one never "moves" it.)
       const oldTeam = prev ? savedTeamId(kind, r.id, prev) : null;
-      if (oldTeam && oldTeam !== r.teamId && isCloudTeam(oldTeam) && !isCloudTeam(r.teamId)) {
+      const newTeam = teamIdOf(kind, r);
+      if (oldTeam && oldTeam !== newTeam && isCloudTeam(oldTeam) && !isCloudTeam(newTeam)) {
         gone.push({ kind, id: r.id, teamId: oldTeam, deletedAt: now, moved: true });
       }
     }
@@ -346,7 +400,7 @@ function trackChanges(now = Date.now()) {
     // A record that is back (e.g. restored from a backup) is no longer deleted.
     const recs = new Map(db[kind].map((r) => [r.id, r]));
     db.deleted = db.deleted.filter((d) => d.kind !== kind || !recs.has(d.id)
-      || (d.moved && !isCloudTeam(recs.get(d.id).teamId)));
+      || (d.moved && !isCloudTeam(teamIdOf(kind, recs.get(d.id)))));
     db.deleted.push(...gone);
   }
   saved = next;
@@ -801,7 +855,7 @@ function render() {
   const { view, id } = route();
   const views = {
     games: viewGames, teams: viewTeams, players: viewTeams, team: viewTeam,
-    new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport, profile: viewProfile,
+    new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport, profile: viewProfile, admin: viewAdmin,
   };
   (views[view] || viewGames)(id);
   renderTabbar(view);
@@ -818,7 +872,7 @@ const TAB_ICONS = {
 };
 
 function renderTabbar(view) {
-  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : view === 'profile' ? 'profile' : 'matches';
+  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['profile', 'admin'].includes(view) ? 'profile' : 'matches';
   const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
   const tab = (k, label, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
@@ -831,13 +885,15 @@ function renderTabbar(view) {
 
 window.addEventListener('hashchange', () => {
   draft = null;
+  Object.assign(remote, { people: null, admin: null }); // online screens load again when opened
   render();
   window.scrollTo(0, 0);
 });
 
-// `menu` is optional HTML for the items of a ⋯ menu shown on the right of the bar.
-function bar(title, back, menu = '') {
-  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1>${menu ? `
+// `menu` is optional HTML for the items of a ⋯ menu shown on the right of the bar; `extra` is
+// shown right after the title (e.g. the "Read-only" pill).
+function bar(title, back, menu = '', extra = '') {
+  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1>${extra}${menu ? `
     <div class="menu">
       <button class="menu-btn" data-action="menu-toggle" aria-label="${t('menu')}" aria-haspopup="true" aria-expanded="false">⋯</button>
       <div class="menu-list" role="menu" hidden>${menu}</div>
@@ -936,7 +992,7 @@ const sb = window.supabase?.createClient && CLOUD.supabaseUrl
 const readJSON = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
 const cloud = { session: null, account: readJSON(ACCOUNT_KEY), step: 'email', email: '', busy: false, error: '' };
 
-const renderIfProfile = () => { if (route().view === 'profile') render(); };
+const renderIfProfile = () => { if (['profile', 'admin'].includes(route().view)) render(); };
 
 // Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline.
 async function refreshAccount() {
@@ -1020,6 +1076,8 @@ function accountSection() {
           <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></li>
         ${canSync() ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
           <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>` : ''}
+        ${a?.isAdmin ? `<li class="item"><span class="grow muted small">${t('adminHint')}</span>
+          <a class="btn small" href="#/admin" data-admin-link>${t('admin')}</a></li>` : ''}
       </ul>
       ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}${err}`;
   }
@@ -1186,6 +1244,9 @@ async function syncOnce() {
     if (epoch === syncEpoch) saveQuiet();
     showSyncStatus();
   }
+  // The team screen was waiting for its upload to show People.
+  const ppl = remote.people;
+  if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId)) loadPeople(ppl.teamId);
   if (offerUploadAfterSync && syncState.status === 'ok') {
     offerUploadAfterSync = false;
     if (canUpload() && localTeams().length) offerUpload();
@@ -1455,6 +1516,298 @@ setInterval(() => {
   showSyncStatus();
 }, 60000);
 
+// ---------- Team access: read-only coach view ----------
+// In a cloud team where this user's role is 'coach' everything is read-only: the views hide the
+// edit controls, and the click / submit / input handlers and dragging refuse anything that would
+// change data (the database refuses those writes anyway). Teams on this phone are never
+// read-only.
+
+const readOnlyTeam = (teamId) => roleOf(teamId) === 'coach';
+const readOnlyGame = (g) => !!g && readOnlyTeam(g.teamId);
+// Teams this user may create games in / move games to.
+const writableTeams = () => db.teams.filter((tm) => !readOnlyTeam(tm.id));
+
+// Is the screen being shown (and its sheets) about a read-only team or game?
+function viewReadOnly() {
+  const { view, id } = route();
+  if (view === 'team') return readOnlyTeam(id);
+  if (view === 'game' || view === 'report' || view === 'edit') return readOnlyGame(getGame(id));
+  if (view === 'new') return !!draft && readOnlyTeam(draft.teamId);
+  return false;
+}
+
+// Actions allowed on a read-only screen. Everything else is refused there: delete-team,
+// edit-player, delete-player, upload-team, remove-coach, sel, set-gk, set-home, save-game,
+// kickoff, resume, end-period, next-period, do-sub, goal, yellow, red, make-gk, formation,
+// set-formation, opp-goal, fix-open, fix-end, fix-started, fix-apply, edit-goal, set-scorer,
+// delete-goal, undo-toast, undo, edit-info, delete-game (and any action added later, until it is
+// listed here). The admin-* actions are only on the Admin page, which is never read-only.
+const READ_ONLY_OK = new Set([
+  'close-sheet', 'menu-toggle', 'games-team', 'soon', // navigation
+  'theme', 'lang', 'backup', // settings
+  'signin-back', 'signin-resend', 'sign-out', 'sync-now', // account and sync
+  'pdf', // share the report
+  'player', // opens a read-only info sheet for coaches (see actions.player)
+  'people-reload', 'leave-team', // People section (anyone may leave a team)
+  'new-team', // creates a team of their own
+]);
+// Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
+const READ_ONLY_FORMS = new Set(['signin-email', 'signin-code', 'upload-teams']);
+
+const refuseReadOnly = () => toast(t('readOnlyToast'));
+const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
+
+// Tap on a player in a read-only game: who it is and how they're doing, no actions.
+function openPlayerInfo(g, id) {
+  const d = derive(g);
+  const s = d.stats[id];
+  const bits = [s.goals && `⚽ ${s.goals}`, s.yellow && `🟨 ${s.yellow}`, s.red && `🟥 ${s.red}`].filter(Boolean).join(' · ');
+  openSheet(`
+    <div class="sheet-head">
+      <h3>${esc(pname(g, id))}${id === d.gk ? gkTag() : ''}</h3>
+      <span class="muted small">${d.on.has(id) ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(s.played) })}</span>
+    </div>
+    ${bits ? `<p>${bits}</p>` : ''}
+    <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
+    <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
+}
+
+// ---------- Team access: people of a team, admin page (online only) ----------
+// These screens read and change team_members / accounts directly (RLS decides what is allowed)
+// and the `admin` Edge Function for creating and removing accounts. Nothing is cached on the
+// phone: offline they show "Needs internet".
+
+const remote = { people: null, admin: null }; // reset when the route changes
+
+// Run a supabase-js query; throw its error (with HTTP status) instead of returning it.
+async function q(query) {
+  const { data, error, status } = await query;
+  if (error) throw new SyncError(error, status);
+  return data;
+}
+
+function accessError(e) {
+  if (isOffline(e)) return t('needsInternet');
+  if (e.code === '23514' || /at least one director/i.test(e.message)) return t('lastDirector');
+  if (e.code === '42501') return t('notAllowed');
+  return t('actionFailed', { msg: esc(e.message) });
+}
+
+const roleLabel = (role) => t(role === 'director' ? 'roleDirector' : 'roleCoach');
+const kindLabel = (kind) => t(kind === 'director' ? 'acctDirector' : 'acctCoach');
+const myId = () => cloud.session?.user?.id;
+
+const OFFLINE = Object.assign(new Error('offline'), { status: 0 });
+
+// Members of a team with their emails (teammates' accounts are visible through RLS).
+async function fetchMembers(teamIds) {
+  if (!navigator.onLine) throw OFFLINE; // don't wait for the request to time out
+  const rows = await q(sb.from('team_members').select('team_id, user_id, role').in('team_id', teamIds));
+  const ids = [...new Set(rows.map((r) => r.user_id))];
+  const accts = ids.length ? await q(sb.from('accounts').select('user_id, email').in('user_id', ids)) : [];
+  const email = new Map(accts.map((a) => [a.user_id, a.email]));
+  return rows.map((r) => ({ ...r, email: email.get(r.user_id) || '?' }))
+    .sort((a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email));
+}
+
+async function loadPeople(teamId) {
+  const prev = remote.people;
+  const st = { teamId, status: 'loading', members: [], msg: prev?.teamId === teamId ? prev.msg : null };
+  remote.people = st;
+  showPeople();
+  try {
+    st.members = await fetchMembers([teamId]);
+    st.status = 'ok';
+  } catch (e) {
+    st.status = isOffline(e) ? 'offline' : 'error';
+    console.warn('People: load failed', e);
+  }
+  if (remote.people === st) showPeople();
+}
+
+// People section of a cloud team's screen (filled in place, so it never disturbs typing).
+function peopleHtml(teamId) {
+  const st = remote.people?.teamId === teamId ? remote.people : null;
+  if (!canSync()) return `<p class="hint">${t('peopleSignIn')}</p>`;
+  if (!st || st.status === 'loading') return `<p class="hint">${t('loading')}</p>`;
+  if (st.status === 'uploading') return `<p class="hint">${t('uploading')}</p>`;
+  if (st.status !== 'ok') {
+    return `<p class="hint warn">${t('needsInternet')}</p>
+      <button class="btn small ghost" data-action="people-reload">${t('tryAgain')}</button>`;
+  }
+  const me = myId();
+  const director = roleOf(teamId) === 'director';
+  const msg = st.msg ? `<p class="hint ${st.msg.ok ? 'ok' : 'warn'}" role="status">${st.msg.text}</p>` : '';
+  return `
+    <ul class="list people">${st.members.map((m) => `
+      <li class="item">
+        <span class="grow"><span class="email">${esc(m.email)}</span>${m.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}</span>
+        <span class="badge ${m.role === 'director' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
+        ${director && m.role === 'coach' && m.user_id !== me
+          ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>` : ''}
+      </li>`).join('')}</ul>
+    ${director ? `<form class="form add-coach" data-form="add-coach">
+      <label>${t('addCoachEmail')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
+      <button class="btn">${t('addCoach')}</button>
+    </form>
+    <p class="hint">${t('addCoachHint')}</p>` : ''}
+    ${msg}
+    <button class="btn ghost danger small" data-action="leave-team">${t('leaveTeam')}</button>`;
+}
+
+function showPeople() {
+  const el = document.getElementById('people');
+  if (el && remote.people && route().view === 'team' && route().id === remote.people.teamId) el.innerHTML = peopleHtml(remote.people.teamId);
+}
+
+function setPeopleMsg(text, ok) {
+  if (remote.people) remote.people.msg = { text, ok };
+  showPeople();
+}
+
+async function addCoach(teamId, email) {
+  try {
+    const r = await q(sb.rpc('add_team_coach', { _team_id: teamId, _email: email }));
+    const e = `<b>${esc(email)}</b>`;
+    if (r === 'added') setPeopleMsg(t('coachAdded', { email: e }), true);
+    else if (r === 'already_member') setPeopleMsg(t('coachAlready', { email: e }), true);
+    else setPeopleMsg(t('coachNoAccount'), false);
+  } catch (e) {
+    return setPeopleMsg(accessError(e), false);
+  }
+  loadPeople(teamId);
+}
+
+// Delete a membership; RLS skips rows it doesn't allow silently, so check something was deleted.
+async function deleteMember(teamId, userId) {
+  const rows = await q(sb.from('team_members').delete().eq('team_id', teamId).eq('user_id', userId).select('user_id'));
+  if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
+}
+
+// ---------- Admin page ----------
+
+// Call the `admin` Edge Function. Errors come back as { error: code, message } with a status.
+async function adminCall(body) {
+  const { data, error } = await sb.functions.invoke('admin', { body });
+  if (!error) return data;
+  const err = new Error(error.message);
+  err.status = error.name === 'FunctionsFetchError' ? 0 : error.context?.status;
+  try {
+    const j = await error.context.json();
+    Object.assign(err, { code: j.error || j.code, message: j.message || j.msg || error.message });
+  } catch {}
+  throw err;
+}
+
+function adminError(e) {
+  if (isOffline(e)) return t('needsInternet');
+  if (e.code === 'exists') return t('errExists');
+  if (e.code === 'invalid_email') return t('errEmail');
+  if (e.code === 'not_admin') return t('errNotAdmin');
+  if (e.code === 'self') return t('errSelf');
+  if (e.code === 'is_admin') return t('errIsAdmin');
+  if (e.status === 401) return t('errSession', { msg: esc(e.message) });
+  return accessError(e);
+}
+
+async function loadAdmin() {
+  const st = { status: 'loading', accounts: [], teams: [], members: [] };
+  remote.admin = st;
+  try {
+    if (!navigator.onLine) throw OFFLINE;
+    const [accounts, teams] = await Promise.all([
+      q(sb.from('accounts').select('user_id, email, kind, is_admin').order('email')),
+      q(sb.from('teams').select('id, club, name').is('deleted_at', null).order('name')),
+    ]);
+    const members = await q(sb.from('team_members').select('team_id, user_id, role'));
+    Object.assign(st, { accounts, teams, members, status: 'ok' });
+  } catch (e) {
+    st.status = isOffline(e) ? 'offline' : 'error';
+    console.warn('Admin: load failed', e);
+  }
+  if (remote.admin === st && route().view === 'admin') renderSoon();
+}
+
+// An admin change: run it, say how it went, reload the page's data. Membership changes may be
+// about this user's own teams, so sync too.
+async function adminDo(fn, okText, sync = false) {
+  try {
+    await fn();
+    if (okText) toast(okText);
+  } catch (e) {
+    notify(adminError(e));
+  }
+  await loadAdmin();
+  if (sync) syncNow();
+}
+
+function viewAdmin() {
+  const head = bar(t('admin'), '#/profile');
+  if (!sb || !cloud.account?.isAdmin) {
+    main.innerHTML = `${head}<p class="empty">${t('adminOnly')}</p>`;
+    return;
+  }
+  const st = remote.admin;
+  const me = myId();
+  const give = `
+    <h2>${t('giveAccess')}</h2>
+    <form class="form" data-form="admin-create">
+      <label>${t('email')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
+      <label>${t('accountKind')}<select name="kind">
+        <option value="director">${t('acctDirector')}</option>
+        <option value="coach" selected>${t('acctCoach')}</option>
+      </select></label>
+      <button class="btn primary">${t('giveAccess')}</button>
+    </form>
+    <p class="hint">${t('giveAccessHint')}</p>`;
+  let body;
+  if (!st || st.status === 'loading') body = `<p class="hint">${t('loading')}</p>`;
+  else if (st.status !== 'ok') body = `<p class="hint warn">${t('needsInternet')}</p><button class="btn small ghost" data-action="admin-reload">${t('tryAgain')}</button>`;
+  else {
+    const email = new Map(st.accounts.map((a) => [a.user_id, a.email]));
+    const teamsOf = (uid) => st.members.filter((m) => m.user_id === uid).length;
+    const kindSelect = (a) => `<select class="mini" data-change="admin-kind" data-id="${esc(a.user_id)}" aria-label="${t('accountKind')}">
+      ${['director', 'coach'].map((k) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('')}</select>`;
+    const accounts = `
+      <h2>${t('accounts')} <span class="muted small">${st.accounts.length}</span></h2>
+      <ul class="list admin-accounts">${st.accounts.map((a) => `
+        <li class="item wrap">
+          <span class="grow"><span class="email">${esc(a.email)}</span>${a.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}
+            <div class="muted small">${a.is_admin ? `${t('acctAdmin')} · ` : ''}${plural('teamsN', teamsOf(a.user_id))}</div></span>
+          ${a.user_id === me || a.is_admin ? `<span class="muted small">${kindLabel(a.kind)}</span>` : `${kindSelect(a)}
+          <button class="btn small ghost danger" data-action="admin-remove-account" data-id="${esc(a.user_id)}" aria-label="${t('removeAccess')}">✕</button>`}
+        </li>`).join('')}</ul>`;
+    const roleSelect = (m) => `<select class="mini" data-change="admin-role" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
+      ${['director', 'coach'].map((r) => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}</select>`;
+    const teams = st.teams.map((tm) => {
+      const ms = st.members.filter((m) => m.team_id === tm.id)
+        .map((m) => ({ ...m, email: email.get(m.user_id) || '?' }))
+        .sort((a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email));
+      const others = st.accounts.filter((a) => !ms.some((m) => m.user_id === a.user_id));
+      return `<li class="card admin-team">
+        <div class="row gap"><strong class="grow">${esc(teamLabel(tm))}${tm.club && tm.name ? ` <span class="muted small">· ${esc(tm.club)}</span>` : ''}</strong>
+          ${ms.some((m) => m.role === 'director') ? '' : `<span class="badge warn">${t('noDirector')}</span>`}</div>
+        ${ms.length ? `<ul class="members">${ms.map((m) => `
+          <li class="row gap"><span class="grow email">${esc(m.email)}</span>${roleSelect(m)}
+            <button class="btn small ghost danger" data-action="admin-remove-member" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button></li>`).join('')}</ul>`
+          : `<p class="muted small">${t('noMembers')}</p>`}
+        ${others.length ? `<form class="row gap add-member" data-form="admin-add-member" data-tid="${esc(tm.id)}">
+          <select class="grow" name="user" required aria-label="${t('pickAccount')}"><option value="">${t('pickAccount')}</option>
+            ${others.map((a) => `<option value="${esc(a.user_id)}">${esc(a.email)}</option>`).join('')}</select>
+          <select class="mini" name="role" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
+            <option value="coach">${t('roleCoach')}</option><option value="director">${t('roleDirector')}</option></select>
+          <button class="btn small">${t('addMember')}</button>
+        </form>` : ''}
+      </li>`;
+    }).join('');
+    body = `${accounts}
+      <h2>${t('cloudTeams')} <span class="muted small">${st.teams.length}</span></h2>
+      ${st.teams.length ? `<ul class="list">${teams}</ul>` : `<p class="empty">${t('noCloudTeams')}</p>`}`;
+  }
+  main.innerHTML = `${head}${give}${body}`;
+  if (!st) loadAdmin();
+}
+
 // ---------- Views: profile / settings ----------
 // App settings live here; add new sections as more settings appear.
 
@@ -1525,23 +1878,32 @@ function viewTeams() {
       </a></li>`).join('')}</ul>` : `<p class="empty">${t('noTeams')}</p>`}`;
 }
 
+let newCloudTeam = null; // id of a team just created as a cloud team (shows a note once)
+
 function viewTeam(id) {
   const tm = getTeam(id);
   if (!tm) return viewTeams();
   const ps = teamPlayers(id).sort(byNumber);
+  const ro = readOnlyTeam(id);
+  const cloudTeam = isCloudTeam(id);
+  const field = (key, label, ph) => (ro
+    ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
+    : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`);
   main.innerHTML = `
-    ${bar(esc(teamLabel(tm)), '#/teams')}
+    ${bar(esc(teamLabel(tm)), '#/teams', '', ro ? readOnlyPill() : '')}
     ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
+    ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
+    ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
     <div class="form">
-      <label>${t('club')}<input data-team="club" value="${esc(tm.club)}" placeholder="${t('clubPh')}" autocomplete="off"></label>
-      <label>${t('team')}<input data-team="name" value="${esc(tm.name)}" placeholder="${t('teamPh')}" autocomplete="off"></label>
+      ${field('club', t('club'), t('clubPh'))}
+      ${field('name', t('team'), t('teamPh'))}
     </div>
-    ${canUpload() && !isCloudTeam(id) ? `<div class="upload-team">
+    ${canUpload() && !cloudTeam ? `<div class="upload-team">
       <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
       <p class="hint">${t('uploadTeamHint')}</p>
     </div>` : ''}
     <h2>${t('players')}</h2>
-    <form class="add-player" data-form="add-player">
+    ${ro ? '' : `<form class="add-player" data-form="add-player">
       <div class="row gap">
         <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
         <input class="grow" name="name" placeholder="${t('shirtName')}" required autocomplete="off">
@@ -1550,23 +1912,33 @@ function viewTeam(id) {
         <input class="grow" name="fullName" placeholder="${t('fullName')}" autocomplete="off">
         <button class="btn primary">${t('add')}</button>
       </div>
-    </form>
+    </form>`}
     ${ps.length ? `<ul class="list">${ps.map((p) => `
       <li class="item">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow">${esc(p.name)}${p.fullName ? `<div class="muted small">${esc(p.fullName)}</div>` : ''}</span>
-        <button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
-        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>
+        ${ro ? '' : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
+        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`}
       </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`}
-    <div class="row gap foot">
+    ${cloudTeam ? `<h2>${t('people')}</h2><section id="people" class="people-section">${peopleHtml(id)}</section>` : ''}
+    ${ro ? '' : `<div class="row gap foot">
       <button class="btn ghost danger" data-action="delete-team">${t('deleteTeam')}</button>
-    </div>`;
+    </div>`}`;
+  // Members are loaded online, once per visit of this screen (and after changes).
+  if (cloudTeam && canSync()) {
+    if (db.sync.uploads.includes(id)) {
+      remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
+      showPeople();
+    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') loadPeople(id);
+  }
 }
 
 // ---------- Views: new / edit game ----------
 
+// Teams where this user is a coach (read-only) are never offered for new games.
 function defaultTeamId() {
-  return getTeam(gamesTeam())?.id ?? getTeam(db.lastTeamId)?.id ?? db.teams[0]?.id ?? null;
+  const ok = (id) => (getTeam(id) && !readOnlyTeam(id) ? id : null);
+  return ok(gamesTeam()) ?? ok(db.lastTeamId) ?? writableTeams()[0]?.id ?? null;
 }
 
 function newDraft(id) {
@@ -1600,8 +1972,14 @@ function viewEdit(id) {
   if (!draft) draft = newDraft(id);
   const back = draft.id ? `#/game/${draft.id}` : '#/games';
   const title = draft.id ? t('editGame') : t('newGameTitle');
+  if (draft.id && readOnlyGame(getGame(draft.id))) {
+    main.innerHTML = `${bar(title, back, '', readOnlyPill())}<p class="empty">${t('readOnlyHint')}</p>`;
+    return;
+  }
   if (!draft.teamId) {
-    main.innerHTML = `${bar(title, back)}<p class="empty">${t('needTeam')}</p><a class="btn primary block" href="#/teams">${t('goTeams')}</a>`;
+    // Only teams where this user is a coach: explain why there's nothing to pick.
+    const msg = db.teams.length ? t('newGameCoachOnly') : t('needTeam');
+    main.innerHTML = `${bar(title, back)}<p class="empty">${msg}</p><a class="btn primary block" href="#/teams">${t('goTeams')}</a>`;
     return;
   }
   const ps = teamPlayers(draft.teamId).sort(byNumber);
@@ -1609,7 +1987,7 @@ function viewEdit(id) {
     ${bar(title, back)}
     <div class="form">
       <label>${t('team')}
-        <select data-field="teamId">${db.teams.map((tm) => `<option value="${tm.id}" ${tm.id === draft.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
+        <select data-field="teamId">${writableTeams().map((tm) => `<option value="${tm.id}" ${tm.id === draft.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
       </label>
       <label>${t('opponent')}<input data-field="opponent" value="${esc(draft.opponent)}" placeholder="${t('opponentPh')}" autocomplete="off"></label>
       <div class="row gap">
@@ -1661,6 +2039,7 @@ function viewEdit(id) {
 }
 
 function saveGame() {
+  if (readOnlyTeam(draft.teamId) || (draft.id && readOnlyGame(getGame(draft.id)))) return refuseReadOnly();
   const field = parseInt(draft.field, 10);
   const periods = parseInt(draft.periods, 10);
   const periodMin = parseInt(draft.periodMin, 10);
@@ -1737,10 +2116,11 @@ function token(g, d, id, where, attrs = '') {
 }
 
 // On-pitch players in formation, with the formation picker and player count in the top corners.
-function pitch(g, d) {
+function pitch(g, d, ro = false) {
   const pts = slotCoords(formationOf(g));
   return `<div class="pitch">${PITCH_LINES}
-    ${formationsFor(g.field).length > 1 ? `<button class="pitch-corner left" data-action="formation" aria-label="${t('formation')}">${formationOf(g)} ▾</button>` : ''}
+    ${ro ? `<span class="pitch-corner left ro" aria-label="${t('formation')}">${formationOf(g)}</span>`
+    : formationsFor(g.field).length > 1 ? `<button class="pitch-corner left" data-action="formation" aria-label="${t('formation')}">${formationOf(g)} ▾</button>` : ''}
     <span class="pitch-corner right" aria-label="${t('onPitch')}">${d.on.size}/${g.field + 1}</span>
     ${d.slots.map((id, i) => {
     const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${typeof pts[i].y === 'number' ? `${pts[i].y.toFixed(1)}%` : pts[i].y}"`;
@@ -1764,7 +2144,8 @@ function viewGame(id) {
   const offIds = sortIds(g, [...d.sentOff].filter((p) => !d.on.has(p)));
 
   const timeline = [...g.events.filter((e) => e.type !== 'pos'), ...g.marks].sort((a, b) => a.t - b.t || (a.wall || 0) - (b.wall || 0)).reverse();
-  const last = g.events[g.events.length - 1];
+  const ro = readOnlyGame(g); // coach of this cloud team: no controls that change the game
+  const last = ro ? null : g.events[g.events.length - 1];
   const canEdit = g.status === 'scheduled' && g.events.length === 0;
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
   const us = g.team || g.club || t('unnamedTeam');
@@ -1772,18 +2153,18 @@ function viewGame(id) {
   const [home, away] = g.home === false ? [them, us] : [us, them];
 
   main.innerHTML = `
-    ${bar(esc(matchTitle(g)), '#/games', `
+    ${bar(esc(matchTitle(g)), '#/games', ro ? (g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : '') : `
       ${canEdit
         ? `<a class="menu-item" role="menuitem" href="#/edit/${g.id}">✎ ${t('edit')}</a>`
         : `<button class="menu-item" role="menuitem" data-action="edit-info">${t('gameInfo')}</button>`}
       ${g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : ''}
       ${g.status !== 'scheduled' ? `<button class="menu-item" role="menuitem" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
-      <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`)}
+      <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`, ro ? readOnlyPill() : '')}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
       ${statusPill(g)}
       <div class="clock-line">
         <span class="clock" id="clock">${fmtNow(g)}</span>
-        ${g.status === 'live' && !g.clock.running ? `<button class="icon-btn on" data-action="resume" aria-label="${t('resume')}">▶</button>` : ''}
+        ${g.status === 'live' && !g.clock.running && !ro ? `<button class="icon-btn on" data-action="resume" aria-label="${t('resume')}">▶</button>` : ''}
       </div>
       <div class="muted small" id="period">${periodLabel(g)}</div>
       <div class="score-row">
@@ -1791,13 +2172,13 @@ function viewGame(id) {
         <span class="score big">${scoreHtml(g, d, ' – ', true)}</span>
         <span class="side">${esc(away)}</span>
       </div>
-      ${g.status === 'break' && g.autoStopped === g.clock.period ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
+      ${g.status === 'break' && g.autoStopped === g.clock.period && !ro ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
         <div class="row center"><button class="btn small" data-action="fix-open">${t('fixTimesBtn')}</button></div></div>` : ''}
-      <div class="row gap center wrap score-actions">
+      ${ro ? (g.status === 'finished' ? `<div class="row gap center wrap score-actions">${clockButtons(g)}</div>` : '') : `<div class="row gap center wrap score-actions">
         ${g.status === 'live' ? `<button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
         ${clockButtons(g)}
-      </div>
-      ${pitch(g, d)}
+      </div>`}
+      ${pitch(g, d, ro)}
     </section>
 
     <h2>${t('bench')}</h2>
@@ -1807,14 +2188,15 @@ function viewGame(id) {
 
     <h2>${t('timeline')}</h2>
     ${last ? `<button class="btn small ghost" data-action="undo">${t('undoX', { x: describe(g, last) })}</button>` : ''}
-    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => e.type === 'goal'
+    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => e.type === 'goal' && !ro
       ? `<li class="tap" data-action="edit-goal" data-id="${e.id}"><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span><span class="edit">✎</span></li>`
       : `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
 `;
 }
 
 function tick() {
-  for (const g of db.games) if (g.status === 'live' && g.clock.running) checkTime(g);
+  // Read-only games (coach): reminders and the auto-stop are the director's phone's job.
+  for (const g of db.games) if (g.status === 'live' && g.clock.running && !readOnlyGame(g)) checkTime(g);
   const { view, id } = route();
   if (view !== 'game') return;
   const g = getGame(id);
@@ -2035,7 +2417,7 @@ function viewReport(id) {
   const d = derive(g);
 
   main.innerHTML = `
-    ${bar(t('gameReport'), `#/game/${g.id}`)}
+    ${bar(t('gameReport'), `#/game/${g.id}`, '', readOnlyGame(g) ? readOnlyPill() : '')}
     <section class="scoreboard">
       <strong>${esc(matchTitle(g))}</strong>
       <div class="muted small">${formatLine(g)}</div>
@@ -2044,7 +2426,7 @@ function viewReport(id) {
     </section>
 
     <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
-    <button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>
+    ${readOnlyGame(g) ? '' : `<button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>`}
     <p class="hint">${t('reportHint')}</p>
     ${sheetPreview(statsSheet(g))}`;
 }
@@ -2271,6 +2653,55 @@ const actions = {
   'sync-now': () => syncNow(),
   'upload-team': () => uploadTeams([route().id]),
 
+  // People of a cloud team (team screen)
+  'people-reload': () => loadPeople(route().id),
+  'remove-coach': async ({ id }) => {
+    const teamId = route().id;
+    const m = remote.people?.members.find((x) => x.user_id === id);
+    const ok = await askConfirm({
+      title: t('removeFromTeam'), message: t('removeMemberConfirm', { email: `<b>${esc(m?.email || '')}</b>` }), ok: t('removeFromTeam'), danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteMember(teamId, id);
+      setPeopleMsg(t('removed'), true);
+    } catch (e) {
+      return setPeopleMsg(accessError(e), false);
+    }
+    loadPeople(teamId);
+  },
+  'leave-team': async () => {
+    const teamId = route().id;
+    const ok = await askConfirm({ title: t('leaveTeam'), message: t('leaveTeamConfirm'), ok: t('leaveTeam'), danger: true });
+    if (!ok) return;
+    try {
+      if (pendingCount()) await syncNow(); // a director's changes go up first
+      await deleteMember(teamId, myId());
+    } catch (e) {
+      return setPeopleMsg(accessError(e), false);
+    }
+    toast(t('leftTeam'));
+    await syncNow(); // the team leaves this phone
+    if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
+  },
+
+  // Admin page
+  'admin-reload': () => { remote.admin = null; render(); },
+  'admin-remove-account': async ({ id }) => {
+    const a = remote.admin?.accounts.find((x) => x.user_id === id);
+    const ok = await askConfirm({
+      title: t('removeAccess'), message: t('removeAccessConfirm', { email: `<b>${esc(a?.email || '')}</b>` }), ok: t('removeAccess'), danger: true,
+    });
+    if (ok) adminDo(() => adminCall({ action: 'delete_account', user_id: id }), t('accessRemoved'));
+  },
+  'admin-remove-member': async ({ tid, id }) => {
+    const a = remote.admin?.accounts.find((x) => x.user_id === id);
+    const ok = await askConfirm({
+      title: t('removeFromTeam'), message: t('removeMemberConfirm', { email: `<b>${esc(a?.email || '')}</b>` }), ok: t('removeFromTeam'), danger: true,
+    });
+    if (ok) adminDo(() => deleteMember(tid, id), t('removed'), true);
+  },
+
   theme: ({ v }) => {
     theme = v;
     localStorage.setItem(THEME_KEY, v);
@@ -2286,10 +2717,16 @@ const actions = {
   },
 
   // teams and players
+  // Signed in with a director (or admin) account: new teams are cloud teams straight away.
+  // Otherwise (signed out, coach account) they stay on this phone, as before.
   'new-team': () => {
     const tm = { id: uid(), club: db.teams[0]?.club || '', name: '' };
     db.teams.push(tm);
     save();
+    if (canUpload()) {
+      newCloudTeam = tm.id;
+      uploadTeams([tm.id]);
+    }
     location.hash = `#/team/${tm.id}`;
   },
   'delete-team': async () => {
@@ -2381,7 +2818,7 @@ const actions = {
   },
 
   // player actions
-  player: ({ id }) => openPlayerSheet(currentGame(), id),
+  player: ({ id }) => (readOnlyGame(currentGame()) ? openPlayerInfo : openPlayerSheet)(currentGame(), id),
   'do-sub': ({ out, in: inn }) => doSub(currentGame(), out, inn),
   goal: ({ id }) => {
     const g = currentGame();
@@ -2516,7 +2953,7 @@ const actions = {
       <h3>${t('gameInfo')}</h3>
       <form class="form" data-form="game-info">
         ${db.teams.length ? `<label>${t('team')}
-          <select name="teamId">${db.teams.map((tm) => `<option value="${tm.id}" ${tm.id === teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
+          <select name="teamId">${db.teams.filter((tm) => tm.id === teamId || !readOnlyTeam(tm.id)).map((tm) => `<option value="${tm.id}" ${tm.id === teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
         </label>` : ''}
         <label>${t('opponent')}<input name="opponent" autocomplete="off" value="${esc(g.opponent)}"></label>
         <label>${t('homeAway')}
@@ -2569,10 +3006,13 @@ document.addEventListener('click', (e) => {
   const fn = actions[el.dataset.action];
   if (!fn) return;
   e.preventDefault();
+  if (!READ_ONLY_OK.has(el.dataset.action) && viewReadOnly()) return refuseReadOnly();
   fn(el.dataset, el);
 });
 
 document.addEventListener('input', (e) => {
+  const { fix: fk, team: tk, field: fd } = e.target.dataset;
+  if ((fk || tk || fd) && viewReadOnly()) return refuseReadOnly();
   const fixKey = e.target.dataset.fix;
   if (fixKey && fix) {
     const g = currentGame();
@@ -2586,6 +3026,7 @@ document.addEventListener('input', (e) => {
   const teamKey = e.target.dataset.team;
   if (teamKey) {
     const tm = getTeam(route().id);
+    if (!tm) return;
     tm[teamKey] = e.target.value.trim();
     syncGameTeams(db, tm.id);
     save();
@@ -2609,7 +3050,21 @@ document.addEventListener('input', (e) => {
 });
 
 document.addEventListener('change', async (e) => {
-  if (e.target.dataset.change !== 'restore') return;
+  const { change, id, tid } = e.target.dataset; // (data-tid: data-team is the team screen's inputs)
+  // Admin page: account type and team roles (RLS lets only the admin change them).
+  if (change === 'admin-kind') {
+    return adminDo(async () => {
+      const rows = await q(sb.from('accounts').update({ kind: e.target.value }).eq('user_id', id).select('user_id'));
+      if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
+    }, t('kindChanged'));
+  }
+  if (change === 'admin-role') {
+    return adminDo(async () => {
+      const rows = await q(sb.from('team_members').update({ role: e.target.value }).eq('team_id', tid).eq('user_id', id).select('user_id'));
+      if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
+    }, t('roleChanged'), true);
+  }
+  if (change !== 'restore') return;
   const file = e.target.files[0];
   if (!file) return;
   try {
@@ -2642,7 +3097,28 @@ document.addEventListener('submit', (e) => {
   const form = e.target.dataset.form;
   if (!form) return;
   e.preventDefault();
+  if (!READ_ONLY_FORMS.has(form) && viewReadOnly()) return refuseReadOnly();
   const data = new FormData(e.target);
+  if (form === 'add-coach') {
+    // Directors only (the form isn't shown to coaches; the database checks it too).
+    if (roleOf(route().id) !== 'director') return refuseReadOnly();
+    return addCoach(route().id, String(data.get('email')).trim().toLowerCase());
+  }
+  if (form === 'admin-create') {
+    const email = String(data.get('email')).trim().toLowerCase();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    return adminDo(async () => {
+      await adminCall({ action: 'create_account', email, kind: String(data.get('kind')) });
+      notify(t('accessGiven', { email: `<b>${esc(email)}</b>` }), t('accessGivenTitle'));
+    }).finally(() => { btn.disabled = false; });
+  }
+  if (form === 'admin-add-member') {
+    const teamId = e.target.dataset.tid;
+    return adminDo(() => q(sb.from('team_members').insert({
+      team_id: teamId, user_id: String(data.get('user')), role: String(data.get('role')), invited_by: myId(),
+    })), t('memberAdded'), true);
+  }
   if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
   if (form === 'signin-code') return verifyCode(String(data.get('code')).replace(/\D/g, ''));
   if (form === 'upload-teams') {
@@ -2707,7 +3183,7 @@ function dropKind(from, to) {
 }
 
 function dragStart(chip, x, y) {
-  if (chip.disabled || !chip.dataset.id || route().view !== 'game') return;
+  if (chip.disabled || !chip.dataset.id || route().view !== 'game' || readOnlyGame(currentGame())) return;
   Object.assign(drag, { from: chip, x0: x, y0: y, moved: false, target: null });
   drag.timer = setTimeout(() => {
     drag.active = true;
