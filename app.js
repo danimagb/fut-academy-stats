@@ -41,9 +41,9 @@ const I18N = {
     exportBackup: 'Export backup', importBackup: 'Import backup', backupTitle: 'Backup',
     storageKept: 'This browser keeps the app\'s data stored (it won\'t clear it on its own).',
     storageNotKept: 'This browser may clear the app\'s data if it runs short of space or the app isn\'t used for a while. Export a backup regularly; adding the app to the home screen helps.',
-    backupHint: 'Teams "On this phone" are saved only on this phone: export a backup now and then, and import it to restore or move to another phone. Synced teams are also kept in the cloud.',
+    backupHint: 'Save a copy of your teams and games to a file, or restore one.',
     privacyLink: 'How your data is handled', privacyTitle: 'Your data',
-    privacyBody: '<p><b>Without an account</b>, everything stays on this phone. Nothing is sent anywhere.</p>'
+    privacyBody: '<p><b>Without an account</b>, everything stays on this device. Nothing is sent anywhere.</p>'
       + '<p><b>Synced teams</b> are stored in the app\'s cloud database (Supabase, in the EU): the team and club name, players\' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to, and who are members of that team, can see it; the admin can see which teams exist and who is in them. Nothing else is collected: no photos, birth dates or contact details of players.</p>'
       + '<p><b>Your account</b> is your email and a password. The password is stored only as a one-way hash (it can\'t be read back, not even by the admin); the email is also used to send you codes the first time and if you forget your password.</p>'
       + '<p><b>Deleting</b>: a director can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>'
@@ -85,35 +85,34 @@ const I18N = {
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
-    password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Create account',
+    password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Activate account',
     signUpIntro: 'Use the email the admin registered.',
     resetTitle: 'Reset your password', resetIntro: '',
     stepOf: 'Step {n} of 3', stepEmail: 'Your email', stepCode: 'Code from the email', stepPassword: 'Choose a password',
-    confirmCode: 'Confirm', createAccount: 'Create account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
+    confirmCode: 'Confirm', createAccount: 'Activate account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
     setPwTitle: 'Choose a password', setPwHint: 'At least 8 characters.',
     newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
     pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
-    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Create account".',
+    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Activate account".',
     tabAdmin: 'Admin', notSignedIn: 'Not signed in', backupSummary: 'Export or import a copy of your data',
-    account: 'Account', accountHint: 'Sync your teams to the cloud. Only for people the admin gave access to.',
+    account: 'Account', accountHint: 'Only for people the admin gave access to.',
     email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'Sent to {email} (check spam too).',
-    otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out on this phone?', signedIn: 'Signed in',
+    otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out?', signedIn: 'Signed in',
     acctDirector: 'Director account', acctCoach: 'Coach account', acctAdmin: 'Admin', acctNone: 'This user has no access set up yet. Ask the admin.',
     authNoAccess: 'This email doesn\'t have access. Ask the admin.', authBadCode: 'Wrong or expired code. Try again or ask for a new one.',
     authRateLimit: 'Too many attempts. Wait a minute and try again.', authOffline: 'No internet connection. Try again when you have signal.',
-    authFailed: 'Couldn\'t sign in ({msg}).', cloudUnavailable: 'Cloud sign-in isn\'t available on this device.',
+    authFailed: 'Couldn\'t sign in ({msg}).', cloudUnavailable: 'Signing in isn\'t available.',
     syncing: 'Syncing…', syncedAgo: 'Synced · {ago}', agoNow: 'just now', agoMin: '{n} min ago', agoHour: '{n} h ago',
     syncWaiting: '{n} changes waiting', syncWaiting1: '1 change waiting', syncOffline: 'Offline · will sync when back online',
     syncWaitingOffline: '{n} changes waiting (offline)', syncWaitingOffline1: '1 change waiting (offline)',
-    syncFailed: 'Couldn\'t sync, will try again', syncUploadFailed: 'Couldn\'t upload a team to the cloud (not allowed).',
-    syncNever: 'Not synced yet', syncNow: 'Sync now', badgeCloud: 'Synced', badgeLocal: 'On this phone',
-    uploadTeam: '☁️ Upload to the cloud', uploadTeamHint: 'People you share this team with will see it, and you\'ll be its director.',
-    uploadTitle: 'Upload teams to the cloud?', uploadHint: 'These teams are only on this phone. Upload them to keep them safe and share them; you\'ll be their director.',
-    uploadSelected: 'Upload selected', notNow: 'Not now', uploading: 'Uploading to the cloud…',
+    syncFailed: 'Couldn\'t sync, will try again', syncUploadFailed: 'Couldn\'t sync a team (not allowed).',
+    syncNever: 'Not synced yet', syncNow: 'Sync now', badgeCloud: 'Synced', badgeLocal: 'Local',
+    uploadTeam: 'Sync this team', uploadTeamHint: 'You\'ll be its director and can add coaches.',
+    uploadTitle: 'Sync your teams?', uploadHint: 'Choose the teams to sync. You\'ll be their director.',
+    uploadSelected: 'Sync selected', notNow: 'Not now', uploading: 'Syncing…',
     signOutLose: '{n} changes not uploaded yet will be lost.', signOutLose1: '1 change not uploaded yet will be lost.',
-    signOutCloud: 'Cloud teams will be removed from this phone (they stay in the cloud).',
+    signOutCloud: 'Synced teams won\'t show here until you sign in again.',
     settings: 'Settings', language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'Auto',
-    themeHint: 'Light is easier to read outdoors in sunlight. Auto follows your phone\'s setting.',
     soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
     onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
     undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
@@ -139,8 +138,8 @@ const I18N = {
     pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarter: 'STARTER', pdfSub: 'SUB', fileRound: 'Round', fileStats: 'Stats',
     readOnly: 'Read-only', readOnlyToast: 'Read-only: you\'re a coach on this team',
     readOnlyHint: 'You\'re a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.',
-    newGameCoachOnly: 'You\'re a coach on these teams, so only their directors create games. To log games of your own, create a team on this phone.',
-    newTeamCloud: 'Saved to the cloud, as you\'re signed in with a director account. You can add coaches under People.',
+    newGameCoachOnly: 'You\'re a coach on these teams, so only directors create games. To log your own games, create a local team.',
+    newTeamCloud: 'Synced team. You can add coaches under People.',
     people: 'People', loading: 'Loading…', needsInternet: 'Needs internet. Try again when you have signal.', tryAgain: 'Try again',
     roleDirector: 'Director', roleCoach: 'Coach', you: 'you', peopleSignIn: 'Sign in to see who has access to this team.',
     addCoach: 'Add coach', addCoachEmail: 'Add a coach by email',
@@ -148,20 +147,20 @@ const I18N = {
     coachAdded: '{email} was added as a coach.', coachAlready: '{email} is already in this team.',
     coachNoAccount: 'This person doesn\'t have access yet. Ask the admin.',
     notAllowed: 'You\'re not allowed to do that.', actionFailed: 'Couldn\'t do that ({msg}).',
-    removeFromTeam: 'Remove from team', removeMemberConfirm: 'Remove {email} from this team? The team disappears from their phone on its next sync.',
+    removeFromTeam: 'Remove from team', removeMemberConfirm: 'Remove {email} from this team?',
     removed: 'Removed', leaveTeam: 'Leave team', leftTeam: 'You left the team',
-    leaveTeamConfirm: 'Leave this team? It disappears from this phone, and a director has to add you again to see it.',
+    leaveTeamConfirm: 'Leave this team? You\'ll only see it again if a director adds you back.',
     lastDirector: 'A team must keep at least one director.',
-    admin: 'Admin', adminHint: 'Give people access, manage accounts and cloud teams.', adminOnly: 'Only the admin can open this page.',
+    admin: 'Admin', adminHint: 'Give access, manage accounts and teams.', adminOnly: 'Only the admin can open this page.',
     giveAccess: 'Give access', accountKind: 'Account type',
-    giveAccessHint: 'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Create account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
+    giveAccessHint: 'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Activate account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
     accessGivenTitle: 'Access given', accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
     errExists: 'This email already has access.', errEmail: 'Check the email address.', errNotAdmin: 'Only the admin can do this.',
     errSession: 'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
     errSelf: 'You can\'t do that to your own account.', errIsAdmin: 'Admins can only be removed in the Supabase dashboard.',
     accounts: 'Accounts', kindChanged: 'Account type changed', removeAccess: 'Remove access', accessRemoved: 'Access removed',
     removeAccessConfirm: 'Remove access for {email}? They can\'t sign in any more and leave all their teams. Teams, players and games stay.',
-    cloudTeams: 'Teams in the cloud', noCloudTeams: 'No teams in the cloud yet.', noMembers: 'No members.', noDirector: 'No director',
+    cloudTeams: 'Synced teams', noCloudTeams: 'No synced teams yet.', noMembers: 'No members.', noDirector: 'No director',
     addMember: 'Add', pickAccount: 'Choose an account…', roleChanged: 'Role changed', memberAdded: 'Added', teamsN: '{n} teams', teamsN1: '1 team',
   },
   pt: {
@@ -170,9 +169,9 @@ const I18N = {
     exportBackup: 'Exportar cópia', importBackup: 'Importar cópia', backupTitle: 'Cópia de segurança',
     storageKept: 'Este navegador mantém os dados da app guardados (não os apaga por iniciativa própria).',
     storageNotKept: 'Este navegador pode apagar os dados da app se ficar sem espaço ou se a app não for usada durante algum tempo. Exporta uma cópia com regularidade; adicionar a app ao ecrã principal ajuda.',
-    backupHint: 'As equipas "Neste telemóvel" ficam guardadas só neste telemóvel: exporta uma cópia de vez em quando e importa-a para restaurar ou passar para outro telemóvel. As equipas sincronizadas ficam também guardadas na nuvem.',
+    backupHint: 'Guarda uma cópia das equipas e jogos num ficheiro, ou restaura uma.',
     privacyLink: 'Como são tratados os dados', privacyTitle: 'Os teus dados',
-    privacyBody: '<p><b>Sem conta</b>, fica tudo neste telemóvel. Nada é enviado para lado nenhum.</p>'
+    privacyBody: '<p><b>Sem conta</b>, fica tudo neste dispositivo. Nada é enviado para lado nenhum.</p>'
       + '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o nome da equipa e do clube, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso e que são membros dessa equipa a podem ver; o administrador vê que equipas existem e quem pertence a cada uma. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>'
       + '<p><b>A tua conta</b> é o teu email e uma palavra-passe. A palavra-passe só é guardada como um código irreversível (hash) e não pode ser lida, nem pelo administrador; o email serve também para te enviar códigos na primeira vez e se te esqueceres da palavra-passe.</p>'
       + '<p><b>Apagar</b>: um diretor pode apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>'
@@ -214,35 +213,34 @@ const I18N = {
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
-    password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Criar conta',
+    password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Ativar conta',
     signUpIntro: 'Usa o email que o administrador registou.',
     resetTitle: 'Recuperar a palavra-passe', resetIntro: '',
     stepOf: 'Passo {n} de 3', stepEmail: 'O teu email', stepCode: 'Código do email', stepPassword: 'Escolhe uma palavra-passe',
-    confirmCode: 'Confirmar', createAccount: 'Criar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
+    confirmCode: 'Confirmar', createAccount: 'Ativar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
     setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'Pelo menos 8 caracteres.',
     newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
     pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
-    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Criar conta".',
+    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Ativar conta".',
     tabAdmin: 'Admin', notSignedIn: 'Sessão não iniciada', backupSummary: 'Exportar ou importar uma cópia dos dados',
-    account: 'Conta', accountHint: 'Sincroniza as equipas na nuvem. Só para quem recebeu acesso do administrador.',
+    account: 'Conta', accountHint: 'Só para quem recebeu acesso do administrador.',
     email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviado para {email} (vê também o spam).',
-    otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão neste telemóvel?', signedIn: 'Sessão iniciada',
+    otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão?', signedIn: 'Sessão iniciada',
     acctDirector: 'Conta de diretor', acctCoach: 'Conta de treinador', acctAdmin: 'Admin', acctNone: 'Este utilizador ainda não tem acesso configurado. Fala com o administrador.',
     authNoAccess: 'Este email não tem acesso. Fala com o administrador.', authBadCode: 'Código errado ou expirado. Tenta outra vez ou pede um novo.',
     authRateLimit: 'Demasiadas tentativas. Espera um minuto e tenta outra vez.', authOffline: 'Sem ligação à internet. Tenta outra vez quando tiveres rede.',
-    authFailed: 'Não foi possível entrar ({msg}).', cloudUnavailable: 'O início de sessão na nuvem não está disponível neste dispositivo.',
+    authFailed: 'Não foi possível entrar ({msg}).', cloudUnavailable: 'Não é possível iniciar sessão.',
     syncing: 'A sincronizar…', syncedAgo: 'Sincronizado · {ago}', agoNow: 'agora mesmo', agoMin: 'há {n} min', agoHour: 'há {n} h',
     syncWaiting: '{n} alterações por enviar', syncWaiting1: '1 alteração por enviar', syncOffline: 'Sem rede · sincroniza quando voltar',
     syncWaitingOffline: '{n} alterações à espera (sem rede)', syncWaitingOffline1: '1 alteração à espera (sem rede)',
-    syncFailed: 'Não foi possível sincronizar, vamos tentar outra vez', syncUploadFailed: 'Não foi possível enviar uma equipa para a nuvem (sem permissão).',
-    syncNever: 'Ainda não sincronizado', syncNow: 'Sincronizar agora', badgeCloud: 'Sincronizada', badgeLocal: 'Neste telemóvel',
-    uploadTeam: '☁️ Enviar para a nuvem', uploadTeamHint: 'Quem partilhar esta equipa contigo vai vê-la, e tu ficas como diretor.',
-    uploadTitle: 'Enviar equipas para a nuvem?', uploadHint: 'Estas equipas só estão neste telemóvel. Envia-as para ficarem guardadas e as poderes partilhar; ficas como diretor.',
-    uploadSelected: 'Enviar selecionadas', notNow: 'Agora não', uploading: 'A enviar para a nuvem…',
+    syncFailed: 'Não foi possível sincronizar, vamos tentar outra vez', syncUploadFailed: 'Não foi possível sincronizar uma equipa (sem permissão).',
+    syncNever: 'Ainda não sincronizado', syncNow: 'Sincronizar agora', badgeCloud: 'Sincronizada', badgeLocal: 'Local',
+    uploadTeam: 'Sincronizar esta equipa', uploadTeamHint: 'Ficas como diretor e podes adicionar treinadores.',
+    uploadTitle: 'Sincronizar as tuas equipas?', uploadHint: 'Escolhe as equipas a sincronizar. Ficas como diretor.',
+    uploadSelected: 'Sincronizar selecionadas', notNow: 'Agora não', uploading: 'A sincronizar…',
     signOutLose: '{n} alterações ainda não enviadas vão perder-se.', signOutLose1: '1 alteração ainda não enviada vai perder-se.',
-    signOutCloud: 'As equipas da nuvem saem deste telemóvel (continuam na nuvem).',
+    signOutCloud: 'As equipas sincronizadas deixam de aparecer aqui até voltares a entrar.',
     settings: 'Definições', language: 'Idioma', theme: 'Tema', themeLight: 'Claro', themeDark: 'Escuro', themeAuto: 'Auto',
-    themeHint: 'O tema claro lê-se melhor ao ar livre, com sol. Auto segue a definição do telemóvel.',
     soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
     onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
     undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
@@ -268,8 +266,8 @@ const I18N = {
     pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarter: 'TITULAR', pdfSub: 'SUPLENTE', fileRound: 'Jornada', fileStats: 'Estatisticas',
     readOnly: 'Só leitura', readOnlyToast: 'Só leitura: és treinador nesta equipa',
     readOnlyHint: 'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
-    newGameCoachOnly: 'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa neste telemóvel.',
-    newTeamCloud: 'Guardada na nuvem, porque entraste com uma conta de diretor. Podes adicionar treinadores em Pessoas.',
+    newGameCoachOnly: 'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa local.',
+    newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
     people: 'Pessoas', loading: 'A carregar…', needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.', tryAgain: 'Tentar outra vez',
     roleDirector: 'Diretor', roleCoach: 'Treinador', you: 'tu', peopleSignIn: 'Entra na tua conta para ver quem tem acesso a esta equipa.',
     addCoach: 'Adicionar treinador', addCoachEmail: 'Adicionar um treinador por email',
@@ -277,20 +275,20 @@ const I18N = {
     coachAdded: '{email} foi adicionado como treinador.', coachAlready: '{email} já está nesta equipa.',
     coachNoAccount: 'Esta pessoa ainda não tem acesso. Fala com o administrador.',
     notAllowed: 'Não tens permissão para fazer isso.', actionFailed: 'Não foi possível ({msg}).',
-    removeFromTeam: 'Remover da equipa', removeMemberConfirm: 'Remover {email} desta equipa? A equipa sai do telemóvel dessa pessoa na próxima sincronização.',
+    removeFromTeam: 'Remover da equipa', removeMemberConfirm: 'Remover {email} desta equipa?',
     removed: 'Removido', leaveTeam: 'Sair da equipa', leftTeam: 'Saíste da equipa',
-    leaveTeamConfirm: 'Sair desta equipa? Ela sai deste telemóvel e só a voltas a ver se um diretor te adicionar outra vez.',
+    leaveTeamConfirm: 'Sair desta equipa? Só a voltas a ver se um diretor te adicionar outra vez.',
     lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
-    admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas na nuvem.', adminOnly: 'Só o administrador pode abrir esta página.',
+    admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas.', adminOnly: 'Só o administrador pode abrir esta página.',
     giveAccess: 'Dar acesso', accountKind: 'Tipo de conta',
-    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Criar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
+    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Ativar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
     accessGivenTitle: 'Acesso dado', accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
     errExists: 'Este email já tem acesso.', errEmail: 'Verifica o endereço de email.', errNotAdmin: 'Só o administrador pode fazer isto.',
     errSession: 'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
     errSelf: 'Não podes fazer isso à tua própria conta.', errIsAdmin: 'Os administradores só podem ser removidos no painel do Supabase.',
     accounts: 'Contas', kindChanged: 'Tipo de conta alterado', removeAccess: 'Retirar acesso', accessRemoved: 'Acesso retirado',
     removeAccessConfirm: 'Retirar o acesso a {email}? Deixa de poder entrar e sai de todas as equipas. As equipas, jogadores e jogos ficam.',
-    cloudTeams: 'Equipas na nuvem', noCloudTeams: 'Ainda não há equipas na nuvem.', noMembers: 'Sem membros.', noDirector: 'Sem diretor',
+    cloudTeams: 'Equipas sincronizadas', noCloudTeams: 'Ainda não há equipas sincronizadas.', noMembers: 'Sem membros.', noDirector: 'Sem diretor',
     addMember: 'Adicionar', pickAccount: 'Escolhe uma conta…', roleChanged: 'Função alterada', memberAdded: 'Adicionado', teamsN: '{n} equipas', teamsN1: '1 equipa',
   },
 };
@@ -1160,7 +1158,7 @@ function accountSectionBody() {
   const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
   const busy = cloud.busy ? 'disabled' : '';
   if (cloud.session && cloud.needsPassword) {
-    // Step 3 of "Create account" / "Reset your password": nothing else until it's done.
+    // Step 3 of "Activate account" / "Reset your password": nothing else until it's done.
     return `${head}<section class="auth-steps">${cloud.pwMode === 'reset' ? `<p class="muted small">${t('resetTitle')}</p>` : ''}
       ${setPasswordForm(busy, err, false)}</section>`;
   }
@@ -1963,8 +1961,7 @@ function viewProfile() {
           ${seg('lang', lang, [['en', 'English'], ['pt', 'Português']])}</li>
         <li class="item wrap"><span class="grow">${t('theme')}</span>
           ${seg('theme', theme, [['light', `☀️ ${t('themeLight')}`], ['dark', `🌙 ${t('themeDark')}`], ['auto', t('themeAuto')]])}</li>
-      </ul>
-      <p class="hint">${t('themeHint')}</p>`)}
+      </ul>`)}
     ${section('backup', t('backupTitle'), t('backupSummary'), `
       <p class="hint">${t('backupHint')}</p>
       ${persisted === null ? '' : `<p class="hint ${persisted ? 'ok' : 'warn'}">${persisted ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
@@ -2788,7 +2785,7 @@ const actions = {
     render();
   },
   'auth-mode': ({ v }) => {
-    // Keep a typed email when switching between Sign in / Create account / Reset.
+    // Keep a typed email when switching between Sign in / Activate account / Reset.
     const typed = $('main input[name="email"]')?.value.trim();
     Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
     render();

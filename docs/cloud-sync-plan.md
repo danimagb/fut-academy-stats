@@ -122,7 +122,7 @@ branch is merged into `main` only once everything works end to end.
     otherwise the data waits for the same user to sign in again.
   - Upload: first sign-in of a director (or admin) account on a phone with local teams opens
     a sheet to pick which to upload; local team screens show "☁️ Upload to the cloud" for
-    director accounts. Teams list and team screen show "Synced" / "On this phone" (the latter
+    director accounts. Teams list and team screen show "Synced" / "Local" (the latter
     only when signed in). Profile → Account shows a quiet status line + "Sync now".
   - Restoring a backup replaces only the local teams; cloud teams, `db.sync` and pending
     deletes stay as they were (otherwise a restore would delete cloud data).
@@ -189,7 +189,7 @@ branch is merged into `main` only once everything works end to end.
     to delete (EN + PT). Backup hint updated for synced teams.
   - README "Cloud sync (optional)" section and file list; CLAUDE.md points to this plan.
 - Then: Account section reorganised into **Sign in** (email + password, "Forgot your
-  password?") and **Create account** (step 1 email → step 2 code → step 3 password) tabs; sync
+  password?") and **Activate account** (step 1 email → step 2 code → step 3 password) tabs; sync
   and the Admin tab wait until the password is chosen.
 - After the merge into `main` (danimagb/fut-academy-stats#19): **password sign-in** (email +
   password; code by email the first time / forgotten password, then choose a password;
@@ -316,7 +316,7 @@ There are two separate levels:
   coach's own local teams stay on their phone (they can be uploaded later if the account
   becomes a director).
 - The read-only coach view applies to cloud teams where the role is `coach` only.
-- The team list and team screen show which kind each team is ("On this phone" / "Synced").
+- The team list and team screen show which kind each team is ("Local" / "Synced").
 
 ## Data model (Postgres)
 

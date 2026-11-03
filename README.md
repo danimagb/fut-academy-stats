@@ -48,11 +48,11 @@ the phone and can be shared with other coaches.
 - **Invite-only.** Nobody can create an account. The **admin** gives people access on the
   in-app **Admin** page (the *Admin* tab, only visible to the admin), as a **director** or
   **coach** account.
-  Profile → Account has two tabs. **Create account** (first time): the email the admin
+  Profile → Account has two tabs. **Activate account** (first time): the email the admin
   registered → a code sent to that email → choose a password. **Sign in**: email + password
   (the app keeps you signed in). *Forgot your password?* uses the same code steps.
   Passwords are stored by Supabase Auth only as bcrypt hashes.
-- **Synced or on this phone.** Every team is either *Synced* or *On this phone*. Director
+- **Synced or local.** Every team is either *Synced* or *Local*. Director
   accounts can upload a team (or create new teams as synced); coach accounts keep their own
   teams on the phone.
 - **Roles in a synced team.** *Directors* can do everything and add or remove coaches (People
