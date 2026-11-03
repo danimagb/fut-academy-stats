@@ -20,11 +20,38 @@ the closest one.
 
 In **Authentication → Sign In / Providers** (or **Authentication → Settings**):
 
-- Turn **off** "Allow new users to sign up". Nobody can create an account on their own any more.
+- Turn **off** "Allow new users to sign up" and **Save**. Nobody can create an account on their
+  own any more. (Without this, anyone could create an account through Supabase's sign-up
+  endpoint, even though such an account would get no access to the data.)
 - Keep the **Email** provider enabled.
 - Leave other providers (Google, Apple, …) off for now.
 
-## 3. Send a 6-digit code instead of a link
+## 3. Email sending (custom SMTP)
+
+Supabase only lets you edit the email templates (step 4) once your own email sending (SMTP)
+is set up. Its built-in sender is also only for testing: very few emails per hour, possibly
+only to your own address. So set this up first.
+
+**Simplest: send through your Gmail account** (no domain needed, ~500 emails/day):
+
+1. Turn on **2-Step Verification** on your Google account (myaccount.google.com → Security).
+2. Create an **app password**: myaccount.google.com → Security → **App passwords** (or search
+   "App passwords" in the account settings). Name it "Supabase" and copy the 16-character
+   password. It can only send email and can be revoked at any time.
+3. In **Authentication → Emails → SMTP Settings**, enable custom SMTP:
+   - Sender email: your Gmail address
+   - Sender name: `Fut Academy Stats`
+   - Host: `smtp.gmail.com`, Port: `587`
+   - Username: your Gmail address
+   - Password: the app password
+4. If **Authentication → Rate Limits** shows an email limit, set it to about 30 per hour.
+
+Keep the app password in Supabase only: never in the repo or the app.
+
+Later, for a branded sender (e.g. `noreply@yourclub.pt`), get a domain and a provider such as
+Resend or Brevo, and change these SMTP fields.
+
+## 4. Send a 6-digit code instead of a link
 
 The app signs people in with a code typed into the app. On iPhone, a link would open in
 Safari instead of the home-screen app.
@@ -41,24 +68,15 @@ replace the body with something like:
 
 Subject, for example: `Código de acesso Fut Academy Stats`.
 
-If there is an "Email OTP length" setting, set it to **6**. Expiry: 3600 seconds (1 hour) is fine.
+The code length can be 6 or 8 digits (the app accepts 6 to 10). Expiry: 3600 seconds (1 hour)
+is fine.
 
-## 4. Site URL
+## 5. Site URL
 
 In **Authentication → URL Configuration**:
 
 - Site URL: `https://danimagb.github.io/fut-academy-stats/`
 - Additional redirect URLs: the same URL (needed later for Google/Apple sign-in, if ever added).
-
-## 5. Email sending (needed before giving other people access)
-
-Supabase's built-in email service is only for testing: it sends very few emails per hour and
-may only deliver to the addresses of your Supabase organization's members. That's enough
-for you to sign in yourself, but **not for the people you give access to**.
-
-Before giving other people access (step 6 of the plan), set up a free SMTP provider (e.g. Resend or Brevo):
-create an account there, verify a sender address or domain, and enter its SMTP details in
-**Authentication → Emails → SMTP Settings**.
 
 ## 6. Create the database tables
 
@@ -85,7 +103,8 @@ create an account there, verify a sender address or domain, and enter its SMTP d
    where email = 'your@email.com';
    ```
 
-   It should say "1 row affected". This is the only time you need SQL: from then on you give
+   It should say "1 row affected". If it says 0 rows, the user from step 1 doesn't exist (check
+   **Authentication → Users**). This is the only time you need SQL: from then on you give
    other people access from the app's Admin page.
 
 You become a team's director automatically when you create or upload that team from the app.

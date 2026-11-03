@@ -440,3 +440,4 @@ label.inline input { width: 90px; min-height: 40px; }
 .score .us { color: var(--win); }
 .score .them { color: var(--loss); }
 .badge.result { font-weight: 700; color: var(--res); background: color-mix(in srgb, var(--res) 15%, transparent); }
+.signin-links { margin-top: 10px; }
