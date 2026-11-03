@@ -20,7 +20,9 @@ the closest one.
 
 In **Authentication → Sign In / Providers** (or **Authentication → Settings**):
 
-- Turn **off** "Allow new users to sign up". Nobody can create an account on their own any more.
+- Turn **off** "Allow new users to sign up" and **Save**. Nobody can create an account on their
+  own any more. (Without this, anyone could create an account through Supabase's sign-up
+  endpoint, even though such an account would get no access to the data.)
 - Keep the **Email** provider enabled.
 - Leave other providers (Google, Apple, …) off for now.
 
@@ -66,7 +68,8 @@ replace the body with something like:
 
 Subject, for example: `Código de acesso Fut Academy Stats`.
 
-If there is an "Email OTP length" setting, set it to **6**. Expiry: 3600 seconds (1 hour) is fine.
+The code length can be 6 or 8 digits (the app accepts 6 to 10). Expiry: 3600 seconds (1 hour)
+is fine.
 
 ## 5. Site URL
 
@@ -100,7 +103,8 @@ In **Authentication → URL Configuration**:
    where email = 'your@email.com';
    ```
 
-   It should say "1 row affected". This is the only time you need SQL: from then on you give
+   It should say "1 row affected". If it says 0 rows, the user from step 1 doesn't exist (check
+   **Authentication → Users**). This is the only time you need SQL: from then on you give
    other people access from the app's Admin page.
 
 You become a team's director automatically when you create or upload that team from the app.

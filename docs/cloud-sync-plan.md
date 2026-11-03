@@ -74,13 +74,17 @@ branch is merged into `main` only once everything works end to end.
   - Profile → Account: email → `signInWithOtp({ shouldCreateUser: false })` → code →
     `verifyOtp({ type: 'email' })`; shows email + account kind; sign out (`scope: 'local'`,
     works offline). Error messages for no access, wrong/expired code, rate limit, offline.
-  - Tested in a browser with **simulated** Supabase responses only: this cloud environment's
-    network policy blocked `qttfytuptdrovwnedofy.supabase.co`. Test against the real project
-    once the host is allowed (sign in with the maintainer's email).
+  - Tested in a browser with simulated Supabase responses (UI flow), and against the **real
+    project** with curl: anon reads only `ping` (writes, RPCs and sign-up refused); the
+    maintainer signed in with an emailed code (the project sends **8-digit** codes; the app
+    accepts 6–10); their `accounts` row reads director + admin; creating a team made them
+    director; `is_admin` can't be changed through the API. The test team was deleted.
+  - The cloud environment needs `*.supabase.co` (or the project host) allowed under Network
+    access to reach the project.
 - Next (step 5): sync engine. Sync only cloud teams; a team needs a "cloud" mark locally
   (see "Local teams and cloud teams").
 - Supabase project: created by the maintainer (EU region), migration applied, admin account
-  set up, sign-ups off, custom SMTP through a dedicated Gmail account (app password).
+  set up (user `danielmagalhaes4@gmail.com`), sign-ups off (verified), custom SMTP through a dedicated Gmail account (app password).
   Project URL: `https://qttfytuptdrovwnedofy.supabase.co`.
 
 ## Goals
