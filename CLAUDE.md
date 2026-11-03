@@ -3,12 +3,14 @@
 Fut Academy Stats is a phone web app (PWA) for youth football games: plain HTML/CSS/JS with no
 build step, hosted on GitHub Pages from `main`. See `README.md` for what it does.
 
-## Work in progress: cloud sync
+## Cloud sync
 
-Cloud sync with Supabase (invite-only) is being built on the **`feature/cloud-sync`** branch,
-in small PRs into that branch. **Read `docs/cloud-sync-plan.md` first**: its "Progress"
-section says which step is done and what comes next. Every PR for this feature must update
-that section.
+Optional cloud sync with Supabase (invite-only, director/coach roles, local-first) was built on
+the `feature/cloud-sync` branch in steps; **`docs/cloud-sync-plan.md`** describes the design and
+its "Progress" section records what was done in each step and the known limitations. Read it
+before changing storage, sync, sign-in or the database. Database changes go in a new file in
+`supabase/migrations/` with tests in `supabase/tests/rls.test.sql`
+(`bash supabase/tests/local/run.sh` must pass).
 
 ## Conventions
 

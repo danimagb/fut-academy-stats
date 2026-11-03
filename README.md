@@ -2,7 +2,7 @@
 
 A phone web app for running youth football games: lineups, live substitutions, goals, cards and minutes played, with a report at full time.
 
-It's plain HTML/CSS/JS with no build step and no server code. Data is saved on the phone (browser `localStorage`). Once opened over HTTPS it can be added to the home screen and works offline.
+It's plain HTML/CSS/JS with no build step and no server of its own. Data is saved on the phone (browser `localStorage`); signing in adds optional, invite-only [cloud sync](#cloud-sync-optional). Once opened over HTTPS it can be added to the home screen and works offline.
 
 ## Using it
 
@@ -21,10 +21,11 @@ It's plain HTML/CSS/JS with no build step and no server code. Data is saved on t
    - A red card takes the player off; they can't come back and the team plays one short. If the GK is sent off, tap another player and choose 🧤 To goal.
    - The screen stays on while the game is live, where the browser supports it.
 4. **Report**: a preview of the PDF stats sheet (club, team, season, game, round; per player: starter/sub, stints entered–left on the game clock, minutes, goals, cards). **Share PDF** sends the file to WhatsApp and similar apps, or downloads it where sharing isn't available.
-5. **Profile** (bottom tab) holds the app settings:
+5. **Profile** (bottom tab) holds your account and the app settings:
+   - **Account** (optional): sign in to sync teams to the cloud. See [Cloud sync](#cloud-sync-optional).
    - **Language**: English | Português (Portuguese is the default on phones set to Portuguese). The PDF follows the app language.
    - **Theme**: ☀️ Light | 🌙 Dark | Auto. Light has stronger contrast and is easier to read outdoors in sunlight; Auto follows the phone's setting (the default).
-   - **Backup**: Export/Import, since data lives only on that phone. Once there is data, the app asks the browser to keep it stored (persistent storage), so it isn't cleared on its own; Profile shows whether the browser agreed.
+   - **Backup**: Export/Import, since teams that aren't synced live only on that phone. Once there is data, the app asks the browser to keep it stored (persistent storage), so it isn't cleared on its own; Profile shows whether the browser agreed.
 
 ### Game clock and extra time
 
@@ -37,6 +38,36 @@ You end each half yourself with **End 1st half** and then **Start 2nd half**. Sa
 - When regular time is reached the phone vibrates and a reminder appears with an "End half" shortcut. It repeats every 2 minutes, and the clock shows the extra time, e.g. `20:00 (+01:30)`.
 - If a half runs past its regular time by the **auto-stop limit** (default 10 min), the app stops it automatically, even if the app was closed.
 - **⏱ Fix times** lets you say when the half really ended (regular, +1, +2, +3, +5, now or a custom value) and whether the next half has already started ("started 5 min ago"). The clock and any subs, goals or cards logged in the meantime are re-timed using the real time they were recorded. It also works after full time if you ended the game late.
+
+## Cloud sync (optional)
+
+Without an account the app works exactly as above, with everything on the phone. Signing in
+adds cloud sync through [Supabase](https://supabase.com) (EU region), so a team survives losing
+the phone and can be shared with other coaches.
+
+- **Invite-only.** Nobody can create an account. The **admin** gives people access on the
+  in-app **Admin** page (Profile → Account → Admin), as a **director** or **coach** account.
+  People sign in with their email and a code sent by email (no passwords).
+- **Synced or on this phone.** Every team is either *Synced* or *On this phone*. Director
+  accounts can upload a team (or create new teams as synced); coach accounts keep their own
+  teams on the phone.
+- **Roles in a synced team.** *Directors* can do everything and add or remove coaches (People
+  section on the team screen, by email, only people who already have access). *Coaches* are
+  read-only: they see the team, games and reports and can share the PDF, but can't change
+  anything.
+- **Local first.** The app saves on the phone first and syncs in the background (on start, a
+  few seconds after a change, when the signal comes back, every minute, or with *Sync now*).
+  Offline at the pitch, changes simply wait. Two phones logging the *same live game* at the
+  same time isn't supported: the last one to sync wins.
+- **Signing out** removes the synced teams from that phone (they stay in the cloud); teams that
+  were only on the phone stay.
+- **Your data**: Profile → Account → *How your data is handled*.
+
+Setting it up (once, by the maintainer) is described in
+[`docs/supabase-setup.md`](docs/supabase-setup.md); how it's built is in
+[`docs/cloud-sync-plan.md`](docs/cloud-sync-plan.md) and [`supabase/README.md`](supabase/README.md).
+The `Supabase keep-alive` GitHub Action pings the project every 2 days so the free tier
+doesn't pause; if it fails, GitHub emails the repository owner.
 
 ## Running it
 
@@ -64,6 +95,11 @@ When you change the code, bump `CACHE` in `sw.js` so phones pick up the new vers
 ## Files
 
 - `index.html`: app shell
-- `app.js`: all logic: storage, views, clock, events, report
-- `styles.css`: mobile-first dark theme
+- `app.js`: all logic: storage, views, clock, events, report, sign-in, sync, admin
+- `styles.css`: mobile-first styles, light and dark themes
+- `config.js`: the Supabase project URL and public (publishable) key
+- `vendor/`: pinned third-party code (supabase-js)
+- `supabase/`: database migration, Row Level Security tests, the `admin` Edge Function
+- `docs/`: Supabase setup guide and the cloud sync plan
+- `.github/workflows/keep-alive.yml`: keeps the Supabase project from pausing
 - `sw.js`, `manifest.webmanifest`, `icons/`: offline + install support

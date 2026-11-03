@@ -41,7 +41,13 @@ const I18N = {
     exportBackup: 'Export backup', importBackup: 'Import backup', backupTitle: 'Backup',
     storageKept: 'This browser keeps the app\'s data stored (it won\'t clear it on its own).',
     storageNotKept: 'This browser may clear the app\'s data if it runs short of space or the app isn\'t used for a while. Export a backup regularly; adding the app to the home screen helps.',
-    backupHint: 'Your teams and games are saved only on this phone. Export a backup now and then, and import it to restore or move to another phone.',
+    backupHint: 'Teams "On this phone" are saved only on this phone: export a backup now and then, and import it to restore or move to another phone. Synced teams are also kept in the cloud.',
+    privacyLink: 'How your data is handled', privacyTitle: 'Your data',
+    privacyBody: '<p><b>Without an account</b>, everything stays on this phone. Nothing is sent anywhere.</p>'
+      + '<p><b>Synced teams</b> are stored in the app\'s cloud database (Supabase, in the EU): the team and club name, players\' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to, and who are members of that team, can see it; the admin can see which teams exist and who is in them. Nothing else is collected: no photos, birth dates or contact details of players.</p>'
+      + '<p><b>Your account</b> is just your email, used to send you sign-in codes.</p>'
+      + '<p><b>Deleting</b>: a director can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>'
+      + '<p>The club is responsible for agreeing to store players\' names, and for parents\' consent where needed.</p>',
     opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
     res_win: 'Win', res_draw: 'Draw', res_loss: 'Loss', roundN: 'Round {n}',
     st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
@@ -154,7 +160,13 @@ const I18N = {
     exportBackup: 'Exportar cópia', importBackup: 'Importar cópia', backupTitle: 'Cópia de segurança',
     storageKept: 'Este navegador mantém os dados da app guardados (não os apaga por iniciativa própria).',
     storageNotKept: 'Este navegador pode apagar os dados da app se ficar sem espaço ou se a app não for usada durante algum tempo. Exporta uma cópia com regularidade; adicionar a app ao ecrã principal ajuda.',
-    backupHint: 'As equipas e os jogos ficam guardados só neste telemóvel. Exporta uma cópia de vez em quando e importa-a para restaurar ou passar para outro telemóvel.',
+    backupHint: 'As equipas "Neste telemóvel" ficam guardadas só neste telemóvel: exporta uma cópia de vez em quando e importa-a para restaurar ou passar para outro telemóvel. As equipas sincronizadas ficam também guardadas na nuvem.',
+    privacyLink: 'Como são tratados os dados', privacyTitle: 'Os teus dados',
+    privacyBody: '<p><b>Sem conta</b>, fica tudo neste telemóvel. Nada é enviado para lado nenhum.</p>'
+      + '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o nome da equipa e do clube, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso e que são membros dessa equipa a podem ver; o administrador vê que equipas existem e quem pertence a cada uma. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>'
+      + '<p><b>A tua conta</b> é só o teu email, usado para te enviar os códigos de acesso.</p>'
+      + '<p><b>Apagar</b>: um diretor pode apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>'
+      + '<p>Cabe ao clube aceitar que os nomes dos jogadores sejam guardados e obter o consentimento dos pais quando necessário.</p>',
     opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
     res_win: 'Vitória', res_draw: 'Empate', res_loss: 'Derrota', roundN: 'Jornada {n}',
     st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
@@ -1063,6 +1075,10 @@ const verifyCode = (token) => cloudStep(async () => {
 });
 
 function accountSection() {
+  return `${accountSectionBody()}<p class="hint"><button class="link-btn" data-action="privacy">${t('privacyLink')}</button></p>`;
+}
+
+function accountSectionBody() {
   const head = `<h2>${t('account')}</h2>`;
   if (!sb) return `${head}<p class="hint">${t('cloudUnavailable')}</p>`;
   const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
@@ -1545,7 +1561,7 @@ function viewReadOnly() {
 const READ_ONLY_OK = new Set([
   'close-sheet', 'menu-toggle', 'games-team', 'soon', // navigation
   'theme', 'lang', 'backup', // settings
-  'signin-back', 'signin-resend', 'sign-out', 'sync-now', // account and sync
+  'signin-back', 'signin-resend', 'sign-out', 'sync-now', 'privacy', // account and sync
   'pdf', // share the report
   'player', // opens a read-only info sheet for coaches (see actions.player)
   'people-reload', 'leave-team', // People section (anyone may leave a team)
@@ -2639,6 +2655,8 @@ const actions = {
   },
   soon: ({ v }) => askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
+  privacy: () => openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
+    <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
   'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
   'signin-resend': () => sendCode(cloud.email),
   'sign-out': async () => {
