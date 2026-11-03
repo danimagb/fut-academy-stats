@@ -45,7 +45,7 @@ const I18N = {
     privacyLink: 'How your data is handled', privacyTitle: 'Your data',
     privacyBody: '<p><b>Without an account</b>, everything stays on this phone. Nothing is sent anywhere.</p>'
       + '<p><b>Synced teams</b> are stored in the app\'s cloud database (Supabase, in the EU): the team and club name, players\' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to, and who are members of that team, can see it; the admin can see which teams exist and who is in them. Nothing else is collected: no photos, birth dates or contact details of players.</p>'
-      + '<p><b>Your account</b> is just your email, used to send you sign-in codes.</p>'
+      + '<p><b>Your account</b> is your email and a password. The password is stored only as a one-way hash (it can\'t be read back, not even by the admin); the email is also used to send you codes the first time and if you forget your password.</p>'
       + '<p><b>Deleting</b>: a director can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>'
       + '<p>The club is responsible for agreeing to store players\' names, and for parents\' consent where needed.</p>',
     opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
@@ -85,6 +85,13 @@ const I18N = {
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
+    password: 'Password', signInPw: 'Sign in', getCodeLink: 'First time, or forgot your password? Get a code by email',
+    backToPassword: 'Sign in with password', codeIntro: 'We\'ll email you a code. Use it the first time (to confirm you were given access) or if you forgot your password; then you choose a password.',
+    setPwTitle: 'Choose a password', setPwHint: 'From now on you\'ll sign in with your email and this password. At least 8 characters.',
+    newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
+    pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
+    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time, or forgot it? Get a code by email below.',
+    tabAdmin: 'Admin',
     account: 'Account', accountHint: 'Sign in to sync your teams to the cloud. Only for people given access by the admin. Without an account the app works as before, on this phone only.',
     email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'We sent a code to {email}. It can take a minute; check the spam folder too.',
     otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out on this phone?', signedIn: 'Signed in',
@@ -144,7 +151,7 @@ const I18N = {
     lastDirector: 'A team must keep at least one director.',
     admin: 'Admin', adminHint: 'Give people access, manage accounts and cloud teams.', adminOnly: 'Only the admin can open this page.',
     giveAccess: 'Give access', accountKind: 'Account type',
-    giveAccessHint: 'Creates an account for this email. No email is sent: the person then signs in in the app (Profile → Account) with their email and a code. Email sending (SMTP) must be set up for the code to arrive.',
+    giveAccessHint: 'Creates an account for this email. No email is sent: the first time, the person opens the app (Profile → Account), taps "First time…? Get a code", enters the code from the email and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
     accessGivenTitle: 'Access given', accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
     errExists: 'This email already has access.', errEmail: 'Check the email address.', errNotAdmin: 'Only the admin can do this.',
     errSession: 'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
@@ -164,7 +171,7 @@ const I18N = {
     privacyLink: 'Como são tratados os dados', privacyTitle: 'Os teus dados',
     privacyBody: '<p><b>Sem conta</b>, fica tudo neste telemóvel. Nada é enviado para lado nenhum.</p>'
       + '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o nome da equipa e do clube, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso e que são membros dessa equipa a podem ver; o administrador vê que equipas existem e quem pertence a cada uma. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>'
-      + '<p><b>A tua conta</b> é só o teu email, usado para te enviar os códigos de acesso.</p>'
+      + '<p><b>A tua conta</b> é o teu email e uma palavra-passe. A palavra-passe só é guardada como um código irreversível (hash) e não pode ser lida, nem pelo administrador; o email serve também para te enviar códigos na primeira vez e se te esqueceres da palavra-passe.</p>'
       + '<p><b>Apagar</b>: um diretor pode apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>'
       + '<p>Cabe ao clube aceitar que os nomes dos jogadores sejam guardados e obter o consentimento dos pais quando necessário.</p>',
     opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
@@ -204,6 +211,13 @@ const I18N = {
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
+    password: 'Palavra-passe', signInPw: 'Entrar', getCodeLink: 'Primeira vez, ou esqueceste a palavra-passe? Receber um código por email',
+    backToPassword: 'Entrar com palavra-passe', codeIntro: 'Enviamos-te um código por email. Usa-o na primeira vez (para confirmar que recebeste acesso) ou se te esqueceste da palavra-passe; depois escolhes uma palavra-passe.',
+    setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'A partir de agora entras com o teu email e esta palavra-passe. Pelo menos 8 caracteres.',
+    newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
+    pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
+    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. Primeira vez, ou esqueceste-a? Recebe um código por email abaixo.',
+    tabAdmin: 'Admin',
     account: 'Conta', accountHint: 'Entra para sincronizar as equipas na nuvem. Só para quem recebeu acesso do administrador. Sem conta, a app funciona como até agora, só neste telemóvel.',
     email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviámos um código para {email}. Pode demorar um minuto; vê também a pasta de spam.',
     otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão neste telemóvel?', signedIn: 'Sessão iniciada',
@@ -263,7 +277,7 @@ const I18N = {
     lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
     admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas na nuvem.', adminOnly: 'Só o administrador pode abrir esta página.',
     giveAccess: 'Dar acesso', accountKind: 'Tipo de conta',
-    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa entra depois na app (Perfil → Conta) com o seu email e um código. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
+    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: na primeira vez, a pessoa abre a app (Perfil → Conta), toca em "Primeira vez…? Receber um código", introduz o código do email e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
     accessGivenTitle: 'Acesso dado', accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
     errExists: 'Este email já tem acesso.', errEmail: 'Verifica o endereço de email.', errNotAdmin: 'Só o administrador pode fazer isto.',
     errSession: 'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
@@ -881,10 +895,12 @@ const TAB_ICONS = {
   matches: '<circle cx="12" cy="12" r="9"/><path class="f" d="M12 7.5l4.3 3.1-1.6 5h-5.4l-1.6-5z"/><path d="M12 3v4.5M20.6 9.2l-4.3 1.4M17.3 19.4l-2.6-3.8M6.7 19.4l2.6-3.8M3.4 9.2l4.3 1.4"/>',
   stats: '<path d="M5 20V12M10 20V5M15 20V9M20 20V14"/>',
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  admin: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
 };
 
 function renderTabbar(view) {
-  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['profile', 'admin'].includes(view) ? 'profile' : 'matches';
+  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['profile', 'admin'].includes(view) ? view : 'matches';
+  const isAdmin = !!(cloud.session && cloud.account?.isAdmin);
   const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
   const tab = (k, label, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
@@ -892,7 +908,9 @@ function renderTabbar(view) {
     tab('team', t('tabTeam'), `href="${myTeam}"`) +
     tab('matches', t('tabMatches'), 'href="#/games"') +
     tab('stats', t('tabStats'), 'data-action="soon" data-v="tabStats"') +
-    tab('profile', t('tabProfile'), 'href="#/profile"');
+    tab('profile', t('tabProfile'), 'href="#/profile"') +
+    (isAdmin ? tab('admin', t('tabAdmin'), 'href="#/admin" data-admin-link') : '');
+  $('#tabbar').classList.toggle('five', isAdmin);
 }
 
 window.addEventListener('hashchange', () => {
@@ -989,7 +1007,8 @@ function viewGames() {
 }
 
 // ---------- Cloud account (Supabase sign-in) ----------
-// Invite-only: the email gets a code only if the
+// Sign-in is email + password; a code by email is used the first time and for a forgotten
+// password, then the user chooses a password. Invite-only: the email gets a code only if the
 // admin gave it an account; `shouldCreateUser: false` never creates users. Everything else in
 // the app keeps working without signing in.
 
@@ -1002,9 +1021,17 @@ const sb = window.supabase?.createClient && CLOUD.supabaseUrl
   : null;
 
 const readJSON = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
-const cloud = { session: null, account: readJSON(ACCOUNT_KEY), step: 'email', email: '', busy: false, error: '' };
+// step: 'login' (email + password) | 'email' (ask for a code) | 'code' (enter the code).
+// After signing in with a code the user must choose a password (`needsPassword`, kept across
+// reloads so closing the app doesn't skip it).
+const SETPW_KEY = 'fut-academy-stats.setPassword';
+const cloud = {
+  session: null, account: readJSON(ACCOUNT_KEY), step: 'login', email: '', busy: false, error: '',
+  needsPassword: localStorage.getItem(SETPW_KEY) === '1', changingPassword: false,
+};
 
-const renderIfProfile = () => { if (['profile', 'admin'].includes(route().view)) render(); };
+// Re-render account screens; elsewhere just refresh the tab bar (the Admin tab follows the account).
+const renderIfProfile = () => { if (['profile', 'admin'].includes(route().view)) render(); else renderTabbar(route().view); };
 
 // Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline.
 async function refreshAccount() {
@@ -1044,7 +1071,11 @@ function authMessage(error) {
   if (!navigator.onLine || error?.name === 'AuthRetryableFetchError' || error?.status === 0) return t('authOffline');
   if (error?.status === 429 || /rate.?limit/i.test(msg)) return t('authRateLimit');
   if (/otp_disabled|signup_disabled|user_not_found|signups not allowed/i.test(msg)) return t('authNoAccess');
+  if (/invalid_credentials|invalid login credentials/i.test(msg)) return t('authBadPassword');
+  if (/same_password|should be different/i.test(msg)) return t('pwSame');
+  if (/weak_password|password should|weak/i.test(msg)) return t('pwWeak');
   if (/otp_expired|invalid|expired/i.test(msg)) return t('authBadCode');
+  if (error instanceof Error && !error.status && !error.code && !error.name?.startsWith('Auth')) return esc(error.message);
   return t('authFailed', { msg: esc(error?.message || error) });
 }
 
@@ -1070,9 +1101,42 @@ const sendCode = (email) => cloudStep(async () => {
 const verifyCode = (token) => cloudStep(async () => {
   const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
   if (error) throw error;
-  Object.assign(cloud, { step: 'email', email: '' });
+  // Signed in with a code: first time or forgotten password, so a password is chosen next.
+  localStorage.setItem(SETPW_KEY, '1');
+  Object.assign(cloud, { step: 'login', needsPassword: true });
   toast(t('signedIn'));
 });
+
+const signInPassword = (email, password) => cloudStep(async () => {
+  cloud.email = email; // kept if it fails (the form is drawn again), e.g. for "get a code"
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  Object.assign(cloud, { step: 'login', email: '' });
+  toast(t('signedIn'));
+});
+
+// Supabase Auth stores only a bcrypt hash of the password (in auth.users); the app never keeps it.
+const setPassword = (pw, pw2) => cloudStep(async () => {
+  if (pw.length < 8) throw new Error(t('pwShort'));
+  if (pw !== pw2) throw new Error(t('pwMismatch'));
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) throw error;
+  localStorage.removeItem(SETPW_KEY);
+  Object.assign(cloud, { needsPassword: false, changingPassword: false, email: '' });
+  toast(t('pwSaved'));
+});
+
+function setPasswordForm(busy, err, cancel) {
+  return `<h3 class="sub-title">${t('setPwTitle')}</h3>
+    <p class="hint">${t('setPwHint')}</p>
+    <form class="form" data-form="set-password">
+      <input type="email" name="username" autocomplete="username" value="${esc(cloud.session.user.email)}" hidden>
+      <label>${t('newPassword')}<input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+      <label>${t('repeatPassword')}<input name="password2" type="password" required minlength="8" autocomplete="new-password"></label>
+      <button class="btn primary" ${busy}>${t('savePassword')}</button>
+      ${cancel ? `<button type="button" class="btn ghost" data-action="cancel-password">${t('cancel')}</button>` : ''}
+    </form>${err}`;
+}
 
 function accountSection() {
   return `${accountSectionBody()}<p class="hint"><button class="link-btn" data-action="privacy">${t('privacyLink')}</button></p>`;
@@ -1092,10 +1156,10 @@ function accountSectionBody() {
           <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></li>
         ${canSync() ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
           <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>` : ''}
-        ${a?.isAdmin ? `<li class="item"><span class="grow muted small">${t('adminHint')}</span>
-          <a class="btn small" href="#/admin" data-admin-link>${t('admin')}</a></li>` : ''}
       </ul>
-      ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}${err}`;
+      ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
+      ${cloud.needsPassword || cloud.changingPassword ? setPasswordForm(busy, err, !cloud.needsPassword)
+        : `${err}<button class="btn small ghost" data-action="change-password">${t('changePassword')}</button>`}`;
   }
   if (cloud.step === 'code') {
     return `${head}
@@ -1110,13 +1174,25 @@ function accountSectionBody() {
         <button class="btn small ghost" data-action="signin-resend" ${busy}>${t('resendCode')}</button>
       </div>`;
   }
+  if (cloud.step === 'email') {
+    return `${head}
+      <p class="hint">${t('codeIntro')}</p>
+      <form class="form" data-form="signin-email">
+        <label>${t('email')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
+        <button class="btn primary" ${busy}>${t('sendCode')}</button>
+      </form>
+      ${err}
+      <div class="signin-links"><button class="btn small ghost" data-action="signin-to-password" ${busy}>${t('backToPassword')}</button></div>`;
+  }
   return `${head}
     <p class="hint">${t('accountHint')}</p>
-    <form class="form" data-form="signin-email">
-      <label>${t('email')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
-      <button class="btn primary" ${busy}>${t('sendCode')}</button>
+    <form class="form" data-form="signin-password">
+      <label>${t('email')}<input name="email" type="email" required autocomplete="username" inputmode="email" value="${esc(cloud.email)}"></label>
+      <label>${t('password')}<input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn primary" ${busy}>${t('signInPw')}</button>
     </form>
-    ${err}`;
+    ${err}
+    <p class="hint"><button class="link-btn" data-action="signin-get-code" ${busy}>${t('getCodeLink')}</button></p>`;
 }
 
 // ---------- Cloud sync ----------
@@ -1562,13 +1638,14 @@ const READ_ONLY_OK = new Set([
   'close-sheet', 'menu-toggle', 'games-team', 'soon', // navigation
   'theme', 'lang', 'backup', // settings
   'signin-back', 'signin-resend', 'sign-out', 'sync-now', 'privacy', // account and sync
+  'signin-get-code', 'signin-to-password', 'change-password', 'cancel-password',
   'pdf', // share the report
   'player', // opens a read-only info sheet for coaches (see actions.player)
   'people-reload', 'leave-team', // People section (anyone may leave a team)
   'new-team', // creates a team of their own
 ]);
 // Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
-const READ_ONLY_FORMS = new Set(['signin-email', 'signin-code', 'upload-teams']);
+const READ_ONLY_FORMS = new Set(['signin-email', 'signin-code', 'signin-password', 'set-password', 'upload-teams']);
 
 const refuseReadOnly = () => toast(t('readOnlyToast'));
 const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
@@ -2658,6 +2735,10 @@ const actions = {
   privacy: () => openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
     <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
   'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
+  'signin-get-code': () => { cloud.email = $('form[data-form="signin-password"] input[name="email"]')?.value.trim() || cloud.email; Object.assign(cloud, { step: 'email', error: '' }); render(); },
+  'signin-to-password': () => { Object.assign(cloud, { step: 'login', error: '' }); render(); },
+  'change-password': () => { Object.assign(cloud, { changingPassword: true, error: '' }); render(); },
+  'cancel-password': () => { Object.assign(cloud, { changingPassword: false, error: '' }); render(); },
   'signin-resend': () => sendCode(cloud.email),
   'sign-out': async () => {
     const n = pendingCount();
@@ -3138,6 +3219,8 @@ document.addEventListener('submit', (e) => {
     })), t('memberAdded'), true);
   }
   if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
+  if (form === 'signin-password') return signInPassword(String(data.get('email')).trim().toLowerCase(), String(data.get('password')));
+  if (form === 'set-password') return setPassword(String(data.get('password')), String(data.get('password2')));
   if (form === 'signin-code') return verifyCode(String(data.get('code')).replace(/\D/g, ''));
   if (form === 'upload-teams') {
     closeSheet();

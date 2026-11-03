@@ -480,3 +480,5 @@ select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; f
 .admin-team .members select { width: auto; flex: none; min-height: 36px; font-size: .9rem; padding: 0 8px; }
 .link-btn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .privacy p { margin: 0 0 10px; font-size: .92rem; }
+.tabbar.five { grid-template-columns: repeat(5, 1fr); }
+.tabbar.five .tab span { font-size: .68rem; }
