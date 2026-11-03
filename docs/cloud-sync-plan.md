@@ -188,6 +188,9 @@ branch is merged into `main` only once everything works end to end.
   - Profile → Account → "How your data is handled": what is stored, where, who sees it, how
     to delete (EN + PT). Backup hint updated for synced teams.
   - README "Cloud sync (optional)" section and file list; CLAUDE.md points to this plan.
+- Then: Account section reorganised into **Sign in** (email + password, "Forgot your
+  password?") and **Create account** (step 1 email → step 2 code → step 3 password) tabs; sync
+  and the Admin tab wait until the password is chosen.
 - After the merge into `main` (danimagb/fut-academy-stats#19): **password sign-in** (email +
   password; code by email the first time / forgotten password, then choose a password;
   "Change password" on Profile) and an **Admin tab** in the bottom bar for the admin only (the

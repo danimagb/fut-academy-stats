@@ -85,12 +85,15 @@ const I18N = {
     tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
-    password: 'Password', signInPw: 'Sign in', getCodeLink: 'First time, or forgot your password? Get a code by email',
-    backToPassword: 'Sign in with password', codeIntro: 'We\'ll email you a code. Use it the first time (to confirm you were given access) or if you forgot your password; then you choose a password.',
+    password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Create account',
+    signUpIntro: 'Only for people the admin gave access to: use the email the admin registered. We\'ll send a code to that email to confirm it\'s yours, then you choose a password.',
+    resetTitle: 'Reset your password', resetIntro: 'We\'ll send a code to your email, then you choose a new password.',
+    stepOf: 'Step {n} of 3', stepEmail: 'Your email', stepCode: 'Code from the email', stepPassword: 'Choose a password',
+    confirmCode: 'Confirm', createAccount: 'Create account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
     setPwTitle: 'Choose a password', setPwHint: 'From now on you\'ll sign in with your email and this password. At least 8 characters.',
     newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
     pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
-    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time, or forgot it? Get a code by email below.',
+    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Create account".',
     tabAdmin: 'Admin',
     account: 'Account', accountHint: 'Sign in to sync your teams to the cloud. Only for people given access by the admin. Without an account the app works as before, on this phone only.',
     email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'We sent a code to {email}. It can take a minute; check the spam folder too.',
@@ -151,7 +154,7 @@ const I18N = {
     lastDirector: 'A team must keep at least one director.',
     admin: 'Admin', adminHint: 'Give people access, manage accounts and cloud teams.', adminOnly: 'Only the admin can open this page.',
     giveAccess: 'Give access', accountKind: 'Account type',
-    giveAccessHint: 'Creates an account for this email. No email is sent: the first time, the person opens the app (Profile → Account), taps "First time…? Get a code", enters the code from the email and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
+    giveAccessHint: 'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Create account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
     accessGivenTitle: 'Access given', accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
     errExists: 'This email already has access.', errEmail: 'Check the email address.', errNotAdmin: 'Only the admin can do this.',
     errSession: 'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
@@ -211,12 +214,15 @@ const I18N = {
     tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
-    password: 'Palavra-passe', signInPw: 'Entrar', getCodeLink: 'Primeira vez, ou esqueceste a palavra-passe? Receber um código por email',
-    backToPassword: 'Entrar com palavra-passe', codeIntro: 'Enviamos-te um código por email. Usa-o na primeira vez (para confirmar que recebeste acesso) ou se te esqueceste da palavra-passe; depois escolhes uma palavra-passe.',
+    password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Criar conta',
+    signUpIntro: 'Só para quem recebeu acesso do administrador: usa o email que o administrador registou. Enviamos um código para esse email para confirmar que é teu e depois escolhes uma palavra-passe.',
+    resetTitle: 'Recuperar a palavra-passe', resetIntro: 'Enviamos um código para o teu email e depois escolhes uma nova palavra-passe.',
+    stepOf: 'Passo {n} de 3', stepEmail: 'O teu email', stepCode: 'Código do email', stepPassword: 'Escolhe uma palavra-passe',
+    confirmCode: 'Confirmar', createAccount: 'Criar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
     setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'A partir de agora entras com o teu email e esta palavra-passe. Pelo menos 8 caracteres.',
     newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
     pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
-    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. Primeira vez, ou esqueceste-a? Recebe um código por email abaixo.',
+    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Criar conta".',
     tabAdmin: 'Admin',
     account: 'Conta', accountHint: 'Entra para sincronizar as equipas na nuvem. Só para quem recebeu acesso do administrador. Sem conta, a app funciona como até agora, só neste telemóvel.',
     email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviámos um código para {email}. Pode demorar um minuto; vê também a pasta de spam.',
@@ -277,7 +283,7 @@ const I18N = {
     lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
     admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas na nuvem.', adminOnly: 'Só o administrador pode abrir esta página.',
     giveAccess: 'Dar acesso', accountKind: 'Tipo de conta',
-    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: na primeira vez, a pessoa abre a app (Perfil → Conta), toca em "Primeira vez…? Receber um código", introduz o código do email e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
+    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Criar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
     accessGivenTitle: 'Acesso dado', accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
     errExists: 'Este email já tem acesso.', errEmail: 'Verifica o endereço de email.', errNotAdmin: 'Só o administrador pode fazer isto.',
     errSession: 'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
@@ -900,7 +906,7 @@ const TAB_ICONS = {
 
 function renderTabbar(view) {
   const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['profile', 'admin'].includes(view) ? view : 'matches';
-  const isAdmin = !!(cloud.session && cloud.account?.isAdmin);
+  const isAdmin = !!(cloud.session && cloud.account?.isAdmin && !cloud.needsPassword);
   const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
   const tab = (k, label, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
@@ -1021,13 +1027,15 @@ const sb = window.supabase?.createClient && CLOUD.supabaseUrl
   : null;
 
 const readJSON = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
-// step: 'login' (email + password) | 'email' (ask for a code) | 'code' (enter the code).
-// After signing in with a code the user must choose a password (`needsPassword`, kept across
-// reloads so closing the app doesn't skip it).
+// mode: 'signin' (email + password) | 'signup' (create account) | 'reset' (forgot password).
+// signup and reset are 3 steps: email -> code by email -> choose a password. `step` is
+// 'email' or 'code'; after the code the user is signed in and must choose a password
+// (`needsPassword`, kept across reloads so closing the app doesn't skip it; SETPW_KEY holds the
+// mode for the step title).
 const SETPW_KEY = 'fut-academy-stats.setPassword';
 const cloud = {
-  session: null, account: readJSON(ACCOUNT_KEY), step: 'login', email: '', busy: false, error: '',
-  needsPassword: localStorage.getItem(SETPW_KEY) === '1', changingPassword: false,
+  session: null, account: readJSON(ACCOUNT_KEY), mode: 'signin', step: 'email', email: '', busy: false, error: '',
+  needsPassword: !!localStorage.getItem(SETPW_KEY), pwMode: localStorage.getItem(SETPW_KEY) || 'signup', changingPassword: false,
 };
 
 // Re-render account screens; elsewhere just refresh the tab bar (the Admin tab follows the account).
@@ -1102,16 +1110,16 @@ const verifyCode = (token) => cloudStep(async () => {
   const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
   if (error) throw error;
   // Signed in with a code: first time or forgotten password, so a password is chosen next.
-  localStorage.setItem(SETPW_KEY, '1');
-  Object.assign(cloud, { step: 'login', needsPassword: true });
-  toast(t('signedIn'));
+  const pwMode = cloud.mode === 'reset' ? 'reset' : 'signup';
+  localStorage.setItem(SETPW_KEY, pwMode);
+  Object.assign(cloud, { mode: 'signin', step: 'email', needsPassword: true, pwMode });
 });
 
 const signInPassword = (email, password) => cloudStep(async () => {
   cloud.email = email; // kept if it fails (the form is drawn again), e.g. for "get a code"
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
-  Object.assign(cloud, { step: 'login', email: '' });
+  Object.assign(cloud, { mode: 'signin', step: 'email', email: '' });
   toast(t('signedIn'));
 });
 
@@ -1121,19 +1129,23 @@ const setPassword = (pw, pw2) => cloudStep(async () => {
   if (pw !== pw2) throw new Error(t('pwMismatch'));
   const { error } = await sb.auth.updateUser({ password: pw });
   if (error) throw error;
+  const wasNew = cloud.needsPassword;
   localStorage.removeItem(SETPW_KEY);
   Object.assign(cloud, { needsPassword: false, changingPassword: false, email: '' });
-  toast(t('pwSaved'));
+  toast(wasNew ? t('signedIn') : t('pwSaved'));
+  if (wasNew) setTimeout(syncNow); // sync was held back until the password was chosen
 });
 
 function setPasswordForm(busy, err, cancel) {
-  return `<h3 class="sub-title">${t('setPwTitle')}</h3>
+  const step3 = cloud.needsPassword;
+  return `${step3 ? `<p class="step-label">${t('stepOf', { n: 3 })}</p>` : ''}
+    <h3 class="sub-title">${step3 ? t('stepPassword') : t('changePassword')}</h3>
     <p class="hint">${t('setPwHint')}</p>
     <form class="form" data-form="set-password">
       <input type="email" name="username" autocomplete="username" value="${esc(cloud.session.user.email)}" hidden>
       <label>${t('newPassword')}<input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
       <label>${t('repeatPassword')}<input name="password2" type="password" required minlength="8" autocomplete="new-password"></label>
-      <button class="btn primary" ${busy}>${t('savePassword')}</button>
+      <button class="btn primary" ${busy}>${step3 && cloud.pwMode === 'signup' ? t('createAccount') : t('savePassword')}</button>
       ${cancel ? `<button type="button" class="btn ghost" data-action="cancel-password">${t('cancel')}</button>` : ''}
     </form>${err}`;
 }
@@ -1147,6 +1159,11 @@ function accountSectionBody() {
   if (!sb) return `${head}<p class="hint">${t('cloudUnavailable')}</p>`;
   const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
   const busy = cloud.busy ? 'disabled' : '';
+  if (cloud.session && cloud.needsPassword) {
+    // Step 3 of "Create account" / "Reset your password": nothing else until it's done.
+    return `${head}<section class="auth-steps">${cloud.pwMode === 'reset' ? `<p class="muted small">${t('resetTitle')}</p>` : ''}
+      ${setPasswordForm(busy, err, false)}</section>`;
+  }
   if (cloud.session) {
     const a = cloud.account;
     const kind = a && !a.none ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')].filter(Boolean).join(' · ') : '';
@@ -1158,41 +1175,50 @@ function accountSectionBody() {
           <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>` : ''}
       </ul>
       ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
-      ${cloud.needsPassword || cloud.changingPassword ? setPasswordForm(busy, err, !cloud.needsPassword)
+      ${cloud.changingPassword ? setPasswordForm(busy, err, true)
         : `${err}<button class="btn small ghost" data-action="change-password">${t('changePassword')}</button>`}`;
   }
+  const tabs = cloud.mode === 'reset' ? '' : `<div class="seg big auth-tabs" role="tablist">
+      <button role="tab" class="${cloud.mode === 'signin' ? 'on' : ''}" aria-selected="${cloud.mode === 'signin'}" data-action="auth-mode" data-v="signin" ${busy}>${t('tabSignIn')}</button>
+      <button role="tab" class="${cloud.mode === 'signup' ? 'on' : ''}" aria-selected="${cloud.mode === 'signup'}" data-action="auth-mode" data-v="signup" ${busy}>${t('tabSignUp')}</button>
+    </div>`;
+  if (cloud.mode === 'signin') {
+    return `${head}${tabs}
+      <p class="hint">${t('accountHint')}</p>
+      <form class="form" data-form="signin-password">
+        <label>${t('email')}<input name="email" type="email" required autocomplete="username" inputmode="email" value="${esc(cloud.email)}"></label>
+        <label>${t('password')}<input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn primary" ${busy}>${t('signInPw')}</button>
+      </form>
+      ${err}
+      <p class="hint"><button class="link-btn" data-action="auth-mode" data-v="reset" ${busy}>${t('forgotPassword')}</button></p>`;
+  }
+  // signup / reset: step 1 (email) or step 2 (code)
+  const title = cloud.mode === 'reset' ? `<h3 class="sub-title">${t('resetTitle')}</h3>` : '';
+  const intro = cloud.mode === 'reset' ? t('resetIntro') : t('signUpIntro');
+  const back = cloud.mode === 'reset' ? `<p class="hint"><button class="link-btn" data-action="auth-mode" data-v="signin" ${busy}>${t('backToSignIn')}</button></p>` : '';
   if (cloud.step === 'code') {
-    return `${head}
+    return `${head}${tabs}<section class="auth-steps">${title}
+      <p class="step-label">${t('stepOf', { n: 2 })}</p>
       <p class="hint">${t('codeSent', { email: `<b>${esc(cloud.email)}</b>` })}</p>
       <form class="form" data-form="signin-code">
-        <label>${t('codeLabel')}<input name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10"></label>
-        <button class="btn primary" ${busy}>${t('signIn')}</button>
+        <label>${t('stepCode')}<input name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10"></label>
+        <button class="btn primary" ${busy}>${t('confirmCode')}</button>
       </form>
       ${err}
       <div class="row gap wrap signin-links">
         <button class="btn small ghost" data-action="signin-back" ${busy}>${t('otherEmail')}</button>
         <button class="btn small ghost" data-action="signin-resend" ${busy}>${t('resendCode')}</button>
-      </div>`;
+      </div></section>${back}`;
   }
-  if (cloud.step === 'email') {
-    return `${head}
-      <p class="hint">${t('codeIntro')}</p>
-      <form class="form" data-form="signin-email">
-        <label>${t('email')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
-        <button class="btn primary" ${busy}>${t('sendCode')}</button>
-      </form>
-      ${err}
-      <div class="signin-links"><button class="btn small ghost" data-action="signin-to-password" ${busy}>${t('backToPassword')}</button></div>`;
-  }
-  return `${head}
-    <p class="hint">${t('accountHint')}</p>
-    <form class="form" data-form="signin-password">
-      <label>${t('email')}<input name="email" type="email" required autocomplete="username" inputmode="email" value="${esc(cloud.email)}"></label>
-      <label>${t('password')}<input name="password" type="password" required autocomplete="current-password"></label>
-      <button class="btn primary" ${busy}>${t('signInPw')}</button>
+  return `${head}${tabs}<section class="auth-steps">${title}
+    <p class="hint">${intro}</p>
+    <p class="step-label">${t('stepOf', { n: 1 })}</p>
+    <form class="form" data-form="signin-email">
+      <label>${t('stepEmail')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
+      <button class="btn primary" ${busy}>${t('sendCode')}</button>
     </form>
-    ${err}
-    <p class="hint"><button class="link-btn" data-action="signin-get-code" ${busy}>${t('getCodeLink')}</button></p>`;
+    ${err}</section>${back}`;
 }
 
 // ---------- Cloud sync ----------
@@ -1236,7 +1262,7 @@ const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(',')}]`
 const sameRecord = (a, b) => canon({ ...a, updatedAt: undefined, dirty: undefined }) === canon({ ...b, updatedAt: undefined, dirty: undefined });
 
 const roleOf = (teamId) => db.sync.teams[teamId] || null;
-const canSync = () => !!(sb && cloud.session && cloud.account && !cloud.account.none);
+const canSync = () => !!(sb && cloud.session && cloud.account && !cloud.account.none && !cloud.needsPassword);
 const canUpload = () => canSync() && (cloud.account.kind === 'director' || cloud.account.isAdmin);
 const localTeams = () => db.teams.filter((tm) => !isCloudTeam(tm.id));
 const pushable = (kind, r) => r.dirty && roleOf(teamIdOf(kind, r)) === 'director';
@@ -1638,7 +1664,7 @@ const READ_ONLY_OK = new Set([
   'close-sheet', 'menu-toggle', 'games-team', 'soon', // navigation
   'theme', 'lang', 'backup', // settings
   'signin-back', 'signin-resend', 'sign-out', 'sync-now', 'privacy', // account and sync
-  'signin-get-code', 'signin-to-password', 'change-password', 'cancel-password',
+  'auth-mode', 'change-password', 'cancel-password',
   'pdf', // share the report
   'player', // opens a read-only info sheet for coaches (see actions.player)
   'people-reload', 'leave-team', // People section (anyone may leave a team)
@@ -2735,8 +2761,12 @@ const actions = {
   privacy: () => openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
     <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
   'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
-  'signin-get-code': () => { cloud.email = $('form[data-form="signin-password"] input[name="email"]')?.value.trim() || cloud.email; Object.assign(cloud, { step: 'email', error: '' }); render(); },
-  'signin-to-password': () => { Object.assign(cloud, { step: 'login', error: '' }); render(); },
+  'auth-mode': ({ v }) => {
+    // Keep a typed email when switching between Sign in / Create account / Reset.
+    const typed = $('main input[name="email"]')?.value.trim();
+    Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
+    render();
+  },
   'change-password': () => { Object.assign(cloud, { changingPassword: true, error: '' }); render(); },
   'cancel-password': () => { Object.assign(cloud, { changingPassword: false, error: '' }); render(); },
   'signin-resend': () => sendCode(cloud.email),

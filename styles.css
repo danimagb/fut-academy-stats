@@ -482,3 +482,7 @@ select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; f
 .privacy p { margin: 0 0 10px; font-size: .92rem; }
 .tabbar.five { grid-template-columns: repeat(5, 1fr); }
 .tabbar.five .tab span { font-size: .68rem; }
+.auth-tabs { display: flex; margin: 4px 0 6px; }
+.auth-tabs button { flex: 1; }
+.step-label { margin: 10px 0 2px; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.auth-steps .sub-title { margin-top: 8px; }
