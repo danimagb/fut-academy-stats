@@ -174,6 +174,13 @@ branch is merged into `main` only once everything works end to end.
     member insert/update/delete with RLS and the last-director trigger): the 19 step 5 tests
     plus 13 step 6 tests (admin, director and coach phones). Not yet tried against the real
     project.
+- Step 6 tested against the **real project**: the `admin` function is deployed with Verify JWT
+  **on** and accepts the maintainer's real session (a forged JWT is refused by the gateway,
+  no session by the function); `create_account` / `exists` / `delete_account` work; the admin
+  changed an account's kind; the Admin page lists accounts; a cloud team was created,
+  `add_team_coach` returned `added` / `already_member` / `no_account`; the People section
+  showed the coach. Test account and team deleted afterwards. Fixed on the way: long emails
+  made People / Admin rows wider than the screen (grid items now `min-width: 0`).
 - Next (step 7): `keep-alive` GitHub Actions workflow (reads `ping`), privacy note in the app,
   delete-cloud-data option, README (cloud sync, accounts, Admin page), deploy the `admin`
   function and test the whole flow on two real phones (give access → sign in → director adds a
