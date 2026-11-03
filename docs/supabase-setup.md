@@ -23,7 +23,11 @@ In **Authentication → Sign In / Providers** (or **Authentication → Settings*
 - Turn **off** "Allow new users to sign up" and **Save**. Nobody can create an account on their
   own any more. (Without this, anyone could create an account through Supabase's sign-up
   endpoint, even though such an account would get no access to the data.)
-- Keep the **Email** provider enabled.
+- Keep the **Email** provider enabled. People sign in with email + password (and get a code by
+  email the first time or when they forget the password).
+- **Passwords**: under the Email provider (or **Authentication → Policies / Passwords**), set
+  the **minimum password length to 8** (the app asks for 8 too). Supabase stores passwords only
+  as bcrypt hashes.
 - Leave other providers (Google, Apple, …) off for now.
 
 ## 3. Email sending (custom SMTP)
@@ -51,7 +55,7 @@ Keep the app password in Supabase only: never in the repo or the app.
 Later, for a branded sender (e.g. `noreply@yourclub.pt`), get a domain and a provider such as
 Resend or Brevo, and change these SMTP fields.
 
-## 4. Send a 6-digit code instead of a link
+## 4. Send a code instead of a link (first sign-in and forgotten passwords)
 
 The app signs people in with a code typed into the app. On iPhone, a link would open in
 Safari instead of the home-screen app.

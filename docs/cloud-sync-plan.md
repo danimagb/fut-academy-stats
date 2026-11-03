@@ -188,6 +188,10 @@ branch is merged into `main` only once everything works end to end.
   - Profile → Account → "How your data is handled": what is stored, where, who sees it, how
     to delete (EN + PT). Backup hint updated for synced teams.
   - README "Cloud sync (optional)" section and file list; CLAUDE.md points to this plan.
+- After the merge into `main` (danimagb/fut-academy-stats#19): **password sign-in** (email +
+  password; code by email the first time / forgotten password, then choose a password;
+  "Change password" on Profile) and an **Admin tab** in the bottom bar for the admin only (the
+  Admin row on Profile was removed).
 - Remaining: test on two real phones after merging `feature/cloud-sync` into `main` (GitHub
   Pages serves `main` only). Possible follow-ups: shared live logging on two phones (events as
   rows), Google/Apple sign-in, a read-only viewer role for parents.
@@ -247,10 +251,13 @@ There are two separate levels:
 ### Sign-in
 
 - Supabase Auth: **"Allow new users to sign up" is turned off.**
-- The user types their email, then receives a **6-digit code** by email and types it in the
-  app (`signInWithOtp({ shouldCreateUser: false })` + `verifyOtp`). An email without an
-  account gets no code. A code is used instead of a magic link because on iPhone the link
-  would open in Safari, not in the home-screen app, so the app wouldn't be signed in.
+- **Email + password** (`signInWithPassword`). The **first time**, and after a **forgotten
+  password**, the user asks for a code by email instead (`signInWithOtp({ shouldCreateUser:
+  false })` + `verifyOtp`); an email without an account gets no code. After a code sign-in the
+  app requires choosing a password (`updateUser({ password })`, min. 8 characters; the
+  requirement survives reloads). Passwords are kept by Supabase Auth only as bcrypt hashes,
+  never in our tables or on the phone. A code (not a magic link) because on iPhone a link
+  would open in Safari, not in the home-screen app.
 - The session is kept on the phone and refreshed automatically; you stay signed in.
 - **Other sign-in options (later, optional)**: Google, Apple or Microsoft through Supabase.
   Still invite-only: with sign-ups off, only someone who already has an account (same email)
@@ -267,9 +274,10 @@ There are two separate levels:
     dashboard (SQL), never from the app.
 - **Bootstrap**: the maintainer creates their own user in the dashboard and marks it as admin
   with one SQL statement (see `docs/supabase-setup.md`). The admin also has a director account.
-- **Giving access** (app → Admin page, visible only to the admin): email + kind. The app calls
+- **Giving access** (app → **Admin tab**, visible only to the admin): email + kind. The app calls
   the `admin` Edge Function, which checks the caller is admin and, with the service role,
-  creates the auth user and the `accounts` row. The person then signs in with the code.
+  creates the auth user and the `accounts` row. The person then gets a code the first time and
+  chooses a password.
 - The admin can also list accounts, change an account's kind, and remove access (deletes
   the user; their memberships go with it).
 
@@ -408,7 +416,8 @@ New records use `crypto.randomUUID()`.
 3. **Database**: `supabase/` folder with SQL migrations (tables, triggers, RLS) and RLS tests,
    plus a setup guide (create the project in the EU, turn off sign-ups, enable email OTP,
    create your user). *You create the Supabase project here.*
-4. **Sign-in**: Profile → Account: email + 6-digit code, sign out, signed-in status. Vendored
+4. **Sign-in**: Profile → Account: email + code (later: email + password, with a code the first
+   time and for a forgotten password), sign out, signed-in status. Vendored
    supabase-js and `config.js`.
 5. **Sync engine**: push/pull, offline queue, status and "Sync now", first sign-in upload.
 6. **Accounts and team access**: `admin` Edge Function and the Admin page (give access,
@@ -429,4 +438,5 @@ Each PR is tested on its own. PRs 2–4 change nothing for someone who doesn't s
 - The app keeps working without an account (local storage only, as today); signing in adds
   cloud sync.
 - The Supabase account is owned by the maintainer.
-- Sign-in: email code first. Google/Apple/Microsoft are optional extras, after testing on iPhone.
+- Sign-in: email + password; a code by email the first time and for a forgotten password.
+  Google/Apple/Microsoft are optional extras, after testing on iPhone.

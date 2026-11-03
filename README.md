@@ -46,8 +46,11 @@ adds cloud sync through [Supabase](https://supabase.com) (EU region), so a team 
 the phone and can be shared with other coaches.
 
 - **Invite-only.** Nobody can create an account. The **admin** gives people access on the
-  in-app **Admin** page (Profile → Account → Admin), as a **director** or **coach** account.
-  People sign in with their email and a code sent by email (no passwords).
+  in-app **Admin** page (the *Admin* tab, only visible to the admin), as a **director** or
+  **coach** account.
+  The first time (and after a forgotten password) people get a code by email, then choose a
+  password; after that they sign in with **email + password**, and the app keeps them signed in.
+  Passwords are stored by Supabase Auth only as bcrypt hashes.
 - **Synced or on this phone.** Every team is either *Synced* or *On this phone*. Director
   accounts can upload a team (or create new teams as synced); coach accounts keep their own
   teams on the phone.
