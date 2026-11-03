@@ -17,6 +17,7 @@
   --win: #3ddc84;
   --loss: #ff6b6b;
   --draw: #9a9fa8;
+  --cloud: #6cb4ff;
   --radius: 14px;
   color-scheme: dark;
 }
@@ -41,6 +42,7 @@
   --win: #0f8a45;
   --loss: #c62828;
   --draw: #6b727c;
+  --cloud: #1559b0;
   color-scheme: light;
 }
 
@@ -129,6 +131,7 @@ form.add-player { display: grid; gap: 8px; margin: 10px 0; }
 .badge { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
 .badge.live { background: var(--accent); color: var(--accent-ink); }
 .badge.break { background: var(--warn); color: #2b1a00; }
+.badge.cloud { color: var(--cloud); background: color-mix(in srgb, var(--cloud) 15%, transparent); white-space: nowrap; }
 
 .shirt {
   flex: none; display: inline-grid; place-items: center;
@@ -441,3 +444,15 @@ label.inline input { width: 90px; min-height: 40px; }
 .score .them { color: var(--loss); }
 .badge.result { font-weight: 700; color: var(--res); background: color-mix(in srgb, var(--res) 15%, transparent); }
 .signin-links { margin-top: 10px; }
+
+/* Cloud sync: team kind, upload */
+.team-kind { margin: -4px 0 10px; }
+.upload-team { margin-top: 12px; }
+.upload-team .hint { margin-top: 6px; }
+.check-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.check, .form .check {
+  display: flex; font-size: 1rem; color: var(--text); align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+}
+.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); flex: none; }
+.check .sub-line { display: block; }
