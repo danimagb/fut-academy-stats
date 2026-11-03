@@ -1167,14 +1167,15 @@ function accountSectionBody() {
     const kind = a && !a.none ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')].filter(Boolean).join(' · ') : '';
     return `${head}
       <ul class="list settings">
-        <li class="item"><span class="grow"><strong>${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span>
-          <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></li>
+        <li class="item"><span class="grow"><strong class="acct-email" title="${esc(cloud.session.user.email)}">${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span></li>
         ${canSync() ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
           <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>` : ''}
       </ul>
       ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
       ${cloud.changingPassword ? setPasswordForm(busy, err, true)
-        : `${err}<button class="btn small ghost" data-action="change-password">${t('changePassword')}</button>`}`;
+        : `${err}<div class="row gap wrap acct-actions">
+            <button class="btn small ghost" data-action="change-password">${t('changePassword')}</button>
+            <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></div>`}`;
   }
   const tabs = cloud.mode === 'reset' ? '' : `<div class="seg big auth-tabs" role="tablist">
       <button role="tab" class="${cloud.mode === 'signin' ? 'on' : ''}" aria-selected="${cloud.mode === 'signin'}" data-action="auth-mode" data-v="signin" ${busy}>${t('tabSignIn')}</button>
