@@ -94,8 +94,8 @@ const I18N = {
     newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
     pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
     pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Create account".',
-    tabAdmin: 'Admin',
-    account: 'Account', accountHint: 'Sign in to sync your teams to the cloud. Only for people given access by the admin. Without an account the app works as before, on this phone only.',
+    tabAdmin: 'Admin', notSignedIn: 'Not signed in', backupSummary: 'Export or import a copy of your data',
+    account: 'Account', accountHint: 'Sync your teams to the cloud. Only for people the admin gave access to.',
     email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'We sent a code to {email}. It can take a minute; check the spam folder too.',
     otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out on this phone?', signedIn: 'Signed in',
     acctDirector: 'Director account', acctCoach: 'Coach account', acctAdmin: 'Admin', acctNone: 'This user has no access set up yet. Ask the admin.',
@@ -223,8 +223,8 @@ const I18N = {
     newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
     pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
     pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Criar conta".',
-    tabAdmin: 'Admin',
-    account: 'Conta', accountHint: 'Entra para sincronizar as equipas na nuvem. Só para quem recebeu acesso do administrador. Sem conta, a app funciona como até agora, só neste telemóvel.',
+    tabAdmin: 'Admin', notSignedIn: 'Sessão não iniciada', backupSummary: 'Exportar ou importar uma cópia dos dados',
+    account: 'Conta', accountHint: 'Sincroniza as equipas na nuvem. Só para quem recebeu acesso do administrador.',
     email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviámos um código para {email}. Pode demorar um minuto; vê também a pasta de spam.',
     otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão neste telemóvel?', signedIn: 'Sessão iniciada',
     acctDirector: 'Conta de diretor', acctCoach: 'Conta de treinador', acctAdmin: 'Admin', acctNone: 'Este utilizador ainda não tem acesso configurado. Fala com o administrador.',
@@ -1155,7 +1155,7 @@ function accountSection() {
 }
 
 function accountSectionBody() {
-  const head = `<h2>${t('account')}</h2>`;
+  const head = '';
   if (!sb) return `${head}<p class="hint">${t('cloudUnavailable')}</p>`;
   const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
   const busy = cloud.busy ? 'disabled' : '';
@@ -1664,7 +1664,7 @@ const READ_ONLY_OK = new Set([
   'close-sheet', 'menu-toggle', 'games-team', 'soon', // navigation
   'theme', 'lang', 'backup', // settings
   'signin-back', 'signin-resend', 'sign-out', 'sync-now', 'privacy', // account and sync
-  'auth-mode', 'change-password', 'cancel-password',
+  'auth-mode', 'change-password', 'cancel-password', 'profile-section',
   'pdf', // share the report
   'player', // opens a read-only info sheet for coaches (see actions.player)
   'people-reload', 'leave-team', // People section (anyone may leave a team)
@@ -1930,26 +1930,48 @@ function viewAdmin() {
 // ---------- Views: profile / settings ----------
 // App settings live here; add new sections as more settings appear.
 
+// Profile is an accordion: Account, Settings, Backup. One section open at a time (Account by
+// default, every time the app starts); each closed header shows a one-line summary. While
+// creating an account / choosing a password, Account stays open.
+let profileOpen = 'account';
+
 function viewProfile() {
   const seg = (action, current, options) => `<span class="seg big" role="group">${options.map(([v, label]) =>
     `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`).join('')}</span>`;
+  const busyAuth = cloud.needsPassword || cloud.step === 'code';
+  const open = busyAuth ? 'account' : profileOpen;
+  const a = cloud.account;
+  const accountSum = cloud.session
+    ? (cloud.needsPassword ? t('stepOf', { n: 3 }) : [cloud.session.user.email, a && !a.none && (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach'))].filter(Boolean).join(' · '))
+    : t('notSignedIn');
+  const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[theme];
+  const section = (id, title, summary, body) => `
+    <section class="acc ${open === id ? 'open' : ''}">
+      <button class="acc-head" data-action="profile-section" data-v="${id}" aria-expanded="${open === id}" aria-controls="acc-${id}">
+        <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum">${esc(summary)}</span></span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div class="acc-body" id="acc-${id}" ${open === id ? '' : 'hidden'}>${body}</div>
+    </section>`;
   main.innerHTML = `
     ${bar(t('tabProfile'))}
-    ${accountSection()}
-    <h2>${t('settings')}</h2>
-    <ul class="list settings">
-      <li class="item"><span class="grow">${t('language')}</span>
-        ${seg('lang', lang, [['en', 'English'], ['pt', 'Português']])}</li>
-      <li class="item wrap"><span class="grow">${t('theme')}</span>
-        ${seg('theme', theme, [['light', `☀️ ${t('themeLight')}`], ['dark', `🌙 ${t('themeDark')}`], ['auto', t('themeAuto')]])}</li>
-    </ul>
-    <p class="hint">${t('themeHint')}</p>
-    <h2>${t('backupTitle')}</h2>
-    <p class="hint">${t('backupHint')}</p>
-    ${persisted === null ? '' : `<p class="hint ${persisted ? 'ok' : 'warn'}">${persisted ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
-    <div class="row gap">
-      <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
-      <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
+    <div class="accordion">
+    ${section('account', t('account'), accountSum, accountSection())}
+    ${section('settings', t('settings'), `${lang === 'pt' ? 'Português' : 'English'} · ${themeLabel}`, `
+      <ul class="list settings">
+        <li class="item"><span class="grow">${t('language')}</span>
+          ${seg('lang', lang, [['en', 'English'], ['pt', 'Português']])}</li>
+        <li class="item wrap"><span class="grow">${t('theme')}</span>
+          ${seg('theme', theme, [['light', `☀️ ${t('themeLight')}`], ['dark', `🌙 ${t('themeDark')}`], ['auto', t('themeAuto')]])}</li>
+      </ul>
+      <p class="hint">${t('themeHint')}</p>`)}
+    ${section('backup', t('backupTitle'), t('backupSummary'), `
+      <p class="hint">${t('backupHint')}</p>
+      ${persisted === null ? '' : `<p class="hint ${persisted ? 'ok' : 'warn'}">${persisted ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
+      <div class="row gap">
+        <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
+        <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
+      </div>`)}
     </div>`;
 }
 
@@ -2761,6 +2783,10 @@ const actions = {
   privacy: () => openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
     <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
   'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
+  'profile-section': ({ v }) => {
+    profileOpen = profileOpen === v ? '' : v; // tap the open one to close it
+    render();
+  },
   'auth-mode': ({ v }) => {
     // Keep a typed email when switching between Sign in / Create account / Reset.
     const typed = $('main input[name="email"]')?.value.trim();
