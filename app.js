@@ -86,17 +86,17 @@ const I18N = {
     allTeams: 'All', noGamesTeam: 'No games for this team yet.',
     removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
     password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Create account',
-    signUpIntro: 'Only for people the admin gave access to: use the email the admin registered. We\'ll send a code to that email to confirm it\'s yours, then you choose a password.',
-    resetTitle: 'Reset your password', resetIntro: 'We\'ll send a code to your email, then you choose a new password.',
+    signUpIntro: 'Use the email the admin registered.',
+    resetTitle: 'Reset your password', resetIntro: '',
     stepOf: 'Step {n} of 3', stepEmail: 'Your email', stepCode: 'Code from the email', stepPassword: 'Choose a password',
     confirmCode: 'Confirm', createAccount: 'Create account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
-    setPwTitle: 'Choose a password', setPwHint: 'From now on you\'ll sign in with your email and this password. At least 8 characters.',
+    setPwTitle: 'Choose a password', setPwHint: 'At least 8 characters.',
     newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
     pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
     pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Create account".',
     tabAdmin: 'Admin', notSignedIn: 'Not signed in', backupSummary: 'Export or import a copy of your data',
     account: 'Account', accountHint: 'Sync your teams to the cloud. Only for people the admin gave access to.',
-    email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'We sent a code to {email}. It can take a minute; check the spam folder too.',
+    email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'Sent to {email} (check spam too).',
     otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out on this phone?', signedIn: 'Signed in',
     acctDirector: 'Director account', acctCoach: 'Coach account', acctAdmin: 'Admin', acctNone: 'This user has no access set up yet. Ask the admin.',
     authNoAccess: 'This email doesn\'t have access. Ask the admin.', authBadCode: 'Wrong or expired code. Try again or ask for a new one.',
@@ -215,17 +215,17 @@ const I18N = {
     allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
     removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
     password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Criar conta',
-    signUpIntro: 'Só para quem recebeu acesso do administrador: usa o email que o administrador registou. Enviamos um código para esse email para confirmar que é teu e depois escolhes uma palavra-passe.',
-    resetTitle: 'Recuperar a palavra-passe', resetIntro: 'Enviamos um código para o teu email e depois escolhes uma nova palavra-passe.',
+    signUpIntro: 'Usa o email que o administrador registou.',
+    resetTitle: 'Recuperar a palavra-passe', resetIntro: '',
     stepOf: 'Passo {n} de 3', stepEmail: 'O teu email', stepCode: 'Código do email', stepPassword: 'Escolhe uma palavra-passe',
     confirmCode: 'Confirmar', createAccount: 'Criar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
-    setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'A partir de agora entras com o teu email e esta palavra-passe. Pelo menos 8 caracteres.',
+    setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'Pelo menos 8 caracteres.',
     newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
     pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
     pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Criar conta".',
     tabAdmin: 'Admin', notSignedIn: 'Sessão não iniciada', backupSummary: 'Exportar ou importar uma cópia dos dados',
     account: 'Conta', accountHint: 'Sincroniza as equipas na nuvem. Só para quem recebeu acesso do administrador.',
-    email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviámos um código para {email}. Pode demorar um minuto; vê também a pasta de spam.',
+    email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviado para {email} (vê também o spam).',
     otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão neste telemóvel?', signedIn: 'Sessão iniciada',
     acctDirector: 'Conta de diretor', acctCoach: 'Conta de treinador', acctAdmin: 'Admin', acctNone: 'Este utilizador ainda não tem acesso configurado. Fala com o administrador.',
     authNoAccess: 'Este email não tem acesso. Fala com o administrador.', authBadCode: 'Código errado ou expirado. Tenta outra vez ou pede um novo.',
@@ -1212,7 +1212,7 @@ function accountSectionBody() {
       </div></section>${back}`;
   }
   return `${head}${tabs}<section class="auth-steps">${title}
-    <p class="hint">${intro}</p>
+    ${intro ? `<p class="hint">${intro}</p>` : ''}
     <p class="step-label">${t('stepOf', { n: 1 })}</p>
     <form class="form" data-form="signin-email">
       <label>${t('stepEmail')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
