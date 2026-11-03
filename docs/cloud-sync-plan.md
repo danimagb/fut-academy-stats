@@ -15,9 +15,9 @@ branch is merged into `main` only once everything works end to end.
 | – | Persistent storage (shipped on `main`, outside the feature branch) | ✅ merged | danimagb/fut-academy-stats#11 |
 | 2 | Local data groundwork | ✅ merged | danimagb/fut-academy-stats#12 |
 | 3 | Database (tables, RLS, tests) + Supabase setup guide | ✅ merged | danimagb/fut-academy-stats#13 |
-| 4 | Sign-in (email code) | 🔄 in review | (this PR) |
-| 5 | Sync engine | ⏳ next | – |
-| 6 | Directors, coaches and invites; read-only coach view | ⏳ | – |
+| 4 | Sign-in (email code) | ✅ merged | danimagb/fut-academy-stats#14 |
+| 5 | Sync engine | 🔄 in review | (this PR) |
+| 6 | Directors, coaches and invites; read-only coach view | ⏳ next | – |
 | 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | ⏳ | – |
 
 **Where things stand (update this with every PR):**
@@ -81,8 +81,67 @@ branch is merged into `main` only once everything works end to end.
     director; `is_admin` can't be changed through the API. The test team was deleted.
   - The cloud environment needs `*.supabase.co` (or the project host) allowed under Network
     access to reach the project.
-- Next (step 5): sync engine. Sync only cloud teams; a team needs a "cloud" mark locally
-  (see "Local teams and cloud teams").
+- Done in step 5 (sync engine, "Cloud sync" section of `app.js`):
+  - `db.sync = { userId, lastPulledAt, lastSyncAt, teams: { [teamId]: 'director'|'coach' },
+    uploads: [teamId] }` (defaulted by `normalize()`). A team is a cloud team iff its id is in
+    `db.sync.teams`; its players and games are too. Everything else is local and never sent.
+    `uploads` = teams being uploaded that the server hasn't confirmed yet (kept through pulls,
+    reverted to local if the server refuses them).
+  - `saveQuiet()` writes the store and refreshes the `saved` snapshot without marking
+    anything dirty: used for pulled data, clearing `dirty`, removing cloud data.
+  - Tombstones in `db.deleted` now carry `teamId` (from the previous snapshot). A game moved
+    from a cloud team to a local team leaves a `moved: true` tombstone (deleted in the cloud,
+    kept on the phone); moved back, it's uploaded again (upserts send `deleted_at: null`).
+  - Mapping: players' `number` is text on both sides; a game is its whole object (minus
+    `updatedAt`/`dirty`) in `data`, plus `team_id`, `date` (valid `YYYY-MM-DD` or null) and
+    `status`. Pulled records get `updatedAt = Date.parse(updated_at)`, `dirty: false`.
+  - `syncNow()` (single flight, runs once more if called meanwhile) = push, then pull.
+    **Push** only for teams where the role is director: upsert dirty records per kind
+    (teams → players → games) and per team, in batches of 100; `dirty` is cleared only if the
+    record didn't change during the request. Then deletes: `update({ deleted_at })` with
+    `in('id', …)`. Deletes of local or coach teams are dropped. Offline (status 0) stops and
+    keeps everything. Error 42501 for a team: an upload in progress reverts the team to local
+    (status line says so); otherwise the user is probably no longer director: its changes are
+    dropped and the team is downloaded in full. **Pull**: memberships (`team_members` of the
+    user) → teams no longer in it are removed from the phone without tombstones; then teams,
+    players, games with `updated_at > lastPulledAt − 10 s`, ordered, 1000 per page. Teams
+    downloaded in full (no `updated_at` filter): new memberships, role changes, refused teams,
+    and coach teams with local edits; local records of those teams the cloud doesn't have are
+    removed (except a director's unsent changes). Merge: `deleted_at` → remove locally; local
+    dirty record of a director team → kept (pushed next time); otherwise the cloud version
+    replaces it (compared key-order-independently, as jsonb reorders keys). Everything is
+    fetched first and applied in one go; `render()` only if something changed, and not while
+    typing / a sheet, dialog or menu is open / dragging (then retried every 1.5 s).
+  - Triggers: app start with a session, `SIGNED_IN` (after `refreshAccount()`), app visible
+    again, `online`, 3 s after a `save()` that changed cloud records, every 60 s while visible,
+    and "Sync now" on Profile. Nothing happens without a session and an `accounts` row.
+  - A different user than `db.sync.userId` signs in → that user's cloud teams are removed from
+    the phone first. Sign out (Profile) warns about changes not uploaded yet, then removes
+    cloud teams (and their players and games) and resets `db.sync`; local teams stay. A
+    `SIGNED_OUT` from elsewhere (session ended) does the same only if nothing is waiting;
+    otherwise the data waits for the same user to sign in again.
+  - Upload: first sign-in of a director (or admin) account on a phone with local teams opens
+    a sheet to pick which to upload; local team screens show "☁️ Upload to the cloud" for
+    director accounts. Teams list and team screen show "Synced" / "On this phone" (the latter
+    only when signed in). Profile → Account shows a quiet status line + "Sync now".
+  - Restoring a backup replaces only the local teams; cloud teams, `db.sync` and pending
+    deletes stay as they were (otherwise a restore would delete cloud data).
+  - Tested with Playwright against an in-memory fake of Supabase (auth + PostgREST with the
+    RLS rules), two browser contexts as two phones: upload prompt, edits/goals/deletes
+    reaching the other phone, coach edits never sent and overwritten, removal from a team,
+    offline queue, edits during an upload, sign-out / another user, game moved between teams,
+    backup restore. Not yet tried against the real project.
+  - Known limitations: last write wins per record, so a live game logged on two phones at
+    once overwrites itself (no warning yet); a director removed from a team loses changes not
+    uploaded yet; the first-sign-in upload prompt is shown once (later: the team screen
+    button); paging by offset could skip a row if more than 1000 rows change during one pull;
+    a coach's local edits of cloud teams are possible until step 6 makes them read-only (they
+    are never sent and the cloud version comes back on the next sync).
+- Next (step 6): `admin` Edge Function + Admin page; team members list, directors add/remove
+  coaches (`add_team_coach`), leave a team; read-only coach view for cloud teams where
+  `db.sync.teams[id] === 'coach'` (hide/disable edit controls). New cloud teams: "+ New team"
+  still creates a local team; a director can upload it (decide in step 6 whether new teams of
+  a signed-in director should be cloud teams by default).
 - Supabase project: created by the maintainer (EU region), migration applied, admin account
   set up (user `danielmagalhaes4@gmail.com`), sign-ups off (verified), custom SMTP through a dedicated Gmail account (app password).
   Project URL: `https://qttfytuptdrovwnedofy.supabase.co`.

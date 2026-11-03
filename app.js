@@ -86,6 +86,16 @@ const I18N = {
     authNoAccess: 'This email doesn\'t have access. Ask the admin.', authBadCode: 'Wrong or expired code. Try again or ask for a new one.',
     authRateLimit: 'Too many attempts. Wait a minute and try again.', authOffline: 'No internet connection. Try again when you have signal.',
     authFailed: 'Couldn\'t sign in ({msg}).', cloudUnavailable: 'Cloud sign-in isn\'t available on this device.',
+    syncing: 'Syncing…', syncedAgo: 'Synced · {ago}', agoNow: 'just now', agoMin: '{n} min ago', agoHour: '{n} h ago',
+    syncWaiting: '{n} changes waiting', syncWaiting1: '1 change waiting', syncOffline: 'Offline · will sync when back online',
+    syncWaitingOffline: '{n} changes waiting (offline)', syncWaitingOffline1: '1 change waiting (offline)',
+    syncFailed: 'Couldn\'t sync, will try again', syncUploadFailed: 'Couldn\'t upload a team to the cloud (not allowed).',
+    syncNever: 'Not synced yet', syncNow: 'Sync now', badgeCloud: 'Synced', badgeLocal: 'On this phone',
+    uploadTeam: '☁️ Upload to the cloud', uploadTeamHint: 'People you share this team with will see it, and you\'ll be its director.',
+    uploadTitle: 'Upload teams to the cloud?', uploadHint: 'These teams are only on this phone. Upload them to keep them safe and share them; you\'ll be their director.',
+    uploadSelected: 'Upload selected', notNow: 'Not now', uploading: 'Uploading to the cloud…',
+    signOutLose: '{n} changes not uploaded yet will be lost.', signOutLose1: '1 change not uploaded yet will be lost.',
+    signOutCloud: 'Cloud teams will be removed from this phone (they stay in the cloud).',
     settings: 'Settings', language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'Auto',
     themeHint: 'Light is easier to read outdoors in sunlight. Auto follows your phone\'s setting.',
     soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
@@ -163,6 +173,16 @@ const I18N = {
     authNoAccess: 'Este email não tem acesso. Fala com o administrador.', authBadCode: 'Código errado ou expirado. Tenta outra vez ou pede um novo.',
     authRateLimit: 'Demasiadas tentativas. Espera um minuto e tenta outra vez.', authOffline: 'Sem ligação à internet. Tenta outra vez quando tiveres rede.',
     authFailed: 'Não foi possível entrar ({msg}).', cloudUnavailable: 'O início de sessão na nuvem não está disponível neste dispositivo.',
+    syncing: 'A sincronizar…', syncedAgo: 'Sincronizado · {ago}', agoNow: 'agora mesmo', agoMin: 'há {n} min', agoHour: 'há {n} h',
+    syncWaiting: '{n} alterações por enviar', syncWaiting1: '1 alteração por enviar', syncOffline: 'Sem rede · sincroniza quando voltar',
+    syncWaitingOffline: '{n} alterações à espera (sem rede)', syncWaitingOffline1: '1 alteração à espera (sem rede)',
+    syncFailed: 'Não foi possível sincronizar, vamos tentar outra vez', syncUploadFailed: 'Não foi possível enviar uma equipa para a nuvem (sem permissão).',
+    syncNever: 'Ainda não sincronizado', syncNow: 'Sincronizar agora', badgeCloud: 'Sincronizada', badgeLocal: 'Neste telemóvel',
+    uploadTeam: '☁️ Enviar para a nuvem', uploadTeamHint: 'Quem partilhar esta equipa contigo vai vê-la, e tu ficas como diretor.',
+    uploadTitle: 'Enviar equipas para a nuvem?', uploadHint: 'Estas equipas só estão neste telemóvel. Envia-as para ficarem guardadas e as poderes partilhar; ficas como diretor.',
+    uploadSelected: 'Enviar selecionadas', notNow: 'Agora não', uploading: 'A enviar para a nuvem…',
+    signOutLose: '{n} alterações ainda não enviadas vão perder-se.', signOutLose1: '1 alteração ainda não enviada vai perder-se.',
+    signOutCloud: 'As equipas da nuvem saem deste telemóvel (continuam na nuvem).',
     settings: 'Definições', language: 'Idioma', theme: 'Tema', themeLight: 'Claro', themeDark: 'Escuro', themeAuto: 'Auto',
     themeHint: 'O tema claro lê-se melhor ao ar livre, com sol. Auto segue a definição do telemóvel.',
     soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
@@ -238,7 +258,9 @@ function load() {
 // Players belong to a team. Data from before teams existed gets one team holding everyone.
 function normalize(data) {
   if (!Array.isArray(data.teams)) data.teams = [];
-  const orphans = data.players.filter((p) => !data.teams.some((tm) => tm.id === p.teamId));
+  data.sync = normalizeSync(data.sync);
+  // Players of a cloud team are left alone (moving them would move them in the cloud too).
+  const orphans = data.players.filter((p) => !data.teams.some((tm) => tm.id === p.teamId) && !data.sync.teams[p.teamId]);
   if (orphans.length) {
     if (!data.teams.length) data.teams.push({ id: uid(), club: '', name: '' });
     for (const p of orphans) p.teamId = data.teams[0].id;
@@ -252,6 +274,20 @@ function normalize(data) {
     }
   }
   return data;
+}
+
+// Cloud sync bookkeeping, kept out of the records so it doesn't count as a change:
+// who synced this phone, the server time of the last pull, the cloud teams with this user's
+// role in each (a team is a cloud team iff it is here; its players and games are too), and
+// teams being uploaded (not confirmed by the server yet). See "Cloud sync" below.
+function emptySync() {
+  return { userId: null, lastPulledAt: null, lastSyncAt: null, teams: {}, uploads: [] };
+}
+function normalizeSync(s) {
+  const sync = { ...emptySync(), ...(s && typeof s === 'object' ? s : {}) };
+  if (!sync.teams || typeof sync.teams !== 'object' || Array.isArray(sync.teams)) sync.teams = {};
+  if (!Array.isArray(sync.uploads)) sync.uploads = [];
+  return sync;
 }
 
 // Games keep a copy of their team's club and name (used in titles, the report and the PDF).
@@ -272,6 +308,13 @@ function syncGameTeams(data, teamId = null) {
 // The rest of the app just edits `db` and calls save(), as before.
 
 const recordKey = ({ updatedAt, dirty, ...rest }) => JSON.stringify(rest);
+const teamIdOf = (kind, r) => (kind === 'teams' ? r.id : r.teamId);
+const isCloudTeam = (teamId) => !!(teamId && db.sync.teams[teamId]);
+// Team of a record as it was at the last save (from its snapshot JSON).
+function savedTeamId(kind, id, key) {
+  if (kind === 'teams') return id;
+  try { return JSON.parse(key).teamId ?? null; } catch { return null; }
+}
 
 function snapshotOf(data) {
   return Object.fromEntries(RECORD_KINDS.map((kind) => [kind, new Map(data[kind].map((r) => [r.id, recordKey(r)]))]));
@@ -284,14 +327,27 @@ function trackChanges(now = Date.now()) {
   for (const kind of RECORD_KINDS) {
     const before = saved[kind];
     const after = next[kind];
+    const gone = [];
     for (const r of db[kind]) {
-      if (before.get(r.id) !== after.get(r.id)) Object.assign(r, { updatedAt: now, dirty: true });
+      const prev = before.get(r.id);
+      if (prev === after.get(r.id)) continue;
+      Object.assign(r, { updatedAt: now, dirty: true });
+      // Moved from a cloud team to a team on this phone (a game's team was changed): delete it
+      // from the cloud team. `moved` tombstones stay while the record is still local.
+      const oldTeam = prev ? savedTeamId(kind, r.id, prev) : null;
+      if (oldTeam && oldTeam !== r.teamId && isCloudTeam(oldTeam) && !isCloudTeam(r.teamId)) {
+        gone.push({ kind, id: r.id, teamId: oldTeam, deletedAt: now, moved: true });
+      }
     }
-    for (const id of before.keys()) {
-      if (!after.has(id)) db.deleted.push({ kind, id, deletedAt: now });
+    // Tombstones remember the record's team, so sync knows whether (and where) to send them.
+    for (const [id, key] of before) {
+      if (!after.has(id)) gone.push({ kind, id, teamId: savedTeamId(kind, id, key), deletedAt: now });
     }
     // A record that is back (e.g. restored from a backup) is no longer deleted.
-    db.deleted = db.deleted.filter((d) => d.kind !== kind || !after.has(d.id));
+    const recs = new Map(db[kind].map((r) => [r.id, r]));
+    db.deleted = db.deleted.filter((d) => d.kind !== kind || !recs.has(d.id)
+      || (d.moved && !isCloudTeam(recs.get(d.id).teamId)));
+    db.deleted.push(...gone);
   }
   saved = next;
 }
@@ -300,6 +356,14 @@ function save() {
   trackChanges();
   localStorage.setItem(STORE_KEY, JSON.stringify(db));
   requestPersistence();
+  if (hasCloudChanges()) scheduleSync();
+}
+
+// Write the store without counting anything as a change: for data that came from (or was
+// cleaned up for) the cloud, and for clearing `dirty` after an upload.
+function saveQuiet() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  saved = snapshotOf(db);
 }
 
 // Ask the browser not to clear our storage when space runs low or the site isn't used for a
@@ -732,6 +796,7 @@ function route() {
 }
 
 function render() {
+  renderPending = false;
   closeSheet();
   const { view, id } = route();
   const views = {
@@ -856,7 +921,7 @@ function viewGames() {
 }
 
 // ---------- Cloud account (Supabase sign-in) ----------
-// Sign-in only for now (cloud sync step 4). Invite-only: the email gets a code only if the
+// Invite-only: the email gets a code only if the
 // admin gave it an account; `shouldCreateUser: false` never creates users. Everything else in
 // the app keeps working without signing in.
 
@@ -887,7 +952,7 @@ async function refreshAccount() {
 if (sb) {
   sb.auth.getSession().then(({ data }) => {
     cloud.session = data.session;
-    if (cloud.session) refreshAccount();
+    if (cloud.session) refreshAccount().finally(syncNow);
     renderIfProfile();
   });
   sb.auth.onAuthStateChange((event, session) => {
@@ -896,8 +961,12 @@ if (sb) {
       cloud.account = null;
       localStorage.removeItem(ACCOUNT_KEY);
     }
+    // Signed out (here or because the session ended): the cloud teams leave this phone, unless
+    // changes are still waiting; those are kept until this user signs in again (another user
+    // signing in removes them first, see syncOnce).
+    if (event === 'SIGNED_OUT' && !pendingCount()) removeCloudData();
     // Supabase advises against calling it again from inside this callback.
-    if (event === 'SIGNED_IN') setTimeout(refreshAccount);
+    if (event === 'SIGNED_IN') setTimeout(() => refreshAccount().finally(syncNow));
     renderIfProfile();
   });
 }
@@ -949,6 +1018,8 @@ function accountSection() {
       <ul class="list settings">
         <li class="item"><span class="grow"><strong>${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span>
           <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></li>
+        ${canSync() ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
+          <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>` : ''}
       </ul>
       ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}${err}`;
   }
@@ -973,6 +1044,416 @@ function accountSection() {
     </form>
     ${err}`;
 }
+
+// ---------- Cloud sync ----------
+// Local-first: the app keeps reading and writing `db` + save(). In the background, syncNow()
+// uploads the changes of cloud teams (push), then downloads what changed in the cloud (pull).
+// Only cloud teams (in db.sync.teams) and their players and games are synced; teams on this
+// phone never leave it. Failures only show in the quiet status line on Profile.
+//  * push (teams where this user is director): upsert `dirty` records, then soft-delete the
+//    records in `db.deleted` (deleted_at). `dirty` is cleared only if the record didn't change
+//    while it was being sent.
+//  * pull: memberships first (teams this user was removed from leave the phone), then rows
+//    changed since the last pull (with some overlap). Local changes not uploaded yet win over
+//    the cloud for directors; for coaches the cloud always wins.
+//  * Last write wins per record (a live game logged on two phones at once overwrites itself).
+
+const PAGE = 1000;
+const PUSH_BATCH = 100;
+const PULL_OVERLAP_MS = 10000; // rows can commit with a slightly older updated_at
+const COLUMNS = {
+  teams: 'id, club, name, updated_at, deleted_at',
+  players: 'id, team_id, number, name, full_name, updated_at, deleted_at',
+  games: 'id, team_id, data, updated_at, deleted_at',
+};
+const validDate = (s) => (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) ? s : null);
+// App record -> database row. deleted_at: null, so uploading a record again undeletes it.
+const toRow = {
+  teams: (r) => ({ id: r.id, club: r.club || '', name: r.name || '', deleted_at: null }),
+  players: (r) => ({ id: r.id, team_id: r.teamId, number: String(r.number ?? ''), name: r.name || '', full_name: r.fullName || '', deleted_at: null }),
+  games: ({ updatedAt, dirty, ...g }) => ({ id: g.id, team_id: g.teamId, date: validDate(g.date), status: g.status ?? null, data: g, deleted_at: null }),
+};
+// Database row -> app record (the app stores shirt numbers as text too).
+const fromRow = {
+  teams: (row) => ({ id: row.id, club: row.club ?? '', name: row.name ?? '' }),
+  players: (row) => ({ id: row.id, teamId: row.team_id, number: row.number ?? '', name: row.name ?? '', fullName: row.full_name ?? '' }),
+  games: (row) => ({ ...row.data, id: row.id, teamId: row.team_id }),
+};
+// Key-order-independent JSON (jsonb doesn't keep key order), without the sync fields.
+const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(',')}]`
+  : v && typeof v === 'object' ? `{${Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(',')}}`
+    : JSON.stringify(v));
+const sameRecord = (a, b) => canon({ ...a, updatedAt: undefined, dirty: undefined }) === canon({ ...b, updatedAt: undefined, dirty: undefined });
+
+const roleOf = (teamId) => db.sync.teams[teamId] || null;
+const canSync = () => !!(sb && cloud.session && cloud.account && !cloud.account.none);
+const canUpload = () => canSync() && (cloud.account.kind === 'director' || cloud.account.isAdmin);
+const localTeams = () => db.teams.filter((tm) => !isCloudTeam(tm.id));
+const pushable = (kind, r) => r.dirty && roleOf(teamIdOf(kind, r)) === 'director';
+const hasCloudChanges = () => RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && isCloudTeam(teamIdOf(kind, r))))
+  || db.deleted.some((d) => isCloudTeam(d.teamId));
+// Changes this phone still has to upload.
+const pendingCount = () => RECORD_KINDS.reduce((n, kind) => n + db[kind].filter((r) => pushable(kind, r)).length, 0)
+  + db.deleted.filter((d) => roleOf(d.teamId) === 'director').length;
+
+const syncState = { status: 'idle', error: '' }; // status: idle | running | ok | offline | failed
+const forceFull = new Set(); // teams to download in full on the next pull (role changed, refused)
+let syncRun = null;
+let syncAgain = false;
+let syncEpoch = 0; // bumped when the cloud data is removed, so a sync in flight drops its results
+let syncTimer = null;
+let offerUploadAfterSync = false;
+
+class SyncError extends Error {
+  constructor(error, status) {
+    super(error?.message || String(error));
+    this.code = error?.code;
+    this.status = status ?? error?.status;
+  }
+}
+const isOffline = (e) => e?.status === 0 || !navigator.onLine || /fetch|network/i.test(e?.message || '');
+const ABORTED = new Error('sync aborted');
+const checkEpoch = (epoch) => { if (epoch !== syncEpoch) throw ABORTED; };
+
+// Remove teams (and their players, games and pending deletes) from this phone, without
+// leaving tombstones: they are only gone from here, not from the cloud.
+function removeTeamsLocally(ids) {
+  const gone = new Set(ids);
+  for (const kind of RECORD_KINDS) db[kind] = db[kind].filter((r) => !gone.has(teamIdOf(kind, r)));
+  db.deleted = db.deleted.filter((d) => !gone.has(d.teamId));
+  for (const id of gone) delete db.sync.teams[id];
+  db.sync.uploads = db.sync.uploads.filter((id) => !gone.has(id));
+}
+
+// Signing out or another user signing in: cloud teams leave the phone, local teams stay.
+function removeCloudData() {
+  syncEpoch++;
+  clearTimeout(syncTimer);
+  forceFull.clear();
+  removeTeamsLocally(Object.keys(db.sync.teams));
+  db.sync = emptySync();
+  Object.assign(syncState, { status: 'idle', error: '' });
+  saveQuiet();
+  renderSoon();
+}
+
+function scheduleSync(ms = 3000) {
+  clearTimeout(syncTimer);
+  if (canSync()) syncTimer = setTimeout(syncNow, ms);
+}
+
+// Single flight: a call while a sync runs makes it run once more afterwards.
+function syncNow() {
+  // Signed in but the account row couldn't be loaded yet (offline at start): load it first.
+  if (sb && cloud.session && !cloud.account) return refreshAccount().then(() => (cloud.account ? syncNow() : undefined));
+  if (!canSync()) return Promise.resolve();
+  if (syncRun) {
+    syncAgain = true;
+    return syncRun;
+  }
+  syncRun = (async () => {
+    do {
+      syncAgain = false;
+      await syncOnce();
+    } while (syncAgain && canSync());
+  })().finally(() => { syncRun = null; });
+  return syncRun;
+}
+
+async function syncOnce() {
+  clearTimeout(syncTimer);
+  const userId = cloud.session.user.id;
+  if (db.sync.userId && db.sync.userId !== userId) removeCloudData(); // another person, same phone
+  const first = !db.sync.userId;
+  if (first) {
+    db.sync.userId = userId;
+    saveQuiet();
+    offerUploadAfterSync = true;
+  }
+  const epoch = syncEpoch;
+  Object.assign(syncState, { status: 'running' });
+  showSyncStatus();
+  try {
+    const pushed = await push(epoch);
+    await pull(epoch, userId);
+    db.sync.lastSyncAt = Date.now();
+    syncState.status = pushed ? 'ok' : 'failed';
+  } catch (e) {
+    if (e === ABORTED) return;
+    syncState.status = isOffline(e) ? 'offline' : 'failed';
+    console.warn('Sync failed', e);
+  } finally {
+    if (epoch === syncEpoch) saveQuiet();
+    showSyncStatus();
+  }
+  if (offerUploadAfterSync && syncState.status === 'ok') {
+    offerUploadAfterSync = false;
+    if (canUpload() && localTeams().length) offerUpload();
+  }
+}
+
+// Returns false if some upload failed for a reason other than the network (it's retried later).
+async function push(epoch) {
+  const refused = new Set(); // teams the server refused this time
+  let ok = true;
+  for (const kind of RECORD_KINDS) {
+    const byTeam = new Map();
+    for (const r of db[kind]) {
+      if (!pushable(kind, r)) continue;
+      const tid = teamIdOf(kind, r);
+      if (!byTeam.has(tid)) byTeam.set(tid, []);
+      byTeam.get(tid).push(r);
+    }
+    for (const [tid, recs] of byTeam) {
+      for (let i = 0; i < recs.length && !refused.has(tid); i += PUSH_BATCH) {
+        const batch = recs.slice(i, i + PUSH_BATCH);
+        const keys = batch.map(recordKey);
+        const { error, status } = await sb.from(kind).upsert(batch.map(toRow[kind]), { onConflict: 'id' });
+        checkEpoch(epoch);
+        if (error) {
+          const e = new SyncError(error, status);
+          if (isOffline(e)) throw e;
+          refused.add(tid);
+          if (e.code === '42501') pushRefused(tid);
+          else ok = false;
+          console.warn('Sync: upload refused', kind, tid, e);
+          continue;
+        }
+        // Edits made while the request was on its way stay dirty for the next push.
+        batch.forEach((r, j) => { if (recordKey(r) === keys[j]) r.dirty = false; });
+        if (kind === 'teams') db.sync.uploads = db.sync.uploads.filter((id) => id !== tid);
+        saveQuiet();
+      }
+    }
+  }
+
+  // Deletes. Those of teams on this phone (or where this user is a coach) are never sent.
+  const toSend = [];
+  for (const d of db.deleted) {
+    const role = roleOf(d.teamId);
+    if (role === 'director' && !refused.has(d.teamId)) toSend.push(d);
+    else if (role === 'coach') forceFull.add(d.teamId); // get the deleted record back
+  }
+  db.deleted = db.deleted.filter((d) => toSend.includes(d) || (refused.has(d.teamId) && roleOf(d.teamId) === 'director'));
+  for (const kind of RECORD_KINDS) {
+    const ds = toSend.filter((d) => d.kind === kind);
+    for (let i = 0; i < ds.length; i += PUSH_BATCH) {
+      const batch = ds.slice(i, i + PUSH_BATCH);
+      const { error, status } = await sb.from(kind).update({ deleted_at: new Date().toISOString() }).in('id', batch.map((d) => d.id));
+      checkEpoch(epoch);
+      if (error) throw new SyncError(error, status);
+      db.deleted = db.deleted.filter((d) => !batch.includes(d));
+      saveQuiet();
+    }
+  }
+  return ok;
+}
+
+// The server refused an upload for a team (RLS, error 42501). A team being uploaded wasn't
+// allowed (e.g. its id belongs to someone else's team): it goes back to being a local team.
+// Otherwise this user probably isn't a director any more: drop the changes so the cloud wins,
+// and download the team in full on the pull that follows (which also refreshes the role).
+function pushRefused(tid) {
+  if (db.sync.uploads.includes(tid)) {
+    delete db.sync.teams[tid];
+    db.sync.uploads = db.sync.uploads.filter((id) => id !== tid);
+    syncState.error = t('syncUploadFailed');
+  } else {
+    for (const kind of RECORD_KINDS) for (const r of db[kind]) if (teamIdOf(kind, r) === tid) r.dirty = false;
+    db.deleted = db.deleted.filter((d) => d.teamId !== tid);
+    forceFull.add(tid);
+  }
+  saveQuiet();
+  renderSoon();
+}
+
+// All rows of `kind` for these teams, changed after `since` (all rows when null), oldest first.
+async function fetchRows(kind, teamIds, since, epoch) {
+  if (!teamIds.length) return [];
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    let q = sb.from(kind).select(COLUMNS[kind]).in(kind === 'teams' ? 'id' : 'team_id', teamIds);
+    if (since) q = q.gt('updated_at', since);
+    const { data, error, status } = await q.order('updated_at').order('id').range(from, from + PAGE - 1);
+    checkEpoch(epoch);
+    if (error) throw new SyncError(error, status);
+    rows.push(...data);
+    if (data.length < PAGE) return rows;
+  }
+}
+
+async function pull(epoch, userId) {
+  const { data: members, error, status } = await sb.from('team_members').select('team_id, role').eq('user_id', userId);
+  checkEpoch(epoch);
+  if (error) throw new SyncError(error, status);
+  const prev = db.sync.teams;
+  const teams = Object.fromEntries(members.map((m) => [m.team_id, m.role]));
+  // Teams still being uploaded aren't in the cloud yet: keep them.
+  for (const id of db.sync.uploads) if (prev[id] && !teams[id]) teams[id] = prev[id];
+  const ids = Object.keys(teams);
+  // Download in full: new teams, teams whose role changed, refused ones, and coach teams with
+  // local edits (so the cloud version comes back).
+  const full = new Set(ids.filter((id) => !prev[id] || prev[id] !== teams[id] || forceFull.has(id)
+    || (teams[id] === 'coach' && RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && teamIdOf(kind, r) === id)))));
+  const since = db.sync.lastPulledAt ? new Date(Date.parse(db.sync.lastPulledAt) - PULL_OVERLAP_MS).toISOString() : null;
+  const rows = {};
+  for (const kind of RECORD_KINDS) {
+    rows[kind] = [
+      ...await fetchRows(kind, ids.filter((id) => !full.has(id)), since, epoch),
+      ...await fetchRows(kind, [...full], null, epoch),
+    ];
+  }
+
+  // Everything is downloaded: apply it in one go (no awaits from here on).
+  let changed = false;
+  const removed = Object.keys(prev).filter((id) => !teams[id]);
+  if (removed.length) {
+    // Removed from these teams. Changes not uploaded yet for them are lost (a director removed
+    // while offline with pending edits).
+    removeTeamsLocally(removed);
+    changed = true;
+  }
+  if (ids.some((id) => prev[id] !== teams[id])) changed = true;
+  db.sync.teams = teams;
+  for (const id of full) forceFull.delete(id);
+
+  let latest = db.sync.lastPulledAt;
+  for (const kind of RECORD_KINDS) {
+    const index = new Map(db[kind].map((r, i) => [r.id, i]));
+    const seen = new Set();
+    const drop = new Set();
+    for (const row of rows[kind]) {
+      if (!latest || Date.parse(row.updated_at) > Date.parse(latest)) latest = row.updated_at;
+      const tid = kind === 'teams' ? row.id : row.team_id;
+      if (!teams[tid]) continue;
+      seen.add(row.id);
+      const i = index.get(row.id);
+      const local = i == null ? null : db[kind][i];
+      // A record moved to a team on this phone is no longer the cloud's.
+      if (local && !isCloudTeam(teamIdOf(kind, local))) continue;
+      if (row.deleted_at) {
+        if (local) drop.add(row.id);
+        // A deleted team takes its (normally already deleted) players with it.
+        if (kind === 'teams') db.players = db.players.filter((p) => p.teamId !== row.id);
+        continue;
+      }
+      if (local?.dirty && teams[teamIdOf(kind, local)] === 'director') continue; // will be uploaded
+      const rec = { ...fromRow[kind](row), updatedAt: Date.parse(row.updated_at), dirty: false };
+      if (local && sameRecord(local, rec)) {
+        Object.assign(local, { dirty: false, updatedAt: rec.updatedAt });
+        continue;
+      }
+      if (local) db[kind][i] = rec;
+      else {
+        index.set(rec.id, db[kind].length);
+        db[kind].push(rec);
+      }
+      changed = true;
+    }
+    // Teams downloaded in full: what the cloud doesn't have isn't theirs (except changes a
+    // director hasn't uploaded yet).
+    for (const r of db[kind]) {
+      const tid = teamIdOf(kind, r);
+      if (full.has(tid) && !seen.has(r.id) && !(r.dirty && teams[tid] === 'director')) drop.add(r.id);
+    }
+    if (drop.size) {
+      db[kind] = db[kind].filter((r) => !drop.has(r.id));
+      changed = true;
+    }
+  }
+  db.sync.lastPulledAt = latest;
+  saveQuiet();
+  if (changed) renderSoon();
+}
+
+// Upload teams from this phone: they become cloud teams with this user as director.
+function uploadTeams(ids) {
+  syncState.error = ''; // a previous upload's error (it stays until the next upload)
+  for (const id of ids) {
+    if (!getTeam(id) || isCloudTeam(id)) continue;
+    db.sync.teams[id] = 'director';
+    if (!db.sync.uploads.includes(id)) db.sync.uploads.push(id);
+    for (const kind of RECORD_KINDS) for (const r of db[kind]) if (teamIdOf(kind, r) === id) r.dirty = true;
+  }
+  saveQuiet();
+  toast(t('uploading'));
+  render();
+  syncNow();
+}
+
+// After the first sign-in on this phone (director accounts): which local teams to upload?
+function offerUpload() {
+  if (!$('#sheet').hidden || document.querySelector('.dialog')) return;
+  openSheet(`
+    <h3>${t('uploadTitle')}</h3>
+    <p class="hint">${t('uploadHint')}</p>
+    <form class="form" data-form="upload-teams">
+      <div class="check-list">${localTeams().map((tm) => `
+        <label class="check"><input type="checkbox" name="team" value="${esc(tm.id)}" checked>
+          <span class="grow"><strong>${esc(teamLabel(tm))}</strong>${tm.club && tm.name ? `<span class="muted small"> · ${esc(tm.club)}</span>` : ''}
+          <span class="muted small sub-line">${t('playersCount', { n: teamPlayers(tm.id).length })}</span></span></label>`).join('')}
+      </div>
+      <button class="btn primary block">${t('uploadSelected')}</button>
+      <button type="button" class="btn ghost block" data-action="close-sheet">${t('notNow')}</button>
+    </form>`);
+}
+
+// "Synced" / "On this phone" pill for a team ("On this phone" only matters when signed in).
+function teamBadge(tm) {
+  if (isCloudTeam(tm.id)) return `<span class="badge cloud">${t('badgeCloud')}</span>`;
+  return canSync() ? `<span class="badge">${t('badgeLocal')}</span>` : '';
+}
+
+function agoText(ms) {
+  const min = Math.floor((Date.now() - ms) / 60000);
+  if (min < 1) return t('agoNow');
+  if (min < 60) return t('agoMin', { n: min });
+  if (min < 24 * 60) return t('agoHour', { n: Math.floor(min / 60) });
+  return new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
+}
+
+const plural = (key, n) => t(n === 1 ? `${key}1` : key, { n });
+
+function syncStatusText() {
+  const n = pendingCount();
+  const { status, error } = syncState;
+  let s;
+  if (status === 'running') s = t('syncing');
+  else if (status === 'offline') s = n ? plural('syncWaitingOffline', n) : t('syncOffline');
+  else if (status === 'failed') s = t('syncFailed');
+  else if (db.sync.lastSyncAt) s = t('syncedAgo', { ago: agoText(db.sync.lastSyncAt) }) + (n ? ` · ${plural('syncWaiting', n)}` : '');
+  else s = n ? plural('syncWaiting', n) : t('syncNever');
+  return error ? `${s}<br>${esc(error)}` : s;
+}
+
+// Update the status line in place (no re-render, so nothing being typed is disturbed).
+function showSyncStatus() {
+  const el = document.getElementById('sync-status');
+  if (el) el.innerHTML = syncStatusText();
+}
+
+// Re-render after a sync changed the data, but not while the user is in the middle of
+// something (typing, a sheet or dialog open, a ⋯ menu, dragging a player): then later.
+let renderPending = false;
+function canRenderNow() {
+  const a = document.activeElement;
+  return $('#sheet').hidden && !document.querySelector('.dialog') && !document.querySelector('.menu-list:not([hidden])')
+    && !(a && a.matches('input, textarea, select')) && !drag.active && !drag.timer;
+}
+function renderSoon() {
+  if (canRenderNow()) render();
+  else renderPending = true;
+}
+setInterval(() => { if (renderPending && canRenderNow()) render(); }, 1500);
+
+// When to sync: coming back to the app, the network returning, and every minute while open.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNow(); });
+window.addEventListener('online', () => syncNow());
+setInterval(() => {
+  if (document.hidden || !canSync()) return;
+  syncNow();
+  showSyncStatus();
+}, 60000);
 
 // ---------- Views: profile / settings ----------
 // App settings live here; add new sections as more settings appear.
@@ -1037,7 +1518,10 @@ function viewTeams() {
           <strong>${esc(teamLabel(tm))}</strong>
           ${tm.club ? `<div class="muted">${esc(tm.club)}</div>` : ''}
         </div>
-        <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
+        <div class="right">
+          <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
+          ${teamBadge(tm)}
+        </div>
       </a></li>`).join('')}</ul>` : `<p class="empty">${t('noTeams')}</p>`}`;
 }
 
@@ -1047,10 +1531,15 @@ function viewTeam(id) {
   const ps = teamPlayers(id).sort(byNumber);
   main.innerHTML = `
     ${bar(esc(teamLabel(tm)), '#/teams')}
+    ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
     <div class="form">
       <label>${t('club')}<input data-team="club" value="${esc(tm.club)}" placeholder="${t('clubPh')}" autocomplete="off"></label>
       <label>${t('team')}<input data-team="name" value="${esc(tm.name)}" placeholder="${t('teamPh')}" autocomplete="off"></label>
     </div>
+    ${canUpload() && !isCloudTeam(id) ? `<div class="upload-team">
+      <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
+      <p class="hint">${t('uploadTeamHint')}</p>
+    </div>` : ''}
     <h2>${t('players')}</h2>
     <form class="add-player" data-form="add-player">
       <div class="row gap">
@@ -1771,9 +2260,16 @@ const actions = {
   'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
   'signin-resend': () => sendCode(cloud.email),
   'sign-out': async () => {
-    if (!(await askConfirm({ title: t('signOut'), message: t('signOutConfirm'), ok: t('signOut') }))) return;
+    const n = pendingCount();
+    const message = [t('signOutConfirm'), Object.keys(db.sync.teams).length ? t('signOutCloud') : '',
+      n ? `<b>${plural('signOutLose', n)}</b>` : ''].filter(Boolean).join(' ');
+    if (!(await askConfirm({ title: t('signOut'), message, ok: t('signOut'), danger: n > 0 }))) return;
+    removeCloudData(); // cloud teams leave this phone; teams on this phone stay
     await sb.auth.signOut({ scope: 'local' }); // local: works offline too
+    render();
   },
+  'sync-now': () => syncNow(),
+  'upload-team': () => uploadTeams([route().id]),
 
   theme: ({ v }) => {
     theme = v;
@@ -2123,7 +2619,17 @@ document.addEventListener('change', async (e) => {
       title: t('importBackup'), message: t('confirmRestore', { p: data.players.length, g: data.games.length }), ok: t('restoreBtn'),
     });
     if (!ok) return;
-    db = normalize(data);
+    // Cloud teams aren't replaced by a backup (that would delete them in the cloud): they and
+    // the sync state stay as they are; the backup replaces the teams on this phone.
+    delete data.sync; // another phone's (or person's) sync state
+    const restored = normalize(data);
+    const cloudIds = new Set(Object.keys(db.sync.teams));
+    for (const kind of RECORD_KINDS) {
+      restored[kind] = restored[kind].filter((r) => !cloudIds.has(teamIdOf(kind, r)))
+        .concat(db[kind].filter((r) => cloudIds.has(teamIdOf(kind, r))));
+    }
+    Object.assign(restored, { sync: db.sync, deleted: db.deleted });
+    db = restored;
     save();
     render();
     toast(t('restored'));
@@ -2139,6 +2645,12 @@ document.addEventListener('submit', (e) => {
   const data = new FormData(e.target);
   if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
   if (form === 'signin-code') return verifyCode(String(data.get('code')).replace(/\D/g, ''));
+  if (form === 'upload-teams') {
+    closeSheet();
+    const ids = data.getAll('team').map(String);
+    if (ids.length) uploadTeams(ids);
+    return;
+  }
   if (form === 'game-info') {
     const g = currentGame();
     const tm = getTeam(data.get('teamId'));
