@@ -6,6 +6,8 @@ const STORE_KEY = 'fut-academy-stats.v1';
 const LANG_KEY = 'fut-academy-stats.lang';
 const THEME_KEY = 'fut-academy-stats.theme'; // 'light' | 'dark' | 'auto' (follow the device)
 const GAMES_TEAM_KEY = 'fut-academy-stats.gamesTeam'; // team filter on the games page ('' = all)
+const STATS_TEAM_KEY = 'fut-academy-stats.statsTeam'; // team picked on the stats page
+const STATS_SEASON_KEY = 'fut-academy-stats.statsSeason'; // season picked on the stats page (e.g. '2026/2027')
 
 const FORMATS = [
   { id: 'U7', field: 3, periods: 2, periodMin: 20 },
@@ -128,6 +130,14 @@ const I18N = {
     didNotPlay: 'Did not play', notCalled: 'Not called up',
     reportHint: 'Preview of the PDF (scroll sideways to see every column). Each half starts at its regular time; extra time shows as (+mm:ss).',
     pdf: '📄 Share PDF',
+    statsNoTeams: 'Create a team and its players first.',
+    statsNoGames: 'No finished games yet. Stats show up here after full time.',
+    statsHint: 'Finished games only. Tap a player to see their sheet and share it as a PDF.',
+    statGamesN1: '1 game', statGamesN: '{n} games', statW: '{n}W', statD: '{n}D', statL: '{n}L', statGoalsFor: 'Goals {f}–{a}',
+    statGames: 'Games', statMin: 'Min', statGoals: 'Goals', statCalled: 'Called up', statStarts: 'Starts',
+    statMinutes: 'Minutes', statCards: 'Cards', statMinPerGame: 'Minutes in each game',
+    statGamesList: 'Games', statNumber: 'Number {n}', statRange: '{a} to {b}', statSubIn: 'sub',
+    statGoalN1: '1 goal', statGoalN: '{n} goals', statYellowWord: 'yellow', statRedWord: 'red',
     confirmFullTime: 'End the game (full time)?', confirmDeleteGame: 'Delete this game and all its stats?',
     gkSentOff: '🟥 GK sent off: tap a player › To goal', inGoalToast: '🧤 {p} in goal',
     confirmRestore: 'Replace all data with this backup ({p} players, {g} games)?',
@@ -256,6 +266,14 @@ const I18N = {
     didNotPlay: 'Não jogou', notCalled: 'Não convocado',
     reportHint: 'Pré-visualização do PDF (desliza para o lado para ver todas as colunas). Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
     pdf: '📄 Partilhar PDF',
+    statsNoTeams: 'Cria primeiro uma equipa e os seus jogadores.',
+    statsNoGames: 'Ainda não há jogos terminados. As estatísticas aparecem aqui depois do fim do jogo.',
+    statsHint: 'Só jogos terminados. Toca num jogador para ver a ficha e partilhá-la em PDF.',
+    statGamesN1: '1 jogo', statGamesN: '{n} jogos', statW: '{n}V', statD: '{n}E', statL: '{n}D', statGoalsFor: 'Golos {f}–{a}',
+    statGames: 'Jogos', statMin: 'Min', statGoals: 'Golos', statCalled: 'Convocado', statStarts: 'Titular',
+    statMinutes: 'Minutos', statCards: 'Cartões', statMinPerGame: 'Minutos em cada jogo',
+    statGamesList: 'Jogos', statNumber: 'Número {n}', statRange: '{a} a {b}', statSubIn: 'suplente',
+    statGoalN1: '1 golo', statGoalN: '{n} golos', statYellowWord: 'amarelo', statRedWord: 'vermelho',
     confirmFullTime: 'Terminar o jogo?', confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
     gkSentOff: '🟥 GR expulso: toca num jogador › Para a baliza', inGoalToast: '🧤 {p} na baliza',
     confirmRestore: 'Substituir todos os dados por esta cópia ({p} jogadores, {g} jogos)?',
@@ -886,6 +904,7 @@ function render() {
   const views = {
     games: viewGames, teams: viewTeams, players: viewTeams, team: viewTeam,
     new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport, profile: viewProfile, admin: viewAdmin,
+    stats: viewStats, player: viewPlayer,
   };
   (views[view] || viewGames)(id);
   renderTabbar(view);
@@ -903,7 +922,8 @@ const TAB_ICONS = {
 };
 
 function renderTabbar(view) {
-  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['profile', 'admin'].includes(view) ? view : 'matches';
+  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['stats', 'player'].includes(view) ? 'stats'
+    : ['profile', 'admin'].includes(view) ? view : 'matches';
   const isAdmin = !!(cloud.session && cloud.account?.isAdmin && !cloud.needsPassword);
   const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
@@ -911,7 +931,7 @@ function renderTabbar(view) {
   $('#tabbar').innerHTML =
     tab('team', t('tabTeam'), `href="${myTeam}"`) +
     tab('matches', t('tabMatches'), 'href="#/games"') +
-    tab('stats', t('tabStats'), 'data-action="soon" data-v="tabStats"') +
+    tab('stats', t('tabStats'), 'href="#/stats"') +
     tab('profile', t('tabProfile'), 'href="#/profile"') +
     (isAdmin ? tab('admin', t('tabAdmin'), 'href="#/admin" data-admin-link') : '');
   $('#tabbar').classList.toggle('five', isAdmin);
@@ -1664,7 +1684,8 @@ const READ_ONLY_OK = new Set([
   'theme', 'lang', 'backup', // settings
   'signin-back', 'signin-resend', 'sign-out', 'sync-now', 'privacy', // account and sync
   'auth-mode', 'change-password', 'cancel-password', 'profile-section',
-  'pdf', // share the report
+  'pdf', 'player-pdf', // share the report / a player's stats sheet
+  'stats-team', 'stats-season', // stats page filters
   'player', // opens a read-only info sheet for coaches (see actions.player)
   'people-reload', 'leave-team', // People section (anyone may leave a team)
   'new-team', // creates a team of their own
@@ -2570,6 +2591,184 @@ function viewReport(id) {
     ${sheetPreview(statsSheet(g))}`;
 }
 
+// ---------- Views: stats (per player, over a season) ----------
+// Worked out from the finished games of a team, nothing extra is stored. A player counts as
+// called up when they were in the squad, and as having played when they had time on the pitch.
+
+function statsTeam() {
+  const id = localStorage.getItem(STATS_TEAM_KEY);
+  return getTeam(id) ? id : getTeam(db.lastTeamId) ? db.lastTeamId : db.teams[0]?.id || '';
+}
+
+const finishedGames = (teamId) => db.games
+  .filter((g) => g.teamId === teamId && g.status === 'finished')
+  .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+
+// Seasons the team has finished games in, newest first.
+const statsSeasons = (teamId) => [...new Set(finishedGames(teamId).map((g) => seasonOf(g.date)).filter(Boolean))].sort().reverse();
+
+function statsSeason(teamId) {
+  const seasons = statsSeasons(teamId);
+  const s = localStorage.getItem(STATS_SEASON_KEY);
+  return seasons.includes(s) ? s : seasons[0] || '';
+}
+
+// Everything the stats page and a player's sheet need, for one team and season.
+function teamStats(teamId, season) {
+  const games = finishedGames(teamId).filter((g) => seasonOf(g.date) === season).map((g) => ({ g, d: derive(g) }));
+  const record = { w: 0, d: 0, l: 0, gf: 0, ga: 0 };
+  for (const { d } of games) {
+    record[d.us > d.them ? 'w' : d.us < d.them ? 'l' : 'd']++;
+    record.gf += d.us;
+    record.ga += d.them;
+  }
+  const players = teamPlayers(teamId).sort(byNumber).map((p) => playerStats(p, games));
+  return { games, record, players };
+}
+
+function playerStats(p, games) {
+  const rows = games.map(({ g, d }) => {
+    const s = d.stats[p.id] || null;
+    return { g, d, s, started: !!s && g.starters.includes(p.id), played: !!s && s.intervals.length > 0 };
+  });
+  const sum = (k) => rows.reduce((n, r) => n + (r.s ? r.s[k] : 0), 0);
+  return {
+    p, rows,
+    teamGames: rows.length,
+    called: rows.filter((r) => r.s).length,
+    played: rows.filter((r) => r.played).length,
+    starts: rows.filter((r) => r.started).length,
+    minutes: Math.floor(sum('played') / 60000),
+    goals: sum('goals'), yellow: sum('yellow'), red: sum('red'),
+  };
+}
+
+const ddmm = (g) => {
+  const [, m, d] = String(g.date).split('-');
+  return d ? `${d}/${m}` : '';
+};
+const pct = (a, b) => (b ? Math.round((100 * a) / b) : 0);
+const gameLength = (g) => g.periods * g.periodMin;
+const resultOf = (d) => (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw');
+const playerFullName = (p) => p.fullName || p.name;
+
+// What a player did in one game, as a short line ("60' · 2 goals · yellow").
+function gameDetail(r) {
+  if (!r.s) return t('notCalled');
+  if (!r.played) return t('didNotPlay');
+  return [
+    fmtMins(r.s.played) + (r.started ? '' : ` (${t('statSubIn')})`),
+    r.s.goals ? plural('statGoalN', r.s.goals) : '',
+    r.s.yellow ? t('statYellowWord') + (r.s.yellow > 1 ? ` ×${r.s.yellow}` : '') : '',
+    r.s.red ? t('statRedWord') : '',
+  ].filter(Boolean).join(' · ');
+}
+
+// Our score first, then the opponent ("2–0 CD Ribeira").
+const gameShort = (g, d) => `${d.us}–${d.them} ${g.opponent || t('opponent')}`;
+
+// Team (and season) pickers shared by the stats page and a player's sheet.
+function statsFilters(teamId, season, withTeams) {
+  const row = (action, items, on) => `<div class="pick-row filter" role="tablist">${items.map(([id, label]) =>
+    `<button class="pick ${id === on ? 'on' : ''}" role="tab" aria-selected="${id === on}" data-action="${action}" data-id="${esc(id)}">${label}</button>`).join('')}</div>`;
+  const seasons = statsSeasons(teamId);
+  return (withTeams && db.teams.length > 1 ? row('stats-team', db.teams.map((tm) => [tm.id, esc(teamLabel(tm))]), teamId) : '')
+    + (seasons.length > 1 ? row('stats-season', seasons.map((s) => [s, `${t('pdfSeason')} ${esc(s)}`]), season) : '');
+}
+
+function viewStats() {
+  const teamId = statsTeam();
+  if (!teamId) {
+    main.innerHTML = `${bar(t('tabStats'))}<p class="empty">${t('statsNoTeams')}</p>
+      <a class="btn primary block" href="#/teams">${t('teamsBtn', { n: 0 })}</a>`;
+    return;
+  }
+  const season = statsSeason(teamId);
+  const st = teamStats(teamId, season);
+  const { record: r } = st;
+  const head = `<div class="stat-row head" aria-hidden="true"><span></span><span>${t('pdfPlayer')}</span>
+    <span>${t('statGames')}</span><span>${t('statMin')}</span><span>${t('statGoals')}</span><span>🟨/🟥</span></div>`;
+  const rowHtml = (ps) => `<li><a class="stat-row" href="#/player/${ps.p.id}">
+    <span class="shirt sm">${esc(ps.p.number) || '–'}</span>
+    <span class="name">${esc(ps.p.name)}</span>
+    <span>${ps.played}<small>/${ps.teamGames}</small></span>
+    <span>${ps.minutes}'</span>
+    <span>${ps.goals}</span>
+    <span>${ps.yellow}/${ps.red}</span>
+  </a></li>`;
+  main.innerHTML = `
+    ${bar(t('tabStats'))}
+    ${statsFilters(teamId, season, true)}
+    ${st.games.length ? `
+      <section class="card stats-summary">
+        <div class="grow">
+          <strong>${esc(teamLabel(getTeam(teamId)))}</strong>
+          <div class="muted small">${t('pdfSeason')} ${esc(season)} · ${plural('statGamesN', st.games.length)}</div>
+        </div>
+        <div class="right">
+          <div class="record"><span class="w">${t('statW', { n: r.w })}</span> <span class="d">${t('statD', { n: r.d })}</span> <span class="l">${t('statL', { n: r.l })}</span></div>
+          <div class="muted small">${t('statGoalsFor', { f: r.gf, a: r.ga })}</div>
+        </div>
+      </section>
+      ${st.players.length ? `<ul class="list stat-table">${head}${st.players.map(rowHtml).join('')}</ul>
+        <p class="hint">${t('statsHint')}</p>` : `<p class="empty">${t('noPlayers')}</p>`}`
+    : `<p class="empty">${t('statsNoGames')}</p>`}`;
+}
+
+function viewPlayer(id) {
+  const p = db.players.find((x) => x.id === id);
+  if (!p) return notFound();
+  const tm = getTeam(p.teamId);
+  const season = statsSeason(p.teamId);
+  const st = teamStats(p.teamId, season);
+  const ps = st.players.find((x) => x.p.id === id) || playerStats(p, st.games);
+  const tile = (label, value, sub = '') => `<div class="tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+
+  // Minutes in each game: one bar per game, as tall as the share of the game played.
+  const top = Math.max(1, ...ps.rows.map((r) => Math.max(gameLength(r.g), r.s ? r.s.played / 60000 : 0)));
+  const bars = ps.rows.map((r) => {
+    const m = r.played ? Math.floor(r.s.played / 60000) : 0;
+    const cls = !r.s ? 'out' : !r.played ? 'dnp' : '';
+    return `<div class="bar-col ${cls}" title="${esc(gameShort(r.g, r.d))}">
+      <span class="v">${r.s ? `${m}'` : '–'}</span>
+      <div class="bar-track"><div class="bar-fill" style="height:${Math.min(100, (100 * m) / top)}%"></div></div>
+      <span class="x">${ddmm(r.g)}</span>
+    </div>`;
+  }).join('');
+
+  const gamesHtml = ps.rows.slice().reverse().map((r) => `<li><a class="card game ${resultOf(r.d)}" href="#/report/${r.g.id}">
+    <div class="grow">
+      <strong>${esc(gameShort(r.g, r.d))}</strong>
+      <div class="muted small">${esc(ddmm(r.g))}${r.g.round ? ` · ${t('roundN', { n: esc(r.g.round) })}` : ''}</div>
+    </div>
+    <div class="right small ${r.played ? '' : 'muted'}">${esc(gameDetail(r))}</div>
+  </a></li>`).join('');
+
+  main.innerHTML = `
+    ${bar(esc(p.name), '#/stats')}
+    ${statsFilters(p.teamId, season, false)}
+    <section class="player-head">
+      <div class="muted small">${esc([tm?.club, tm?.name].filter(Boolean).join(' · '))}</div>
+      <h2>${esc(playerFullName(p))}</h2>
+      <div class="small">${[p.number ? t('statNumber', { n: esc(p.number) }) : '', season ? `${t('pdfSeason')} ${esc(season)}` : ''].filter(Boolean).join(' · ')}</div>
+    </section>
+    ${st.games.length ? `
+      <div class="tiles">
+        ${tile(t('statCalled'), `${pct(ps.called, ps.teamGames)}%`, `${ps.called} / ${ps.teamGames}`)}
+        ${tile(t('statGames'), `${ps.played} / ${ps.teamGames}`)}
+        ${tile(t('statStarts'), ps.starts)}
+        ${tile(t('statMinutes'), `${ps.minutes}'`)}
+        ${tile(t('statGoals'), ps.goals)}
+        ${tile(t('statCards'), `<span class="yc">${ps.yellow}</span> <span class="rc">${ps.red}</span>`)}
+      </div>
+      <h2>${t('statMinPerGame')}</h2>
+      <div class="minutes-chart">${bars}</div>
+      <button class="btn primary block" data-action="player-pdf" data-id="${p.id}">${t('pdf')}</button>
+      <h2>${t('statGamesList')}</h2>
+      <ul class="list">${gamesHtml}</ul>`
+    : `<p class="empty">${t('statsNoGames')}</p>`}`;
+}
+
 // ---------- PDF report ----------
 // A tiny PDF writer: the PDF's built-in Helvetica fonts (WinAnsi encoding, so
 // Portuguese accents work), filled/stroked rectangles, lines and text.
@@ -2621,9 +2820,7 @@ function textWidth(s, size, bold) {
   return (w * size) / 1000;
 }
 
-function pdfDoc() {
-  const W = 842;
-  const H = 595; // A4 landscape, in points
+function pdfDoc({ W = 842, H = 595 } = {}) { // A4 landscape by default, in points
   const pages = [];
   let ops = null;
   const rgb = (hex) => [1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
@@ -2754,19 +2951,147 @@ function pdfFileName(g) {
   return `${parts.filter(Boolean).join('_')}.pdf`;
 }
 
-async function exportPdf(g) {
-  const name = pdfFileName(g);
-  const file = new File([buildPdf(g)], name, { type: 'application/pdf' });
+const exportPdf = (g) => shareFile(new File([buildPdf(g)], pdfFileName(g), { type: 'application/pdf' }));
+
+// Share a file (WhatsApp and the like) where the phone can, else download it.
+async function shareFile(file) {
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: name });
+      await navigator.share({ files: [file], title: file.name });
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
     }
   }
-  download(name, file, 'application/pdf');
+  download(file.name, file, file.type);
 }
+
+// A player's stats sheet for the season (A4 portrait), to send to the family.
+const PDF_GREEN = '#1d5c3f';
+
+function buildPlayerPdf(playerId) {
+  const p = db.players.find((x) => x.id === playerId);
+  const tm = getTeam(p.teamId);
+  const season = statsSeason(p.teamId);
+  const st = teamStats(p.teamId, season);
+  const ps = st.players.find((x) => x.p.id === playerId) || playerStats(p, st.games);
+  const pdf = pdfDoc({ W: 595, H: 842 });
+  const M = 40;
+  const W = pdf.W - 2 * M;
+  const INK = '#1b1f23';
+  const MUTED = '#5b636b';
+  const TILE = '#e6ecea';
+  let y;
+
+  pdf.page();
+  // Header band
+  const HB = 118;
+  pdf.rect(0, pdf.H - HB, pdf.W, HB, PDF_GREEN);
+  y = pdf.H - 36;
+  pdf.text([tm?.name, tm?.club].filter(Boolean).join(' · ').toUpperCase(), M, y, { size: 10, color: '#cfe3d8', maxW: W });
+  y -= 32;
+  pdf.text(playerFullName(p).toUpperCase(), M, y, { size: 24, bold: true, color: '#ffffff', maxW: W });
+  y -= 22;
+  const first = st.games[0]?.g;
+  const last = st.games[st.games.length - 1]?.g;
+  const range = first ? t('statRange', { a: ddmm(first), b: ddmm(last) }) : '';
+  pdf.text([season && `${t('pdfSeason')} ${season}`, range].filter(Boolean).join(' · '), M, y, { size: 11, color: '#ffffff', maxW: W });
+
+  y = pdf.H - HB - 30;
+  if (p.number) {
+    pdf.text(t('statNumber', { n: p.number }), M, y, { size: 11, color: INK });
+    y -= 14;
+  }
+
+  // Stat tiles, three per row
+  const gap = 10;
+  const tw = (W - 2 * gap) / 3;
+  const th = 56;
+  const tiles = [
+    [t('statCalled'), `${pct(ps.called, ps.teamGames)}%`, `${ps.called} / ${ps.teamGames}`],
+    [t('statGames'), `${ps.played} / ${ps.teamGames}`],
+    [t('statStarts'), String(ps.starts)],
+    [t('statMinutes'), `${ps.minutes}'`],
+    [t('statGoals'), String(ps.goals)],
+    [t('statCards'), null],
+  ];
+  tiles.forEach(([label, value, sub], i) => {
+    const x = M + (i % 3) * (tw + gap);
+    const top = y - Math.floor(i / 3) * (th + gap);
+    pdf.rect(x, top - th, tw, th, TILE);
+    pdf.text(label.toUpperCase(), x + 10, top - 16, { size: 8, bold: true, color: PDF_GREEN, maxW: tw - 20 });
+    if (value == null) { // cards: a yellow and a red card, each with its count
+      [[ps.yellow, '#f5c518'], [ps.red, '#d63a3a']].forEach(([count, fill], k) => {
+        const cx = x + 10 + k * 54;
+        pdf.rect(cx, top - 46, 13, 18, fill);
+        pdf.text(String(count), cx + 20, top - 42, { size: 22, bold: true, color: INK });
+      });
+      return;
+    }
+    const vw = pdf.text(value, x + 10, top - 42, { size: 22, bold: true, color: INK, maxW: tw - 20 });
+    if (sub) pdf.text(sub, x + 16 + vw, top - 42, { size: 10, color: MUTED });
+  });
+  y -= 2 * th + gap + 30;
+
+  // Minutes in each game
+  pdf.text(t('statMinPerGame').toUpperCase(), M, y, { size: 9, bold: true, color: INK });
+  y -= 18;
+  const CH = 130;
+  const axisW = 24;
+  const top = Math.max(1, ...ps.rows.map((r) => Math.max(gameLength(r.g), r.s ? r.s.played / 60000 : 0)));
+  const base = y - CH;
+  for (let k = 0; k <= 4; k++) {
+    const ly = base + (CH * k) / 4;
+    pdf.line(M + axisW, ly, M + W, ly, '#d5dcd9', 0.5);
+    pdf.text(`${Math.round((top * k) / 4)}'`, M + axisW - 4, ly - 2.5, { size: 7, color: MUTED, align: 'right' });
+  }
+  const n = ps.rows.length;
+  const slot = (W - axisW) / Math.max(n, 1);
+  const bw = Math.min(26, slot * 0.6);
+  const every = Math.ceil(24 / slot); // label every k-th game when they would overlap
+  ps.rows.forEach((r, i) => {
+    const cx = M + axisW + slot * (i + 0.5);
+    const m = r.played ? Math.floor(r.s.played / 60000) : 0;
+    const h = Math.min(CH, (CH * m) / top);
+    if (h > 0) pdf.rect(cx - bw / 2, base, bw, h, PDF_GREEN);
+    if (i % every === 0) {
+      if (slot >= 14) pdf.text(r.s ? `${m}'` : '–', cx, base + h + 4, { size: 7, bold: true, color: INK, align: 'center' });
+      pdf.text(ddmm(r.g), cx, base - 11, { size: 7, color: MUTED, align: 'center' });
+    }
+  });
+  y = base - 40;
+
+  // Games list
+  const heading = () => {
+    pdf.text(t('statGamesList').toUpperCase(), M, y, { size: 12, bold: true, color: INK });
+    pdf.line(M, y - 7, M + 40, y - 7, PDF_GREEN, 2);
+    y -= 24;
+  };
+  heading();
+  for (const r of ps.rows) {
+    if (y < M + 10) {
+      pdf.page();
+      y = pdf.H - M - 10;
+      heading();
+    }
+    const x0 = M;
+    const w1 = pdf.text(ddmm(r.g), x0, y, { size: 10, bold: true, color: INK });
+    const w2 = pdf.text(gameShort(r.g, r.d), x0 + w1 + 10, y, { size: 10, color: INK, maxW: 240 });
+    pdf.text(`·  ${gameDetail(r)}`, x0 + w1 + 18 + w2, y, { size: 10, color: r.played ? INK : MUTED, maxW: W - w1 - w2 - 20 });
+    y -= 18;
+  }
+  return pdf.bytes();
+}
+
+function playerPdfName(playerId) {
+  const p = db.players.find((x) => x.id === playerId);
+  const tm = getTeam(p.teamId);
+  const clean = (s) => String(s || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '');
+  const season = statsSeason(p.teamId).replace('/', '-');
+  return `${[clean(tm?.club), clean(tm?.name), clean(playerFullName(p)), t('fileStats'), season].filter(Boolean).join('_')}.pdf`;
+}
+
+const exportPlayerPdf = (playerId) => shareFile(new File([buildPlayerPdf(playerId)], playerPdfName(playerId), { type: 'application/pdf' }));
 
 // ---------- Actions ----------
 
@@ -3142,6 +3467,17 @@ const actions = {
 
   // report
   pdf: () => exportPdf(currentGame()),
+  'player-pdf': ({ id }) => exportPlayerPdf(id),
+
+  // stats
+  'stats-team': ({ id }) => {
+    localStorage.setItem(STATS_TEAM_KEY, id);
+    render();
+  },
+  'stats-season': ({ id }) => {
+    localStorage.setItem(STATS_SEASON_KEY, id);
+    render();
+  },
 
   // backup
   backup: () => download(`fut-academy-backup-${isoDate(new Date())}.json`, JSON.stringify(db, null, 2), 'application/json'),
