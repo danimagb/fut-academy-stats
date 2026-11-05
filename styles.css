@@ -117,7 +117,6 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .form { display: grid; gap: 12px; }
 .form label { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
 form.row { margin: 10px 0; }
-.add-player-btn { margin: 10px 0; }
 
 /* Lists */
 .list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
@@ -511,6 +510,12 @@ select.mini { width: auto; min-height: 36px; padding: 0 8px; flex: none; }
 .acc-body .list > .item { background: transparent; border: 0; border-radius: 0; padding: 10px 0; }
 .acc-body .list > .item + .item { border-top: 1px solid var(--line); }
 .acc-body .auth-tabs { margin-top: 12px; }
+/* Team screen: Players / Staff sections, with an Add button next to the header */
+.team-sections { margin-top: 18px; }
+.acc-top { display: flex; align-items: center; gap: 6px; padding-right: 12px; }
+.acc-top .acc-head { flex: 1; min-width: 0; }
+.acc-add { flex: none; }
+.acc-body .empty { margin: 12px 0 0; }
 .acct-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acct-actions { margin-top: 4px; }
 
