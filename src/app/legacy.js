@@ -1,3 +1,18 @@
+import { askPersistence, save } from '@/data/save';
+import { derive, getGame, getTeam, teamPlayers } from '@/data/queries';
+import {
+  SETPW_KEY,
+  canSync,
+  canUpload,
+  cloud,
+  refreshAccount,
+  renderIfProfile,
+  sb,
+  syncNow,
+} from '@/data/session';
+import { fmtDate } from '@/domain/titles';
+import { plural } from '@/shared/i18n/i18n';
+import { setRerender } from '@/shared/lib/rerender';
 import { installActionListener, registerActions } from '@/app/actions';
 import { onRender, render, route, setViews } from '@/app/router';
 import { keepScreenOn } from '@/app/wake-lock';
@@ -6,19 +21,15 @@ import { bar, closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { getSupabase } from '@/data/supabase';
-import { fetchAccount, storeAccount, storedAccount } from '@/data/auth';
+import { storeAccount } from '@/data/auth';
 import {
   SyncError,
   configureSync,
-  hasCloudChanges,
   isOffline,
   localTeams,
   pendingCount,
   removeCloudData,
   roleOf,
-  runSync,
-  scheduleSync,
   syncState,
 } from '@/data/sync';
 import { $, $$ } from '@/shared/lib/dom';
@@ -32,12 +43,11 @@ import {
   loadRejected,
   normalize,
   saveQuiet,
-  saveStore,
   setDb,
   syncGameTeams,
   teamIdOf,
 } from '@/data/store';
-import { persistedState, requestPersistence } from '@/data/persist';
+import { persistedState } from '@/data/persist';
 import { checkIncoming } from '@/domain/validate';
 import { fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
@@ -55,7 +65,7 @@ import {
   timeCheck,
   timeOf,
 } from '@/domain/clock';
-import { deriveState, planMove } from '@/domain/game-state';
+import { planMove } from '@/domain/game-state';
 import { formationOf as formationOfGame, slotCoords, startLineup } from '@/domain/pitch';
 import { byNumber, pname, sortIds } from '@/domain/players';
 import {
@@ -108,37 +118,9 @@ darkMq.addEventListener?.('change', () => {
 
 initStore();
 
-function save() {
-  saveStore();
-  askPersistence();
-  if (hasCloudChanges()) scheduleSync();
-}
-
-// Ask the browser to keep our data (see data/persist.ts); Profile shows the answer.
-async function askPersistence() {
-  if ((await requestPersistence(!!(db.teams.length || db.games.length))) && route().view === 'profile')
-    render();
-}
-
 // ---------- Helpers ----------
 
 const main = $('#main');
-
-function fmtDate(g) {
-  const d = new Date(`${g.date}T${g.time || '00:00'}`);
-  if (isNaN(d)) return g.date || '';
-  return d.toLocaleString(locale(), {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-const getGame = (id) => db.games.find((g) => g.id === id);
-const getTeam = (id) => db.teams.find((tm) => tm.id === id);
-const teamPlayers = (teamId) => db.players.filter((p) => p.teamId === teamId);
 
 const formatLine = (g) =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
@@ -215,8 +197,6 @@ function applyFix(g, endMin, startedMinAgo) {
 const formationOf = (g) => formationOfGame(g, db.formations);
 
 // ---------- Game state (derived from events) ----------
-
-const derive = (g) => deriveState(g, Date.now());
 
 function addEvent(g, e) {
   const id = uid();
@@ -406,44 +386,6 @@ function viewGames() {
 // password, then the user chooses a password. Invite-only: the email gets a code only if the
 // admin gave it an account; `shouldCreateUser: false` never creates users. Everything else in
 // the app keeps working without signing in.
-
-const sb = getSupabase();
-
-// mode: 'signin' (email + password) | 'signup' (create account) | 'reset' (forgot password).
-// signup and reset are 3 steps: email -> code by email -> choose a password. `step` is
-// 'email' or 'code'; after the code the user is signed in and must choose a password
-// (`needsPassword`, kept across reloads so closing the app doesn't skip it; SETPW_KEY holds the
-// mode for the step title).
-const SETPW_KEY = 'fut-academy-stats.setPassword';
-const cloud = {
-  session: null,
-  account: storedAccount(),
-  mode: 'signin',
-  step: 'email',
-  email: '',
-  busy: false,
-  error: '',
-  needsPassword: !!localStorage.getItem(SETPW_KEY),
-  pwMode: localStorage.getItem(SETPW_KEY) || 'signup',
-  changingPassword: false,
-};
-
-// Re-render account screens; elsewhere just refresh the tab bar (the Admin tab follows the account).
-const renderIfProfile = () => {
-  if (['profile', 'admin'].includes(route().view)) render();
-  else renderTabbar(route().view);
-};
-
-// Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline.
-async function refreshAccount() {
-  const userId = cloud.session?.user?.id;
-  if (!sb || !userId) return;
-  const account = await fetchAccount(sb, userId);
-  if (!account) return; // offline or transient: keep what we had
-  cloud.account = account;
-  storeAccount(account);
-  renderIfProfile();
-}
 
 if (sb) {
   sb.auth.getSession().then(({ data }) => {
@@ -652,17 +594,6 @@ function accountSectionBody() {
 //    the cloud for directors; for coaches the cloud always wins.
 //  * Last write wins per record (a live game logged on two phones at once overwrites itself).
 
-const canSync = () => !!(sb && cloud.session && cloud.account && !cloud.account.none && !cloud.needsPassword);
-const canUpload = () => canSync() && (cloud.account.kind === 'director' || cloud.account.isAdmin);
-
-// Starts a sync (see data/sync.ts). Signed in but the account row couldn't be loaded yet
-// (offline at start): load it first.
-function syncNow() {
-  if (sb && cloud.session && !cloud.account)
-    return refreshAccount().then(() => (cloud.account ? syncNow() : undefined));
-  return runSync();
-}
-
 configureSync({
   client: sb,
   canSync,
@@ -731,8 +662,6 @@ function agoText(ms) {
   return new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
 }
 
-const plural = (key, n) => t(n === 1 ? `${key}1` : key, { n });
-
 function syncStatusText() {
   const n = pendingCount();
   const { status, error } = syncState;
@@ -773,6 +702,7 @@ function renderSoon() {
 setInterval(() => {
   if (renderPending && canRenderNow()) render();
 }, 1500);
+setRerender({ now: () => render(), soon: () => renderSoon(), tabbar: () => renderTabbar(route().view) });
 
 // When to sync: coming back to the app, the network returning, and every minute while open.
 document.addEventListener('visibilitychange', () => {
