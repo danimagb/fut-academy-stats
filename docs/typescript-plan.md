@@ -18,8 +18,8 @@ keeps deploying from the branch exactly as it does today.
 | 3   | Supabase and config as modules (drop `vendor/`)                    | ✅ merged    | danimagb/fut-academy-stats#36 |
 | 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                  | ✅ merged    | danimagb/fut-academy-stats#37 |
 | 5.1 | Shared basics and types: I18N, format helpers, data types, formats | ✅ merged    | danimagb/fut-academy-stats#38 |
-| 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | 🔄 in review | danimagb/fut-academy-stats#39 |
-| 5.3 | Storage, change tracking, validating data that comes in            | ⏳ todo      |                               |
+| 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ✅ merged    | danimagb/fut-academy-stats#39 |
+| 5.3 | Storage, change tracking, validating data that comes in            | 🔄 in review | (this PR)                     |
 | 5.4 | Supabase client, sync and sign-in logic                            | ⏳ todo      |                               |
 | 5.5 | Database checks on what is stored (new migration)                  | ⏳ todo      |                               |
 | 6   | Router, UI and screens as modules + event delegation               | ⏳ todo      |                               |
@@ -157,6 +157,35 @@ keeps deploying from the branch exactly as it does today.
     - lineups and formations
     - titles in both languages
     - the August–July season and season totals
+- Done in step 5.3: storage, change tracking, and checks on data that comes in.
+  - **`data/store.ts`**:
+    - It holds `db` as a live binding: importers always see the current store, and `setDb()`
+      replaces it on a backup restore.
+    - `initStore()` loads the store once at startup, so importing the module does nothing.
+    - It also has `load`, `normalize`, `normalizeSync`, `syncGameTeams`, `trackChanges`,
+      `saveStore`, `saveQuiet`, `isCloudTeam`, `teamIdOf`, `recordKey`, `RECORD_KINDS` and
+      `dropInvalid`.
+    - `save()` in `main.js` is `saveStore()`, then the persistence request, then the sync
+      schedule.
+  - **`data/persist.ts`**: the persistent-storage request. **`shared/lib/id.ts`**: `uid`.
+  - **`domain/validate.ts`** checks at two levels (see `docs/standards/data-and-sync.md`):
+    - `checkShape` is used on load: a record that fails is left out and kept in
+      `fut-academy-stats.rejected`.
+    - `checkIncoming` (shape plus sanity) is used on backup imports and cloud pulls.
+    - One toast says how many records were left out (new I18N keys `skippedN`/`skippedN1`).
+  - **Checked against the app's own data:** the stores from two Playwright games, one with
+    goals, a goal against, half time and full time, the other with a GK change and a time
+    fix, pass both levels. A unit test found that data from before teams existed (no
+    `teamId`) would have been rejected; that's fixed, and there's a test for it.
+  - 26 new tests:
+    - `store.test.ts`: migrations, change tracking (stamps, tombstones, restore, quiet saves,
+      "moved" tombstones), and setting damaged records aside on load
+    - `validate.test.ts`: valid, old and long games pass; broken and implausible records fail
+  - Playwright checks:
+    - A damaged game in `localStorage`: the app opens, shows the toast, and keeps the game
+      aside.
+    - A backup with a goal by a player who isn't in the squad: the restore leaves that game
+      out and says so.
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").

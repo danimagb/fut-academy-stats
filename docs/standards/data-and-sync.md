@@ -37,9 +37,20 @@ rules.
 - Row Level Security decides **who** can write: only a team's directors can write its players
   and games. Nothing decides **what** they write, except our own checks. A director can call
   the Supabase API directly, without the app.
-- Everything the app loads goes through `domain/validate.ts` (type guards and sanity checks)
-  before the rest of the code uses it. That covers cloud pulls, backup imports and
-  `localStorage`. A bad record is skipped with a warning and never crashes the app.
+- Everything the app loads goes through `domain/validate.ts` before the rest of the code uses
+  it. There are two levels:
+  - **Shape** (`checkShape`): ids, the arrays and objects the code relies on, and nothing that
+    would crash the app. It's used on everything, including the phone's own `localStorage`. A
+    record that fails is left out and kept in `fut-academy-stats.rejected`, so nothing is lost.
+  - **Shape plus sanity** (`checkIncoming`): known statuses and event types; times between 0
+    and every period plus its auto-stop limit plus an hour; players in the squad; text up to
+    500 characters. It's used on data from outside: backup imports
+    (`dropInvalid(data, checkIncoming)`) and cloud pulls. A failing record is left out.
+- The user sees one toast ("N records left out because they look damaged") and the details go
+  to the console. The app never crashes on bad data.
+- The limits are generous on purpose. Before tightening one, check it against data the app
+  itself writes, and against **old** data. Records from before teams existed have no `teamId`,
+  and older games have no `maxExtra`.
 - The database adds `CHECK` constraints for the basics (shape, size, allowed values). When you
   add a field or a status, update the validation, the constraints and their tests together.
 - Values that are worked out (minutes, score, clock) are never stored, so they can't be sent
