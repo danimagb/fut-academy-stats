@@ -24,7 +24,7 @@ keeps deploying from the branch exactly as it does today.
 | 5.5  | Database checks on what is stored (new migration)                                      | ✅ merged    | danimagb/fut-academy-stats#42 |
 | 7    | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged    | danimagb/fut-academy-stats#43 |
 | 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
-| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | 🔄 in review | (this PR)                     |
+| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | 🔄 in review | danimagb/fut-academy-stats#45 |
 | 6.2b | Team and account screens                                                               | ⏳ todo      |                               |
 | 6.3  | Game screens                                                                           | ⏳ todo      |                               |
 | 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ⏳ todo      |                               |
