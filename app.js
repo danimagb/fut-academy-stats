@@ -2225,13 +2225,13 @@ function viewEdit(id) {
       const v = draft.sel[p.id] || '';
       return `<li class="item ${v}">
         <span class="shirt">${esc(p.number) || '–'}</span>
-        <span class="grow pname" title="${esc(p.name)}">${esc(p.name)}</span>
+        <span class="grow pname">${esc(p.name)}</span>
+        <button class="gkbtn ${draft.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="${t('gkAria')}">🧤</button>
         <span class="seg">
           <button class="${v === '' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="">${t('selOut')}</button>
           <button class="${v === 'bench' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="bench">${t('selBench')}</button>
           <button class="${v === 'start' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="start">${t('selStart')}</button>
         </span>
-        <button class="gkbtn ${draft.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="${t('gkAria')}">🧤</button>
       </li>`;
     }).join('')}</ul>
     <form class="row gap" data-form="add-player-draft">
