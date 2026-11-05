@@ -195,6 +195,14 @@ branch is merged into `main` only once everything works end to end.
   password; code by email the first time / forgotten password, then choose a password;
   "Change password" on Profile) and an **Admin tab** in the bottom bar for the admin only (the
   Admin row on Profile was removed).
+- **Finished games are locked** for new events: the app no longer offers subs, goals, cards or
+  position changes after full time (tapping a player shows an info sheet; dragging does
+  nothing); existing goals can still be edited or removed. Migration
+  `20261105000000_lock_finished_games.sql` enforces it on the server: a `before update`
+  trigger on `games` drops events whose id the finished game didn't already have, and keeps
+  `data`/`status` if an update tries to move it out of `finished`. It adjusts the row instead
+  of raising an error, so an upload batch isn't refused; `updated_at` still moves, so the
+  phone gets the server's version on its next pull. Not applied to the Supabase project yet.
 - Remaining: test on two real phones after merging `feature/cloud-sync` into `main` (GitHub
   Pages serves `main` only). Possible follow-ups: shared live logging on two phones (events as
   rows), Google/Apple sign-in, a read-only viewer role for parents.

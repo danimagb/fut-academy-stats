@@ -147,6 +147,7 @@ const I18N = {
     pdfNo: 'No.', pdfPlayer: 'Player', pdfShirt: 'Shirt', pdfStints: 'ON – OFF', pdfMinutes: 'MINUTES',
     pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarter: 'STARTER', pdfSub: 'SUB', fileRound: 'Round', fileStats: 'Stats',
     readOnly: 'Read-only', readOnlyToast: 'Read-only: you\'re a coach on this team',
+    finishedHint: 'Game finished: no new events can be recorded. Tap a goal in the timeline to edit it.',
     readOnlyHint: 'You\'re a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.',
     newGameCoachOnly: 'You\'re a coach on these teams, so only directors create games. To log your own games, create a local team.',
     newTeamCloud: 'Synced team. You can add coaches under People.',
@@ -283,6 +284,7 @@ const I18N = {
     pdfNo: 'Nº', pdfPlayer: 'Atleta', pdfShirt: 'Cam.', pdfStints: 'ENTRADA – SAÍDA', pdfMinutes: 'MINUTOS',
     pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarter: 'TITULAR', pdfSub: 'SUPLENTE', fileRound: 'Jornada', fileStats: 'Estatisticas',
     readOnly: 'Só leitura', readOnlyToast: 'Só leitura: és treinador nesta equipa',
+    finishedHint: 'Jogo terminado: não é possível registar novos eventos. Toca num golo na cronologia para o editar.',
     readOnlyHint: 'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
     newGameCoachOnly: 'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa local.',
     newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
@@ -825,7 +827,12 @@ function derive(g) {
   return { on, sentOff, gk, us, them, stats, slots };
 }
 
+// After full time nothing new is recorded (subs, goals, cards, positions); existing events can
+// still be edited or removed. The server enforces the same (guard_finished_game).
+const canRecord = (g) => g.status !== 'finished';
+
 function addEvent(g, e) {
+  if (!canRecord(g)) return null;
   const id = uid();
   g.events.push({ id, t: matchTime(g), wall: Date.now(), ...e });
   save();
@@ -834,6 +841,7 @@ function addEvent(g, e) {
 }
 
 function doSub(g, out, inn) {
+  if (!canRecord(g)) return;
   const id = addEvent(g, { type: 'sub', playerId: out, inId: inn });
   render();
   toast({ html: subLine(esc(pname(g, inn)), esc(pname(g, out))) }, undoBtn(id));
@@ -842,6 +850,7 @@ function doSub(g, out, inn) {
 // Move a pitch player to a slot (swapping with whoever is there). Moving into or out of
 // goal changes the goalkeeper. Before kick-off this just edits the starting lineup.
 function movePlayer(g, id, slot) {
+  if (!canRecord(g)) return;
   const d = derive(g);
   const from = d.slots.indexOf(id);
   if (from < 0 || from === slot) return;
@@ -1701,6 +1710,7 @@ const refuseReadOnly = () => toast(t('readOnlyToast'));
 const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
 
 // Tap on a player in a read-only game: who it is and how they're doing, no actions.
+// Also shown for a finished game, where nothing new can be recorded.
 function openPlayerInfo(g, id) {
   const d = derive(g);
   const s = d.stats[id];
@@ -1711,7 +1721,7 @@ function openPlayerInfo(g, id) {
       <span class="muted small">${d.on.has(id) ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(s.played) })}</span>
     </div>
     ${bits ? `<p>${bits}</p>` : ''}
-    <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
+    <p class="hint">${readOnlyGame(g) ? `${readOnlyPill()} ${t('readOnlyHint')}` : t('finishedHint')}</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
 }
 
@@ -3363,17 +3373,22 @@ const actions = {
   },
 
   // player actions
-  player: ({ id }) => (readOnlyGame(currentGame()) ? openPlayerInfo : openPlayerSheet)(currentGame(), id),
+  player: ({ id }) => {
+    const g = currentGame();
+    (readOnlyGame(g) || !canRecord(g) ? openPlayerInfo : openPlayerSheet)(g, id);
+  },
   'do-sub': ({ out, in: inn }) => doSub(currentGame(), out, inn),
   goal: ({ id }) => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'goal', playerId: id });
+    if (!eid) return;
     render();
     toast(t('evGoal', { p: g.names[id].name }), undoBtn(eid));
   },
   yellow: ({ id }) => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'yellow', playerId: id });
+    if (!eid) return;
     render();
     toast(t('evYellow', { p: g.names[id].name }), undoBtn(eid));
   },
@@ -3381,6 +3396,7 @@ const actions = {
     const g = currentGame();
     const wasGk = derive(g).gk === id;
     const eid = addEvent(g, { type: 'red', playerId: id });
+    if (!eid) return;
     render();
     toast(wasGk ? t('gkSentOff') : t('evRed', { p: g.names[id].name }), undoBtn(eid));
   },
@@ -3409,6 +3425,7 @@ const actions = {
   'opp-goal': () => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'oppgoal' });
+    if (!eid) return;
     render();
     toast(t('evOppGoal'), undoBtn(eid));
   },
@@ -3749,7 +3766,9 @@ function dropKind(from, to) {
 }
 
 function dragStart(chip, x, y) {
-  if (chip.disabled || !chip.dataset.id || route().view !== 'game' || readOnlyGame(currentGame())) return;
+  if (chip.disabled || !chip.dataset.id || route().view !== 'game') return;
+  const g = currentGame();
+  if (!g || readOnlyGame(g) || !canRecord(g)) return;
   Object.assign(drag, { from: chip, x0: x, y0: y, moved: false, target: null });
   drag.timer = setTimeout(() => {
     drag.active = true;
