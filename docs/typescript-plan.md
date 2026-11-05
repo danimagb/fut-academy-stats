@@ -17,8 +17,8 @@ keeps deploying from the branch exactly as it does today.
 | 2   | CI: oxlint, tsc, Vitest, build                                     | ✅ merged    | danimagb/fut-academy-stats#35 |
 | 3   | Supabase and config as modules (drop `vendor/`)                    | ✅ merged    | danimagb/fut-academy-stats#36 |
 | 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                  | ✅ merged    | danimagb/fut-academy-stats#37 |
-| 5.1 | Shared basics and types: I18N, format helpers, data types, formats | 🔄 in review | danimagb/fut-academy-stats#38 |
-| 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ⏳ todo      |                               |
+| 5.1 | Shared basics and types: I18N, format helpers, data types, formats | ✅ merged    | danimagb/fut-academy-stats#38 |
+| 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | 🔄 in review | danimagb/fut-academy-stats#39 |
 | 5.3 | Storage, change tracking, validating data that comes in            | ⏳ todo      |                               |
 | 5.4 | Supabase client, sync and sign-in logic                            | ⏳ todo      |                               |
 | 5.5 | Database checks on what is stored (new migration)                  | ⏳ todo      |                               |
@@ -128,6 +128,35 @@ keeps deploying from the branch exactly as it does today.
     domain "operation" may change (`code-organisation.md`).
   - The language from the browser, the EN/PT switch (saved, and kept after a reload) and both
     themes were checked in Playwright.
+- Done in step 5.2: the game logic is in `src/domain/`, and `main.js` is down to 4,043 lines.
+  - **`clock.ts`**:
+    - match time, start/stop, the clock shown, period labels, timeline times
+    - `endPeriod`
+    - `timeCheck`: a pure "remind / auto-stop / nothing" decision, which `checkTime` in
+      `main.js` acts on (save, vibrate, toast)
+    - `applyFix`: "I forgot to press the button"
+    - Every function takes `now` instead of reading the real time.
+  - **`game-state.ts`**: `deriveState(g, now)` (who's on, GK, score, minutes, cards, lineup),
+    and `planMove`, which is what dragging a player or "To goal" means.
+  - **`pitch.ts`** (`formationOf`, `slotCoords`, `fitLineup`, `startLineup`), **`players.ts`**
+    (`byNumber`, `sortIds`, `pname`) and **`titles.ts`** (team and match titles, period names,
+    `seasonOf`).
+  - **`stats.ts`**: finished games, seasons, `teamStats`, `playerStats`, `resultOf`,
+    `gameLength`.
+  - `main.js` keeps thin wrappers that pass `Date.now()` and `db`: `matchTime`, `derive`,
+    `formationOf`, `teamStats` and others. HTML-producing helpers (`scoreHtml`, `describe`,
+    `subLine`, `formatLine`) stay with the screens for step 6.
+  - 49 new tests, covering:
+    - the 2nd half starting at 20:00 after a long 1st half
+    - extra time as `20:00 (+02:00)`, and times on a period boundary
+    - events logged during the break, and half-time subs shown at 20:00
+    - reminders every 2 minutes, and auto-stop (including old games with no `maxExtra`)
+    - the "forgot to press" fix re-timing events from their wall-clock time
+    - minutes played (extra time included), subs, goalkeeper changes, red cards (the team
+      one short, the GK sent off), and position swaps
+    - lineups and formations
+    - titles in both languages
+    - the August–July season and season totals
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").
