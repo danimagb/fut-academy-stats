@@ -1,11 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "import",
-    "typescript",
-    "unicorn",
-    "vitest"
-  ],
+  "plugins": ["import", "typescript", "unicorn", "vitest"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -40,38 +35,24 @@
   },
   "overrides": [
     {
-      "files": [
-        "*.config.ts",
-        "*.config.js"
-      ],
+      "files": ["*.config.ts", "*.config.js"],
       "rules": {
         "import/no-default-export": "off"
       }
     },
     {
-      "files": [
-        "src/shared/**"
-      ],
+      "files": ["src/shared/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "patterns": [
-              "../**",
-              "@/app/**",
-              "@/pages/**",
-              "@/features/**",
-              "@/data/**",
-              "@/domain/**"
-            ]
+            "patterns": ["../**", "@/app/**", "@/pages/**", "@/features/**", "@/data/**", "@/domain/**"]
           }
         ]
       }
     },
     {
-      "files": [
-        "src/domain/**"
-      ],
+      "files": ["src/domain/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -90,62 +71,38 @@
       }
     },
     {
-      "files": [
-        "src/data/**"
-      ],
+      "files": ["src/data/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "patterns": [
-              "../**",
-              "@/app/**",
-              "@/pages/**",
-              "@/features/**"
-            ]
+            "patterns": ["../**", "@/app/**", "@/pages/**", "@/features/**"]
           }
         ]
       }
     },
     {
-      "files": [
-        "src/features/**"
-      ],
+      "files": ["src/features/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "patterns": [
-              "../**",
-              "@/app/**",
-              "@/pages/**",
-              "@/features/**"
-            ]
+            "patterns": ["../**", "@/app/**", "@/pages/**", "@/features/**"]
           }
         ]
       }
     },
     {
-      "files": [
-        "src/pages/**"
-      ],
+      "files": ["src/pages/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "patterns": [
-              "../**",
-              "@/app/**",
-              "@/pages/**"
-            ]
+            "patterns": ["../**", "@/app/**", "@/pages/**"]
           }
         ]
       }
     }
   ],
-  "ignorePatterns": [
-    "dist/**",
-    "public/vendor/**",
-    "supabase/**"
-  ]
+  "ignorePatterns": ["dist/**", "public/vendor/**", "supabase/**"]
 }

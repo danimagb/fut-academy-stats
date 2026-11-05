@@ -1,6 +1,7 @@
 # Git, PRs and CI
 
 ## Branches
+
 - `main` is what's live. Only merge into it from a PR with all checks passing.
 - Bigger pieces of work get a **feature branch** (`feature/cloud-sync`, `feature/typescript`)
   with a plan in `docs/<name>-plan.md`. Each step is a PR into that branch, and the
@@ -11,13 +12,16 @@
   branch is fine.
 
 ## Commits
+
 Follow the style already in the history: **`Area: what changed, in plain words`**, in the
 imperative or as a description of the result, with no full stop.
+
 ```
 Game screen: player tokens show minutes in a pill under the shirt
 Stats: Y axis and gridlines on the in-app minutes chart
 TypeScript 3/10: Supabase and config as modules
 ```
+
 - `Area` is a screen (`Game screen`, `Team screen`, `Stats`, `Profile`) or a part of the app
   (`Sync`, `Storage`, `CI`, `Docs`). Steps of a feature plan use
   `<Feature> <n>/<total>: …`.
@@ -27,6 +31,7 @@ TypeScript 3/10: Supabase and config as modules
 - Never commit secrets, `dist/`, `node_modules/` or real personal data.
 
 ## Pull requests
+
 - **Keep them small**: one plan step or one feature or fix. If the description needs "and
   also", split it.
 - Title: same style as commits. Description:
@@ -40,6 +45,7 @@ TypeScript 3/10: Supabase and config as modules
   `CLAUDE.md` and `docs/standards/` for conventions.
 
 ## Checklist (reviewer and author)
+
 - [ ] CI passes: lint, typecheck, unit tests, build (and end to end from step 7).
 - [ ] New logic has tests; a bug fix has a test that failed before the fix.
 - [ ] Every new string is in `I18N` in `en` and `pt`.
@@ -50,13 +56,14 @@ TypeScript 3/10: Supabase and config as modules
 - [ ] No secrets or personal data.
 
 ## CI
-| Job | Command | Required |
-|---|---|---|
-| `lint` | `npm run lint` (oxlint) and `npm run format:check` | yes |
-| `typecheck` | `npm run typecheck` | yes |
-| `test` | `npm test` | yes |
-| `build` | `npm run build` | yes |
-| `e2e` | `npm run e2e` | yes, from step 7 |
+
+| Job         | Command                                            | Required         |
+| ----------- | -------------------------------------------------- | ---------------- |
+| `lint`      | `npm run lint` (oxlint) and `npm run format:check` | yes              |
+| `typecheck` | `npm run typecheck`                                | yes              |
+| `test`      | `npm test`                                         | yes              |
+| `build`     | `npm run build`                                    | yes              |
+| `e2e`       | `npm run e2e`                                      | yes, from step 7 |
 
 Never skip, disable or loosen a check to get a PR green. Fix the cause, or change the rule on
 purpose in its own PR (see `README.md` → "Changing a rule").

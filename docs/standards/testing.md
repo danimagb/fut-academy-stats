@@ -1,18 +1,20 @@
 # Testing
 
 ## What gets tested how
-| Kind | Tool | For | Where |
-|---|---|---|---|
-| Unit | Vitest | pure logic: clock, game state, pitch, stats, helpers, i18n parity, `save()` change tracking, storage migrations | next to the file: `<module>.test.ts` |
-| DOM | Vitest + happy-dom | a screen's HTML for a given `state` (escaping, what is shown or hidden for read-only coaches) | next to the page or feature: `<name>.test.ts` |
-| End to end | Playwright (Chromium, phone viewport) | real user flows in the built app, offline reload | `e2e/*.spec.ts` |
-| Database | pgTAP (existing) | RLS policies | `supabase/tests/` |
+
+| Kind       | Tool                                  | For                                                                                                             | Where                                         |
+| ---------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Unit       | Vitest                                | pure logic: clock, game state, pitch, stats, helpers, i18n parity, `save()` change tracking, storage migrations | next to the file: `<module>.test.ts`          |
+| DOM        | Vitest + happy-dom                    | a screen's HTML for a given `state` (escaping, what is shown or hidden for read-only coaches)                   | next to the page or feature: `<name>.test.ts` |
+| End to end | Playwright (Chromium, phone viewport) | real user flows in the built app, offline reload                                                                | `e2e/*.spec.ts`                               |
+| Database   | pgTAP (existing)                      | RLS policies                                                                                                    | `supabase/tests/`                             |
 
 Most tests are unit tests. They're fast and cover the parts that are easy to get wrong
 (minutes played, extra time, events logged during a break). Keep end-to-end tests to a few
 key flows.
 
 ## Rules
+
 - **Fixing a bug means adding a test** that fails before the fix.
 - **New pure logic comes with tests** in the same PR. A UI change comes with a test when it
   changes behaviour, not just layout.
@@ -35,6 +37,7 @@ key flows.
   `clock`, `game-state`, `pitch`, `stats` and `storage`.
 
 ## Playwright
+
 - Follow [Playwright best practices](https://playwright.dev/docs/best-practices). Find
   elements by role and visible name (`getByRole('button', { name: 'Goal' })`), not by CSS
   class. Rely on web-first assertions (`await expect(…).toBeVisible()`), and never use
@@ -49,10 +52,12 @@ key flows.
 - On failure, CI keeps the screenshots and the trace.
 
 ## Running
+
 ```
 npm test              # unit tests once
 npx vitest            # watch mode while working
 npm run e2e           # end to end (builds + previews first)
 ```
+
 Before pushing, run `npm run lint && npm run typecheck && npm test`. CI runs the same
 commands.

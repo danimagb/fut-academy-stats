@@ -9,16 +9,16 @@ branch is merged into `main` only once everything works end to end.
 
 ## Progress
 
-| # | Step | Status | PR |
-|---|------|--------|----|
-| 1 | Plan | ✅ merged | danimagb/fut-academy-stats#10 |
-| – | Persistent storage (shipped on `main`, outside the feature branch) | ✅ merged | danimagb/fut-academy-stats#11 |
-| 2 | Local data groundwork | ✅ merged | danimagb/fut-academy-stats#12 |
-| 3 | Database (tables, RLS, tests) + Supabase setup guide | ✅ merged | danimagb/fut-academy-stats#13 |
-| 4 | Sign-in (email code) | ✅ merged | danimagb/fut-academy-stats#14 |
-| 5 | Sync engine | ✅ merged | danimagb/fut-academy-stats#15 |
-| 6 | Directors, coaches and invites; read-only coach view | ✅ merged | danimagb/fut-academy-stats#16 |
-| 7 | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | 🔄 in review | (this PR) |
+| #   | Step                                                                           | Status       | PR                            |
+| --- | ------------------------------------------------------------------------------ | ------------ | ----------------------------- |
+| 1   | Plan                                                                           | ✅ merged    | danimagb/fut-academy-stats#10 |
+| –   | Persistent storage (shipped on `main`, outside the feature branch)             | ✅ merged    | danimagb/fut-academy-stats#11 |
+| 2   | Local data groundwork                                                          | ✅ merged    | danimagb/fut-academy-stats#12 |
+| 3   | Database (tables, RLS, tests) + Supabase setup guide                           | ✅ merged    | danimagb/fut-academy-stats#13 |
+| 4   | Sign-in (email code)                                                           | ✅ merged    | danimagb/fut-academy-stats#14 |
+| 5   | Sync engine                                                                    | ✅ merged    | danimagb/fut-academy-stats#15 |
+| 6   | Directors, coaches and invites; read-only coach view                           | ✅ merged    | danimagb/fut-academy-stats#16 |
+| 7   | Finishing (keep-alive, privacy, README), test on two phones, merge into `main` | 🔄 in review | (this PR)                     |
 
 **Where things stand (update this with every PR):**
 
@@ -83,7 +83,7 @@ branch is merged into `main` only once everything works end to end.
     access to reach the project.
 - Done in step 5 (sync engine, "Cloud sync" section of `app.js`):
   - `db.sync = { userId, lastPulledAt, lastSyncAt, teams: { [teamId]: 'director'|'coach' },
-    uploads: [teamId] }` (defaulted by `normalize()`). A team is a cloud team iff its id is in
+uploads: [teamId] }` (defaulted by `normalize()`). A team is a cloud team iff its id is in
     `db.sync.teams`; its players and games are too. Everything else is local and never sent.
     `uploads` = teams being uploaded that the server hasn't confirmed yet (kept through pulls,
     reverted to local if the server refuses them).
@@ -236,9 +236,9 @@ branch is merged into `main` only once everything works end to end.
                                                    └─ Edge Function: admin (accounts)
 ```
 
-- **Keys**: the app ships only the project URL and the *anon* (public) key in `config.js`.
+- **Keys**: the app ships only the project URL and the _anon_ (public) key in `config.js`.
   These are designed to be public. All access control is done by Row Level Security (RLS)
-  in the database. The *service role* key exists only as a secret of the Edge Function and
+  in the database. The _service role_ key exists only as a secret of the Edge Function and
   never goes in the repo or the app.
 - **supabase-js** is vendored into the repo (a pinned version) and cached by the service
   worker, so the app still loads offline.
@@ -256,7 +256,7 @@ There are two separate levels:
 - Supabase Auth: **"Allow new users to sign up" is turned off.**
 - **Email + password** (`signInWithPassword`). The **first time**, and after a **forgotten
   password**, the user asks for a code by email instead (`signInWithOtp({ shouldCreateUser:
-  false })` + `verifyOtp`); an email without an account gets no code. After a code sign-in the
+false })` + `verifyOtp`); an email without an account gets no code. After a code sign-in the
   app requires choosing a password (`updateUser({ password })`, min. 8 characters; the
   requirement survives reloads). Passwords are kept by Supabase Auth only as bcrypt hashes,
   never in our tables or on the phone. A code (not a magic link) because on iPhone a link
@@ -323,12 +323,12 @@ There are two separate levels:
 All app record ids stay as they are (text), so existing local data uploads without remapping.
 New records use `crypto.randomUUID()`.
 
-| table          | columns (main)                                                                 |
-|----------------|--------------------------------------------------------------------------------|
-| `accounts`     | `user_id`, `email`, `kind` (`director`/`coach`), `is_admin`, `created_at`, `created_by` |
-| `teams`        | `id`, `club`, `name`, `created_by`, `updated_at`, `deleted_at`                 |
-| `team_members` | `team_id`, `user_id`, `role` (`director`/`coach`), `invited_by`, `created_at`  |
-| `players`      | `id`, `team_id`, `number`, `name`, `full_name`, `updated_at`, `deleted_at`     |
+| table          | columns (main)                                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `accounts`     | `user_id`, `email`, `kind` (`director`/`coach`), `is_admin`, `created_at`, `created_by`                           |
+| `teams`        | `id`, `club`, `name`, `created_by`, `updated_at`, `deleted_at`                                                    |
+| `team_members` | `team_id`, `user_id`, `role` (`director`/`coach`), `invited_by`, `created_at`                                     |
+| `players`      | `id`, `team_id`, `number`, `name`, `full_name`, `updated_at`, `deleted_at`                                        |
 | `games`        | `id`, `team_id`, `date`, `status`, `data` (jsonb: the full game object), `updated_at`, `updated_by`, `deleted_at` |
 
 - A game is stored as one JSON document (lineup, events, clock, names…), like today. This
@@ -418,7 +418,7 @@ New records use `crypto.randomUUID()`.
    already shipped separately on `main`.
 3. **Database**: `supabase/` folder with SQL migrations (tables, triggers, RLS) and RLS tests,
    plus a setup guide (create the project in the EU, turn off sign-ups, enable email OTP,
-   create your user). *You create the Supabase project here.*
+   create your user). _You create the Supabase project here._
 4. **Sign-in**: Profile → Account: email + code (later: email + password, with a code the first
    time and for a forgotten password), sign out, signed-in status. Vendored
    supabase-js and `config.js`.

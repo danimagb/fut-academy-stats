@@ -52,26 +52,26 @@ adds cloud sync through [Supabase](https://supabase.com) (EU region), so a team 
 the phone and can be shared with other coaches.
 
 - **Invite-only.** Nobody can create an account. The **admin** gives people access on the
-  in-app **Admin** page (the *Admin* tab, only visible to the admin), as a **director** or
+  in-app **Admin** page (the _Admin_ tab, only visible to the admin), as a **director** or
   **coach** account.
   Profile → Account has two tabs. **Activate account** (first time): the email the admin
   registered → a code sent to that email → choose a password. **Sign in**: email + password
-  (the app keeps you signed in). *Forgot your password?* uses the same code steps.
+  (the app keeps you signed in). _Forgot your password?_ uses the same code steps.
   Passwords are stored by Supabase Auth only as bcrypt hashes.
-- **Synced or local.** Every team is either *Synced* or *Local*. Director
+- **Synced or local.** Every team is either _Synced_ or _Local_. Director
   accounts can upload a team (or create new teams as synced); coach accounts keep their own
   teams on the phone.
-- **Roles in a synced team.** *Directors* can do everything and add or remove coaches (Staff section
-  on the team screen, by email, only people who already have access). *Coaches* are
+- **Roles in a synced team.** _Directors_ can do everything and add or remove coaches (Staff section
+  on the team screen, by email, only people who already have access). _Coaches_ are
   read-only: they see the team, games and reports and can share the PDF, but can't change
   anything.
 - **Local first.** The app saves on the phone first and syncs in the background (on start, a
-  few seconds after a change, when the signal comes back, every minute, or with *Sync now*).
-  Offline at the pitch, changes simply wait. Two phones logging the *same live game* at the
+  few seconds after a change, when the signal comes back, every minute, or with _Sync now_).
+  Offline at the pitch, changes simply wait. Two phones logging the _same live game_ at the
   same time isn't supported: the last one to sync wins.
 - **Signing out** removes the synced teams from that phone (they stay in the cloud); teams that
   were only on the phone stay.
-- **Your data**: Profile → Account → *How your data is handled*.
+- **Your data**: Profile → Account → _How your data is handled_.
 
 Setting it up (once, by the maintainer) is described in
 [`docs/supabase-setup.md`](docs/supabase-setup.md); how it's built is in

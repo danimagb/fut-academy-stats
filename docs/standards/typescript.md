@@ -1,6 +1,7 @@
 # TypeScript
 
 ## Compiler
+
 - The goal is `strict: true`, plus `noUncheckedIndexedAccess`, `noImplicitOverride`,
   `noFallthroughCasesInSwitch` and `exactOptionalPropertyTypes`. Until step 8 the config is
   looser, but **new code is written as if strict were already on**.
@@ -8,6 +9,7 @@
   browsers.
 
 ## Types
+
 - **No `any`.** If a value's type is really unknown (JSON from `localStorage`, a Supabase row,
   an imported backup), use `unknown` and narrow it with a type guard (`isGame(x): x is Game`)
   where the data comes in. Code past that point trusts the types.
@@ -33,14 +35,15 @@
   types.
 
 ## Naming
-| What | Style | Example |
-|---|---|---|
-| Variables, functions | `camelCase` | `matchTitle`, `fmtClock` |
-| Types | `PascalCase` | `GameEvent`, `SyncState` |
-| Top-level constants that never change | `UPPER_SNAKE_CASE` | `STORE_KEY`, `PUSH_BATCH` |
-| Files | `kebab-case.ts` | `game-state.ts`, `pages/player/player.ts` |
-| Booleans | `is`/`has`/`can` | `isLive`, `canEdit` |
-| Screens | `view` + screen name | `viewGame`, `viewStats` |
+
+| What                                  | Style                | Example                                   |
+| ------------------------------------- | -------------------- | ----------------------------------------- |
+| Variables, functions                  | `camelCase`          | `matchTitle`, `fmtClock`                  |
+| Types                                 | `PascalCase`         | `GameEvent`, `SyncState`                  |
+| Top-level constants that never change | `UPPER_SNAKE_CASE`   | `STORE_KEY`, `PUSH_BATCH`                 |
+| Files                                 | `kebab-case.ts`      | `game-state.ts`, `pages/player/player.ts` |
+| Booleans                              | `is`/`has`/`can`     | `isLive`, `canEdit`                       |
+| Screens                               | `view` + screen name | `viewGame`, `viewStats`                   |
 
 - Use whole words for names, except abbreviations the code already uses throughout: `db`,
   `g` (game), `p` (player), `t` (match time), `esc`, `fmt*`. Single letters are fine for short
@@ -48,6 +51,7 @@
 - Name a function for what it gives back or does (`getTeam`, `endPeriod`), not how it works.
 
 ## Functions and values
+
 - **`const` by default**; use `let` only when the value is reassigned, and never `var`.
   Always use `===` (except `x == null`, which checks for both `null` and `undefined`).
 - **Keep calculations separate from side effects.** The clock, game state, stats and lineup
@@ -65,6 +69,7 @@
   `await` it, or mark it `void promise` on purpose and handle its errors inside.
 
 ## Errors
+
 - **Expected problems** (offline, a session that's run out, a bad backup file) aren't
   exceptions. Show a message to the user (`toast` or an alert) and keep the app working.
   The app must keep working offline and without an account.
@@ -75,6 +80,7 @@
   make it throw (see `data-and-sync.md`).
 
 ## Comments
+
 - **Explain why, not what.** Follow how `app.js` is written today: a short paragraph above
   any logic that isn't obvious (period boundaries, events logged during the break, sync
   conflicts).
@@ -86,6 +92,7 @@
   `I18N` (see `ui.md`).
 
 ## Imports and exports
+
 - Use **named exports only**, with no `export default`. That keeps the same name
   everywhere and makes finding usages and renaming reliable.
 - Order imports: packages, then `@/` modules (lowest layer first: `shared`, `domain`, `data`, …), then files from the same folder (`./`). Use `import type { … }`

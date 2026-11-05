@@ -10,20 +10,20 @@ keeps deploying from the branch exactly as it does today.
 
 ## Progress
 
-| # | Step | Status | PR |
-|---|------|--------|----|
-| 0 | Plan and code standards | ✅ merged | danimagb/fut-academy-stats#32 |
-| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | ✅ merged | danimagb/fut-academy-stats#33 |
-| 2 | CI: oxlint, tsc, Vitest, build | 🔄 in review | (this PR) |
-| 3 | Supabase and config as modules (drop `vendor/`) | ⏳ todo | |
-| 4 | Service worker via vite-plugin-pwa (drop `sw.js`) | ⏳ todo | |
-| 5 | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo | |
-| 5b | Database checks on what is stored (new migration) | ⏳ todo | |
-| 6 | Router, UI and screens as modules + event delegation | ⏳ todo | |
-| 7 | End-to-end smoke tests (Playwright) in CI | ⏳ todo | |
-| 8 | Strict TypeScript | ⏳ todo | |
-| 9 | Deploy workflow to GitHub Pages + docs | ⏳ todo | |
-| 10 | Merge `feature/typescript` into `main` | ⏳ todo | |
+| #   | Step                                                                        | Status       | PR                            |
+| --- | --------------------------------------------------------------------------- | ------------ | ----------------------------- |
+| 0   | Plan and code standards                                                     | ✅ merged    | danimagb/fut-academy-stats#32 |
+| 1   | Tooling skeleton (Vite, TypeScript, `package.json`)                         | ✅ merged    | danimagb/fut-academy-stats#33 |
+| 2   | CI: oxlint, tsc, Vitest, build                                              | 🔄 in review | (this PR)                     |
+| 3   | Supabase and config as modules (drop `vendor/`)                             | ⏳ todo      |                               |
+| 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                           | ⏳ todo      |                               |
+| 5   | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo      |                               |
+| 5b  | Database checks on what is stored (new migration)                           | ⏳ todo      |                               |
+| 6   | Router, UI and screens as modules + event delegation                        | ⏳ todo      |                               |
+| 7   | End-to-end smoke tests (Playwright) in CI                                   | ⏳ todo      |                               |
+| 8   | Strict TypeScript                                                           | ⏳ todo      |                               |
+| 9   | Deploy workflow to GitHub Pages + docs                                      | ⏳ todo      |                               |
+| 10  | Merge `feature/typescript` into `main`                                      | ⏳ todo      |                               |
 
 **Where things stand (update this with every PR):**
 
@@ -102,8 +102,8 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   instead of the copy in `vendor/`.
 - `keep-alive.yml` doesn't change. The database changes only in step 5b, which adds checks on
   what can be stored; the tables and access rules stay the same.
-- **Never trust data that comes in.** Row Level Security only controls *who* can write: only
-  a team's directors can write its players and games. It doesn't control *what* they write.
+- **Never trust data that comes in.** Row Level Security only controls _who_ can write: only
+  a team's directors can write its players and games. It doesn't control _what_ they write.
   `games.data` is a `jsonb` document with no checks, so a director could skip the app, call
   the Supabase API directly and store anything in their own team. We don't move the game
   logic to the server: the server can't know the real match time, and minutes, score and
@@ -114,6 +114,7 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
 ## Steps (one PR each into `feature/typescript`; the app works after each)
 
 ### 1. Tooling skeleton (the code itself stays as it is)
+
 - `package.json` with pinned dev dependencies: `vite`, `typescript`, `vite-plugin-pwa`,
   `vitest`, `happy-dom`, `oxlint`, `@playwright/test`. `@supabase/supabase-js` is the only
   runtime dependency. Commit `package-lock.json`.
@@ -130,6 +131,7 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   `app.js` moves to `src/main.js`. Add `dist/` to `.gitignore`.
 
 ### 2. CI (`.github/workflows/ci.yml`)
+
 - Runs on PRs, and on pushes to `main` and `feature/**`.
 - Four jobs run in parallel:
   - `lint` (oxlint)
@@ -151,6 +153,7 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   `main`, in Settings → Branches.
 
 ### 3. Supabase and config as modules
+
 - Replace `window.supabase` and the copy in `vendor/` with
   `import { createClient } from '@supabase/supabase-js'`.
 - Replace `config.js` / `window.FAS_CONFIG` with `src/config.ts`. It still holds only the public
@@ -158,12 +161,15 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
 - Delete `vendor/`.
 
 ### 4. Service worker through vite-plugin-pwa
+
 - Use `VitePWA({ registerType: 'autoUpdate', manifest, workbox: { globPatterns: ['**/*'] } })`.
 - Check that a phone with the app installed from the old `sw.js` switches to the new service
   worker and keeps its data.
 
 ### 5. Split the logic into `domain/`, `data/` and `shared/`, with unit tests
+
 Follow the layers in `docs/standards/code-organisation.md`.
+
 - `src/domain/`:
   - `types.ts`: `Team`, `Player`, `Game`, `GameEvent`, `Lineup`, `Db`, `Tombstone`, `Role`,
     `Lang`
@@ -194,6 +200,7 @@ Follow the layers in `docs/standards/code-organisation.md`.
     unknown event types, unknown players, huge text) are rejected
 
 ### 5b. Database checks on what is stored
+
 - New migration `supabase/migrations/<timestamp>_data_constraints.sql` with `CHECK`
   constraints on `games`:
   - `jsonb_typeof(data) = 'object'` and `jsonb_typeof(data->'events') = 'array'`
@@ -209,7 +216,9 @@ Follow the layers in `docs/standards/code-organisation.md`.
   SQL.
 
 ### 6. `app/`, `pages/` and `features/`, plus event delegation
+
 This is big, so it may be split into PRs 6a, 6b, … (for example one for the game screen).
+
 - `src/app/`: `main.ts`, `router.ts`, `actions.ts` (the single `data-action` listener), `pwa.ts`.
   Startup and the timers move here.
 - `src/shared/ui/`: sheet, `confirmSheet`, `alertSheet`, toast, icons.
@@ -225,6 +234,7 @@ This is big, so it may be split into PRs 6a, 6b, … (for example one for the ga
 - Turn on all the layer and slice import rules. Delete `app/legacy.ts`.
 
 ### 7. End-to-end smoke tests (Playwright, phone size)
+
 - What the tests do:
   - create a team and players, then create a game
   - run the clock through both halves; log a goal and a sub, and undo
@@ -236,10 +246,12 @@ This is big, so it may be split into PRs 6a, 6b, … (for example one for the ga
   screenshots when a test fails.
 
 ### 8. Strict TypeScript
+
 - Turn on `strict` and remove `allowJs`. Fix what it finds; list the real bugs in the PR.
 - Turn on oxlint's `typescript` plugin.
 
 ### 9. Deploy workflow and docs
+
 - `.github/workflows/deploy.yml` runs on every push to `main`. It builds the app, then runs
   `actions/upload-pages-artifact` (`dist`) and `actions/deploy-pages`. Permissions:
   `pages: write`, `id-token: write`.
@@ -250,6 +262,7 @@ This is big, so it may be split into PRs 6a, 6b, … (for example one for the ga
 - Update the README's "Run locally" section.
 
 ### 10. Merge into `main`
+
 - Before merging, the repo owner changes Settings → Pages → Source to **GitHub Actions**.
 - After merging, check:
   - the live site
@@ -258,16 +271,17 @@ This is big, so it may be split into PRs 6a, 6b, … (for example one for the ga
 
 ## CI summary
 
-| Check | Tool | From step |
-|---|---|---|
-| Lint | oxlint | 2 |
-| Types | `tsc --noEmit` | 2 (strict from 8) |
-| Unit tests | Vitest + happy-dom | 2 (real tests from 5) |
-| Build | Vite | 2 |
-| End to end | Playwright (Chromium, phone size) | 7 |
-| Deploy to Pages | GitHub Actions | 9 (push to `main`) |
+| Check           | Tool                              | From step             |
+| --------------- | --------------------------------- | --------------------- |
+| Lint            | oxlint                            | 2                     |
+| Types           | `tsc --noEmit`                    | 2 (strict from 8)     |
+| Unit tests      | Vitest + happy-dom                | 2 (real tests from 5) |
+| Build           | Vite                              | 2                     |
+| End to end      | Playwright (Chromium, phone size) | 7                     |
+| Deploy to Pages | GitHub Actions                    | 9 (push to `main`)    |
 
 ## Checks for every PR
+
 - All CI jobs pass.
 - Check the app by hand on `npm run preview`, at phone size and in both themes.
 - No errors in the browser console.
