@@ -55,7 +55,7 @@ const I18N = {
     st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
     teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
     playersCount: '{n} players', unnamedTeam: 'My team',
-    club: 'Club', clubPh: 'e.g. Padroense F.C.', team: 'Team', teamPh: 'e.g. U7 B',
+    club: 'Club', clubPh: 'e.g. Padroense F.C.', team: 'Team', ageGroup: 'Age group', teamPh: 'e.g. U7 B',
     players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
     deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
@@ -191,7 +191,7 @@ const I18N = {
     st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
     teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
     playersCount: '{n} jogadores', unnamedTeam: 'A minha equipa',
-    club: 'Clube', clubPh: 'ex.: Padroense F.C.', team: 'Equipa', teamPh: 'ex.: Sub-7B',
+    club: 'Clube', clubPh: 'ex.: Padroense F.C.', team: 'Equipa', ageGroup: 'Escalão', teamPh: 'ex.: Sub-7B',
     players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
     deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
@@ -513,7 +513,11 @@ function fmtDate(g) {
 
 const getGame = (id) => db.games.find((g) => g.id === id);
 const getTeam = (id) => db.teams.find((tm) => tm.id === id);
-const teamLabel = (tm) => tm.name || tm.club || t('unnamedTeam');
+// A team is shown as "Club - Age group" everywhere (screens, PDFs), or whichever of the two is set.
+const teamFull = (club, name) => [club, name].map((x) => String(x || '').trim()).filter(Boolean).join(' - ');
+const teamLabel = (tm) => teamFull(tm.club, tm.name) || t('unnamedTeam');
+// The same for a game (which keeps a copy of its team's club and name).
+const gameTeam = (g) => teamFull(g.club, g.team);
 const teamPlayers = (teamId) => db.players.filter((p) => p.teamId === teamId);
 
 const byNumber = (a, b) =>
@@ -540,7 +544,7 @@ const formatLine = (g) => `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ?
 
 // "Club x Opponent" (or the other way round when playing away).
 function matchTitle(g) {
-  const us = g.club || g.team;
+  const us = gameTeam(g);
   const them = g.opponent || t('opponent');
   if (!us) return `vs ${them}`;
   return g.home === false ? `${them} x ${us}` : `${us} x ${them}`;
@@ -1588,7 +1592,7 @@ function offerUpload() {
     <form class="form" data-form="upload-teams">
       <div class="check-list">${localTeams().map((tm) => `
         <label class="check"><input type="checkbox" name="team" value="${esc(tm.id)}" checked>
-          <span class="grow"><strong>${esc(teamLabel(tm))}</strong>${tm.club && tm.name ? `<span class="muted small"> · ${esc(tm.club)}</span>` : ''}
+          <span class="grow"><strong>${esc(teamLabel(tm))}</strong>
           <span class="muted small sub-line">${t('playersCount', { n: teamPlayers(tm.id).length })}</span></span></label>`).join('')}
       </div>
       <button class="btn primary block">${t('uploadSelected')}</button>
@@ -1923,7 +1927,7 @@ function viewAdmin() {
         .sort((a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email));
       const others = st.accounts.filter((a) => !ms.some((m) => m.user_id === a.user_id));
       return `<li class="card admin-team">
-        <div class="row gap"><strong class="grow">${esc(teamLabel(tm))}${tm.club && tm.name ? ` <span class="muted small">· ${esc(tm.club)}</span>` : ''}</strong>
+        <div class="row gap"><strong class="grow">${esc(teamLabel(tm))}</strong>
           ${ms.some((m) => m.role === 'director') ? '' : `<span class="badge warn">${t('noDirector')}</span>`}</div>
         ${ms.length ? `<ul class="members">${ms.map((m) => `
           <li class="row gap"><span class="grow email">${esc(m.email)}</span>${roleSelect(m)}
@@ -2000,9 +2004,8 @@ function gameCard(g) {
   const res = g.status === 'finished' ? (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw') : '';
   // Our goals green, theirs red, both neutral on a draw.
   const score = scoreHtml(g, d, '–', true);
-  // Only what helps pick a game out of the list: team (when there are several), date and round.
+  // Only what helps pick a game out of the list (the title already names the team): date and round.
   const meta = [
-    db.teams.length > 1 && g.team ? esc(g.team) : '',
     esc(fmtDate(g)),
     g.round ? t('roundN', { n: esc(g.round) }) : '',
   ].filter(Boolean).join(' · ');
@@ -2028,7 +2031,6 @@ function viewTeams() {
       <li><a class="card" href="#/team/${tm.id}">
         <div class="grow">
           <strong>${esc(teamLabel(tm))}</strong>
-          ${tm.club ? `<div class="muted">${esc(tm.club)}</div>` : ''}
         </div>
         <div class="right">
           <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
@@ -2055,7 +2057,7 @@ function viewTeam(id) {
     ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
     <div class="form">
       ${field('club', t('club'), t('clubPh'))}
-      ${field('name', t('team'), t('teamPh'))}
+      ${field('name', t('ageGroup'), t('teamPh'))}
     </div>
     ${canUpload() && !cloudTeam ? `<div class="upload-team">
       <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
@@ -2326,7 +2328,7 @@ function viewGame(id) {
   const last = ro ? null : g.events[g.events.length - 1];
   const canEdit = g.status === 'scheduled' && g.events.length === 0;
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
-  const us = g.team || g.club || t('unnamedTeam');
+  const us = gameTeam(g) || t('unnamedTeam');
   const them = g.opponent || t('opponent');
   const [home, away] = g.home === false ? [them, us] : [us, them];
 
@@ -2558,7 +2560,7 @@ function statsSheet(g) {
   const [yy, mo, dd] = String(g.date).split('-');
 
   return {
-    title: [g.club, `${t('pdfTitle')} · ${g.team || ''}`.replace(/ · $/, ''), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
+    title: [gameTeam(g), t('pdfTitle'), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
       .filter(Boolean).join(' — '),
     // [label, value, column it lines up with]
     meta: [
@@ -2775,7 +2777,7 @@ function viewPlayer(id) {
     ${bar(esc(p.name), '#/stats')}
     ${statsFilters(p.teamId, season, false)}
     <section class="player-head">
-      <div class="muted small">${esc([tm?.club, tm?.name].filter(Boolean).join(' · '))}</div>
+      <div class="muted small">${esc(tm ? teamFull(tm.club, tm.name) : '')}</div>
       <h2>${esc(playerFullName(p))}</h2>
       <div class="small">${[p.number ? t('statNumber', { n: esc(p.number) }) : '', season ? `${t('pdfSeason')} ${esc(season)}` : ''].filter(Boolean).join(' · ')}</div>
     </section>
@@ -3015,7 +3017,7 @@ function buildPlayerPdf(playerId) {
   const HB = 118;
   pdf.rect(0, pdf.H - HB, pdf.W, HB, PDF_GREEN);
   y = pdf.H - 36;
-  pdf.text([tm?.name, tm?.club].filter(Boolean).join(' · ').toUpperCase(), M, y, { size: 10, color: '#cfe3d8', maxW: W });
+  pdf.text((tm ? teamFull(tm.club, tm.name) : '').toUpperCase(), M, y, { size: 10, color: '#cfe3d8', maxW: W });
   y -= 32;
   pdf.text(playerFullName(p).toUpperCase(), M, y, { size: 24, bold: true, color: '#ffffff', maxW: W });
   y -= 22;
