@@ -26,6 +26,7 @@ keeps deploying from the branch exactly as it does today.
 
 **Where things stand (update this with every PR):**
 
+- Code standards are in `docs/standards/` (this PR). Every step follows them.
 - Nothing has been built yet. The app is still `app.js` / `styles.css` / `sw.js`, with no build.
 
 ## Why
@@ -65,6 +66,9 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
 - Scripts: `dev`, `build` (`vite build`), `preview`, `typecheck` (`tsc --noEmit`), `lint`
   (`oxlint`), `test` (`vitest run`), `e2e` (`playwright test`).
 - `tsconfig.json` starts with `allowJs` and `strict: false`, so the current code passes.
+- Add the `@/` → `src/` import alias in both `tsconfig.json` (`paths`) and `vite.config.ts`.
+- Add the formatter (Prettier, settings in `docs/standards/README.md`) and an `.editorconfig`.
+  The `format` and `format:check` scripts come with it.
 - `vite.config.ts` uses `base: './'` (the site lives under `…github.io/fut-academy-stats/`) and
   holds the Vitest config (`environment: 'happy-dom'`).
 - `index.html` becomes Vite's entry. Icons, the manifest and `.nojekyll` move to `public/`, and
@@ -79,8 +83,14 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   - `build` (Vite, uploads `dist/` as an artifact)
 - Uses the Node version from `.nvmrc` and caches npm. `concurrency` cancels runs that a
   newer push has replaced.
+- `lint` also runs `format:check`.
 - Add a starter `.oxlintrc.json`: the `correctness` category as errors, `suspicious` as
-  warnings, plus `no-unused-vars` and `eqeqeq`. Fix whatever it reports in the current code.
+  warnings, plus `no-unused-vars`, `eqeqeq`, `import/no-cycle` and `import/no-default-export`.
+  Fix whatever it reports in the current code.
+- Add the import rules between layers and slices from `docs/standards/code-organisation.md`.
+  They only start reporting errors in step 5, once the folders exist. Use dependency-cruiser
+  for any rule oxlint can't express.
+- Run the formatter once over the whole codebase, in its own commit.
 - Add one example Vitest test, so the `test` job has something to run.
 - Manual step for the repo owner: make these checks required for `feature/typescript` and
   `main`, in Settings → Branches.
@@ -97,23 +107,21 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
 - Check that a phone with the app installed from the old `sw.js` switches to the new service
   worker and keeps its data.
 
-### 5. Split the logic into typed modules, with unit tests
-- `src/types.ts`: `Team`, `Player`, `Game`, `GameEvent`, `Lineup`, `Db`, `Tombstone`, `Role`,
-  `Lang`.
-- One module per area, all `.ts`:
-  - `src/i18n.ts`: typed so that `pt` must have every key in `en`
-  - `src/theme.ts`
-  - `src/storage.ts`
-  - `src/helpers.ts`
-  - `src/clock.ts`
-  - `src/pitch.ts`
-  - `src/game-state.ts`
-  - `src/auth.ts`
-  - `src/sync.ts`
-  - `src/report.ts`
-- Shared values that change (`db`, `draft`, `renderPending`) go into one exported `state`
-  object, because code can't assign to a variable it imported.
-- Vitest tests for:
+### 5. Split the logic into `domain/`, `data/` and `shared/`, with unit tests
+Follow the layers in `docs/standards/code-organisation.md`.
+- `src/domain/`:
+  - `types.ts`: `Team`, `Player`, `Game`, `GameEvent`, `Lineup`, `Db`, `Tombstone`, `Role`,
+    `Lang`
+  - `clock.ts`, `game-state.ts`, `pitch.ts`, `stats.ts`, `report.ts` (the report table model),
+    `formats.ts`, `titles.ts`
+- `src/data/`: `store.ts` (`state`, `save()`, change tracking, migrations), `supabase.ts`,
+  `sync.ts`, `persist.ts`. Shared values that change (`db`, `draft`, `renderPending`) go into
+  one exported `state` object, because code can't assign to a variable it imported.
+- `src/shared/`: `lib/` (`esc`, `pad`, DOM and date helpers), `i18n/` (typed so that `pt` must
+  have every key in `en`), `config.ts`.
+- Code that isn't moved yet stays in `src/app/legacy.ts` and imports from the new modules.
+- Turn on the layer import rules for these folders.
+- Vitest tests, next to each module, plus the data builders in `src/test/factories.ts`:
   - **clock:** periods, extra time, times on a period boundary, and the "forgot to press" rebuild
   - **game state from events:** minutes played, subs, goalkeeper changes, score
   - **lineup:** formation slot moves
@@ -121,13 +129,21 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   - **match title and score order:** home and away
   - **translations:** `pt` has every key in `en`
 
-### 6. Router, UI and screens as modules, plus event delegation
-- `src/router.ts`; `src/ui.ts` (sheet, confirm and alert dialogs); `src/views/*.ts`, one file per
-  screen.
-- Replace the inline `onclick="fn()"` strings with `data-action` attributes and one typed
-  listener on `document`. `index.html` already does this for `data-action="close-sheet"`.
-- Move the timers and startup into `src/main.ts`.
-- Split the styles into `src/styles/*.css`, imported from `main.ts`.
+### 6. `app/`, `pages/` and `features/`, plus event delegation
+This is big, so it may be split into PRs 6a, 6b, … (for example one for the game screen).
+- `src/app/`: `main.ts`, `router.ts`, `actions.ts` (the single `data-action` listener), `pwa.ts`.
+  Startup and the timers move here.
+- `src/shared/ui/`: sheet, `confirmSheet`, `alertSheet`, toast, icons.
+- `src/pages/<page>/`, one folder per screen: games, teams, team, game-edit, game, report,
+  stats, player, profile, admin.
+- `src/features/<feature>/`: substitution, log-event, fix-times, formation-picker, undo,
+  sign-in, team-people, backup, share-pdf, language-switch, theme-switch (the list may change
+  as the work goes).
+- Replace the inline `onclick="fn()"` strings with `data-action="<slice>.<verb>"`.
+  `index.html` already does this for `data-action="close-sheet"`.
+- Split `styles.css` into `shared/styles/` (variables, both themes, base) and one `.css` file
+  per page or feature, kept next to its code.
+- Turn on all the layer and slice import rules. Delete `app/legacy.ts`.
 
 ### 7. End-to-end smoke tests (Playwright, phone size)
 - What the tests do:

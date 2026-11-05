@@ -19,6 +19,10 @@ Playwright). This happens on the `feature/typescript` branch, through PRs into i
 **`docs/typescript-plan.md`** lists every step, and its "Progress" section records where things
 stand. Read it before working on that branch, and update it in every PR for that work.
 
+Code on that branch follows **`docs/standards/`**: TypeScript style, the frontend folder
+structure (`app` → `pages` → `features` → `data` → `domain` → `shared`, with imports only going
+down), the UI, data, testing and git/PR rules. Read `docs/standards/README.md` first.
+
 ## Conventions
 
 - `app.js` holds all logic (storage, views, clock, events, report/PDF), `styles.css` all
