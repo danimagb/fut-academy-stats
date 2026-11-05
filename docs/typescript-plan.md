@@ -19,8 +19,8 @@ keeps deploying from the branch exactly as it does today.
 | 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                  | ✅ merged    | danimagb/fut-academy-stats#37 |
 | 5.1 | Shared basics and types: I18N, format helpers, data types, formats | ✅ merged    | danimagb/fut-academy-stats#38 |
 | 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ✅ merged    | danimagb/fut-academy-stats#39 |
-| 5.3 | Storage, change tracking, validating data that comes in            | 🔄 in review | danimagb/fut-academy-stats#40 |
-| 5.4 | Supabase client, sync and sign-in logic                            | ⏳ todo      |                               |
+| 5.3 | Storage, change tracking, validating data that comes in            | ✅ merged    | danimagb/fut-academy-stats#40 |
+| 5.4 | Supabase client, sync and sign-in logic                            | 🔄 in review | (this PR)                     |
 | 5.5 | Database checks on what is stored (new migration)                  | ⏳ todo      |                               |
 | 6   | Router, UI and screens as modules + event delegation               | ⏳ todo      |                               |
 | 7   | End-to-end smoke tests (Playwright) in CI                          | ⏳ todo      |                               |
@@ -186,6 +186,32 @@ keeps deploying from the branch exactly as it does today.
       aside.
     - A backup with a goal by a player who isn't in the squad: the restore leaves that game
       out and says so.
+- Done in step 5.4: the sync engine and the Supabase client are in `src/data/`, and `main.js`
+  is down to 3,557 lines.
+  - **`data/sync.ts`** is the sync engine (push, pull, single-flight runs, the sign-out epoch,
+    refusals, removing teams from the phone).
+    - It doesn't know about screens. `main.js` calls `configureSync({ client, canSync,
+userId, request, onStatus, onChange, onRejected, afterSync })` once.
+    - `runSync()` is the core run. `syncNow()` in `main.js` loads the account row first when
+      needed, then calls it.
+    - The code moved unchanged apart from those hooks. It's marked `// @ts-nocheck`, and
+      step 8 (strict TypeScript) types it.
+  - **`data/supabase.ts`**: `getSupabase()` creates the client on first use, so importing the
+    module does nothing.
+  - **`data/auth.ts`**: `fetchAccount` (the `accounts` row), plus the copy kept on the phone
+    for offline use (`storedAccount` / `storeAccount`). The sign-in screens stay for step 6.
+  - **`src/test/fake-supabase.ts`** is an in-memory stand-in for the client calls sync makes.
+    Tests can refuse a write (for RLS) or change data while an upload is on its way.
+  - 11 sync tests:
+    - **push:** a director's changes are uploaded and then marked as sent; a coach's or a
+      local team's changes are never uploaded, and a coach's edit is replaced by the cloud
+      version; deletions are sent as soft deletes; an edit made during an upload stays
+      pending; a new team the server refuses becomes local again
+    - **pull:** new and deleted rows arrive; rows that fail `checkIncoming` are left out and
+      counted; a team the user was removed from leaves the phone
+    - **sessions:** another person signing in clears the previous person's cloud teams;
+      signing out during a sync drops what it downloaded; the first sync is reported (so the
+      app can offer to upload the phone's teams)
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").
