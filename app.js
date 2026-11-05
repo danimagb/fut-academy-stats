@@ -2221,11 +2221,11 @@ function viewEdit(id) {
 
     <h2>${t('squad')} <span class="muted small" id="squad-count">${squadCount()}</span></h2>
     <p class="hint">${t('squadHint')}</p>
-    <ul class="list">${ps.map((p) => {
+    <ul class="list squad-pick">${ps.map((p) => {
       const v = draft.sel[p.id] || '';
       return `<li class="item ${v}">
         <span class="shirt">${esc(p.number) || '–'}</span>
-        <span class="grow">${esc(p.name)}</span>
+        <span class="grow pname" title="${esc(p.name)}">${esc(p.name)}</span>
         <span class="seg">
           <button class="${v === '' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="">${t('selOut')}</button>
           <button class="${v === 'bench' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="bench">${t('selBench')}</button>
