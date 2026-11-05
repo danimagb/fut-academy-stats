@@ -1,9 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 import { CLOUD } from '@/shared/config';
 import { $, $$ } from '@/shared/lib/dom';
-import { fmtClock, fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
+import { fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
 import { FORMATS, formationsFor } from '@/domain/formats';
+import {
+  applyFix as applyFixAt,
+  endPeriod,
+  fmtAt,
+  fmtInPeriod,
+  fmtNowAt,
+  matchTimeAt,
+  periodLabel,
+  periodStart,
+  startClock as startClockAt,
+  timeCheck,
+  timeOf,
+} from '@/domain/clock';
+import { deriveState, planMove } from '@/domain/game-state';
+import { formationOf as formationOfGame, slotCoords, startLineup } from '@/domain/pitch';
+import { byNumber, pname, sortIds } from '@/domain/players';
+import {
+  gameLength,
+  playerStats,
+  resultOf,
+  statsSeasons as seasonsOfTeam,
+  teamStats as teamSeason,
+} from '@/domain/stats';
+import { gameTeam, matchTitle, periodName, seasonOf, teamFull, teamLabel } from '@/domain/titles';
 import { getLang, locale, setLang, t } from '@/shared/i18n/i18n';
 
 // ---------- Config ----------
@@ -220,47 +244,10 @@ function fmtDate(g) {
 
 const getGame = (id) => db.games.find((g) => g.id === id);
 const getTeam = (id) => db.teams.find((tm) => tm.id === id);
-// A team is shown as "Club - Age group" everywhere (screens, PDFs), or whichever of the two is set.
-const teamFull = (club, name) =>
-  [club, name]
-    .map((x) => String(x || '').trim())
-    .filter(Boolean)
-    .join(' - ');
-const teamLabel = (tm) => teamFull(tm.club, tm.name) || t('unnamedTeam');
-// The same for a game (which keeps a copy of its team's club and name).
-const gameTeam = (g) => teamFull(g.club, g.team);
 const teamPlayers = (teamId) => db.players.filter((p) => p.teamId === teamId);
-
-const byNumber = (a, b) =>
-  (parseInt(a.number, 10) || 999) - (parseInt(b.number, 10) || 999) || a.name.localeCompare(b.name);
-
-function sortIds(g, ids) {
-  return [...ids].sort((a, b) => byNumber(g.names[a], g.names[b]));
-}
-
-function pname(g, id) {
-  const p = g.names[id];
-  if (!p) return '?';
-  return p.number ? `#${p.number} ${p.name}` : p.name;
-}
-
-function periodName(g, n) {
-  if (g.periods === 2) return n === 1 ? t('p1') : t('p2');
-  if (g.periods === 4) return t('pQ', { n });
-  if (g.periods === 1) return t('pGame');
-  return t('pN', { n });
-}
 
 const formatLine = (g) =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
-
-// "Club x Opponent" (or the other way round when playing away).
-function matchTitle(g) {
-  const us = gameTeam(g);
-  const them = g.opponent || t('opponent');
-  if (!us) return `vs ${them}`;
-  return g.home === false ? `${them} x ${us}` : `${us} x ${them}`;
-}
 
 // Score in the same order as matchTitle (home side first). With `colour`, our goals are
 // wrapped in .us and theirs in .them (no colour on a draw).
@@ -302,87 +289,21 @@ function download(filename, data, type) {
 // played add up. The clock shown to the coach restarts every period at its
 // regular start (2nd half at 20:00), and extra time shows as "20:00 (+02:00)".
 
-function matchTime(g) {
-  const c = g.clock;
-  return c.elapsedMs + (c.running ? Date.now() - c.startedAt : 0);
-}
-
-function startClock(g) {
-  if (g.clock.running) return;
-  g.clock.running = true;
-  g.clock.startedAt = Date.now();
-}
-
-function stopClock(g) {
-  if (!g.clock.running) return;
-  g.clock.elapsedMs = matchTime(g);
-  g.clock.running = false;
-  g.clock.startedAt = null;
-}
-
-function periodStart(g) {
-  const m = [...g.marks].reverse().find((x) => x.type === 'start');
-  return m ? m.t : 0;
-}
-
-// Game clock for `ms` into period p.
-function fmtInPeriod(g, p, ms) {
-  const regular = g.periodMin * 60000;
-  const offset = (p - 1) * regular;
-  return Math.floor(ms / 1000) > g.periodMin * 60
-    ? `${fmtClock(offset + regular)} (+${fmtClock(ms - regular)})`
-    : fmtClock(offset + ms);
-}
-
-// Game clock for match time t. A time on the boundary between two periods
-// counts as the end of the earlier one, or the start of the later one with atStart.
-function fmtAt(g, t, atStart = false) {
-  let m = null;
-  for (const x of g.marks) if (x.type === 'start' && (!m || (atStart ? x.t <= t : x.t < t))) m = x;
-  return m ? fmtInPeriod(g, m.period, t - m.t) : fmtClock(t);
-}
-
-function fmtNow(g) {
-  if (g.status === 'live') return fmtInPeriod(g, g.clock.period, matchTime(g) - periodStart(g));
-  return fmtAt(g, matchTime(g));
-}
-
-function periodLabel(g) {
-  const c = g.clock;
-  switch (g.status) {
-    case 'scheduled':
-      return t('notStarted', { n: g.periods, m: g.periodMin });
-    case 'live':
-      return `${periodName(g, c.period)}${c.running ? '' : ` (${t('paused')})`}`;
-    case 'break':
-      return t('breakAfter', { p: periodName(g, c.period) });
-    default:
-      return t('fullTime');
-  }
-}
-
-const maxExtraMs = (g) => (g.maxExtra ?? 10) * 60000;
-
-// Ends the current period at match time endT (may be earlier than now).
-// Events logged after endT happened during the break, so they move to endT.
-function endPeriodAt(g, endT) {
-  stopClock(g);
-  g.clock.elapsedMs = endT;
-  for (const e of g.events) if (e.t > endT) e.t = endT;
-  g.marks.push({ type: 'end', period: g.clock.period, t: endT, wall: Date.now() });
-  g.status = g.clock.period >= g.periods ? 'finished' : 'break';
-}
+const matchTime = (g) => matchTimeAt(g, Date.now());
+const startClock = (g) => startClockAt(g, Date.now());
+const fmtNow = (g) => fmtNowAt(g, Date.now());
+const endPeriodAt = (g, endT) => endPeriod(g, endT, Date.now());
 
 // Reminders once regular time is up, and an automatic stop if the coach forgets.
 function checkTime(g) {
-  const p = g.clock.period;
-  const pt = matchTime(g) - periodStart(g);
-  const regular = g.periodMin * 60000;
+  const check = timeCheck(g, Date.now());
+  if (check.kind === 'none') return;
+  const p = check.period;
   const onThisGame = route().view === 'game' && route().id === g.id;
   const last = p >= g.periods;
 
-  if (pt >= regular + maxExtraMs(g)) {
-    endPeriodAt(g, periodStart(g) + regular + maxExtraMs(g));
+  if (check.kind === 'auto-stop') {
+    endPeriodAt(g, check.endT);
     g.autoStopped = p;
     save();
     navigator.vibrate?.([500, 200, 500]);
@@ -395,54 +316,24 @@ function checkTime(g) {
     }
     return;
   }
-  if (pt >= regular) {
-    const n = Math.floor((pt - regular) / 120000); // remind every 2 minutes
-    if ((g.alerted[p] ?? -1) >= n) return;
-    g.alerted[p] = n;
-    save();
-    navigator.vibrate?.([300, 150, 300]);
-    if (onThisGame) {
-      const msg =
-        n === 0
-          ? t('timeUp', { p: periodName(g, p) })
-          : t('extraMin', { p: periodName(g, p), m: Math.floor((pt - regular) / 60000) });
-      toast(
-        msg,
-        `<button data-action="end-period">${last ? t('fullTime') : t('endPeriod', { p: periodName(g, p) })}</button>`,
-      );
-    }
+  g.alerted[p] = check.n;
+  save();
+  navigator.vibrate?.([300, 150, 300]);
+  if (onThisGame) {
+    const msg =
+      check.n === 0
+        ? t('timeUp', { p: periodName(g, p) })
+        : t('extraMin', { p: periodName(g, p), m: check.extraMin });
+    toast(
+      msg,
+      `<button data-action="end-period">${last ? t('fullTime') : t('endPeriod', { p: periodName(g, p) })}</button>`,
+    );
   }
 }
 
-// "I forgot to press the button": set when the period really ended and,
-// optionally, how long ago the next one started. Event times are rebuilt from
-// their real (wall-clock) timestamps.
+// "I forgot to press the button" (see applyFix in domain/clock.ts).
 function applyFix(g, endMin, startedMinAgo) {
-  const p = g.clock.period;
-  const last = p >= g.periods;
-  const startIdx = g.marks.map((m) => m.type).lastIndexOf('start');
-  const start = g.marks[startIdx]?.t ?? 0;
-  const endT = start + Math.round(endMin * 60000);
-  const resumeWall = startedMinAgo != null && !last ? Date.now() - Math.round(startedMinAgo * 60000) : null;
-
-  for (const e of g.events) {
-    if (e.t <= endT) continue;
-    e.t = resumeWall != null && e.wall >= resumeWall ? endT + (e.wall - resumeWall) : endT;
-  }
-  g.marks = g.marks.slice(0, startIdx + 1);
-  g.marks.push({ type: 'end', period: p, t: endT, wall: Date.now() });
-  Object.assign(g.clock, { running: false, startedAt: null, elapsedMs: endT });
-  g.autoStopped = null;
-
-  if (resumeWall != null) {
-    g.clock.period = p + 1;
-    g.marks.push({ type: 'start', period: p + 1, t: endT, wall: resumeWall });
-    Object.assign(g.clock, { running: true, startedAt: resumeWall });
-    g.status = 'live';
-    delete g.alerted[p + 1];
-  } else {
-    g.status = last ? 'finished' : 'break';
-  }
+  applyFixAt(g, endMin, startedMinAgo, Date.now());
   save();
 }
 
@@ -450,115 +341,11 @@ function applyFix(g, endMin, startedMinAgo) {
 // A lineup is one id (or null) per slot: slot 0 is the goal, slots 1..field follow the
 // formation from defence to attack, left to right. Changing formation keeps the slots.
 
-function formationOf(g) {
-  const list = formationsFor(g.field);
-  if (list.includes(g.formation)) return g.formation;
-  const last = db.formations?.[g.field];
-  return list.includes(last) ? last : list[0];
-}
-
-// Slot positions in % of the pitch (own goal at the bottom). The GK's `y` is a CSS length:
-// a fixed distance from the bottom edge, so its name and minutes always fit inside the
-// pitch however small the pitch gets (it shrinks with the screen height).
-function slotCoords(formation) {
-  const rows = formation.split('-').map(Number);
-  const pts = [{ x: 50, y: 'calc(100% - 50px)' }];
-  rows.forEach((n, r) => {
-    const y = rows.length === 1 ? 52 : 70 - r * (54 / (rows.length - 1));
-    for (let i = 0; i < n; i++) pts.push({ x: 50 + ((i + 1) / (n + 1) - 0.5) * 115, y });
-  });
-  return pts;
-}
-
-// Keep players where they were, put the GK in goal and fill the gaps in shirt order.
-function fitLineup(prev, starters, gkId, size) {
-  const slots = Array(size).fill(null);
-  slots[0] = starters.includes(gkId) ? gkId : null;
-  const rest = starters.filter((id) => id !== slots[0]);
-  (prev || []).forEach((id, i) => {
-    if (i > 0 && i < size && rest.includes(id)) slots[i] = id;
-  });
-  const left = rest.filter((id) => !slots.includes(id));
-  for (let i = 1; i < size; i++) if (!slots[i]) slots[i] = left.shift() ?? null;
-  return slots;
-}
-
-const startLineup = (g) => fitLineup(g.lineup, sortIds(g, g.starters), g.gkId, g.field + 1);
+const formationOf = (g) => formationOfGame(g, db.formations);
 
 // ---------- Game state (derived from events) ----------
 
-function derive(g) {
-  const on = new Set(g.starters);
-  const sentOff = new Set();
-  let gk = g.gkId;
-  const slots = startLineup(g);
-  let us = 0;
-  let them = 0;
-  const stats = {};
-  for (const id of g.squad)
-    stats[id] = { intervals: [], open: null, goals: 0, yellow: 0, red: 0, redAt: null };
-  for (const id of g.starters) stats[id].open = 0;
-
-  const close = (s, t) => {
-    if (s.open != null) s.intervals.push([s.open, t]);
-    s.open = null;
-  };
-
-  for (const e of g.events) {
-    const s = stats[e.playerId];
-    switch (e.type) {
-      case 'sub':
-        on.delete(e.playerId);
-        on.add(e.inId);
-        close(s, e.t);
-        stats[e.inId].open = e.t;
-        if (gk === e.playerId) gk = e.inId;
-        if (slots.includes(e.playerId)) slots[slots.indexOf(e.playerId)] = e.inId;
-        else if (slots.includes(null)) slots[slots.indexOf(null)] = e.inId;
-        break;
-      case 'goal':
-        s.goals++;
-        us++;
-        break;
-      case 'oppgoal':
-        them++;
-        break;
-      case 'yellow':
-        s.yellow++;
-        break;
-      case 'red':
-        s.red++;
-        s.redAt = e.t;
-        sentOff.add(e.playerId);
-        if (on.delete(e.playerId)) close(s, e.t);
-        if (gk === e.playerId) gk = null;
-        if (slots.includes(e.playerId)) slots[slots.indexOf(e.playerId)] = null;
-        break;
-      case 'gk': {
-        gk = e.playerId;
-        const i = slots.indexOf(e.playerId);
-        if (i > 0) [slots[0], slots[i]] = [e.playerId, slots[0]];
-        break;
-      }
-      case 'pos': {
-        // move an outfield player to another outfield slot, swapping with whoever is there
-        const i = slots.indexOf(e.playerId);
-        if (i > 0 && e.slot > 0 && e.slot < slots.length)
-          [slots[i], slots[e.slot]] = [slots[e.slot], e.playerId];
-        break;
-      }
-    }
-  }
-
-  const end = matchTime(g);
-  for (const id of g.squad) {
-    const s = stats[id];
-    if (s.open != null) s.intervals.push([s.open, end]);
-    s.intervals = s.intervals.filter(([a, b]) => b > a || g.status === 'scheduled');
-    s.played = s.intervals.reduce((sum, [a, b]) => sum + (b - a), 0);
-  }
-  return { on, sentOff, gk, us, them, stats, slots };
-}
+const derive = (g) => deriveState(g, Date.now());
 
 function addEvent(g, e) {
   const id = uid();
@@ -577,28 +364,25 @@ function doSub(g, out, inn) {
 // Move a pitch player to a slot (swapping with whoever is there). Moving into or out of
 // goal changes the goalkeeper. Before kick-off this just edits the starting lineup.
 function movePlayer(g, id, slot) {
-  const d = derive(g);
-  const from = d.slots.indexOf(id);
-  if (from < 0 || from === slot) return;
-  const other = d.slots[slot];
-  const newGk = slot === 0 ? id : from === 0 ? other : null;
-  if (from === 0 && !other) return; // the GK can't leave the goal empty
-  if (g.status === 'scheduled' && !g.events.length) {
-    const s = [...d.slots];
-    [s[from], s[slot]] = [s[slot], s[from]];
-    g.lineup = s;
-    g.gkId = s[0];
+  const plan = planMove(g, derive(g), id, slot);
+  if (plan.kind === 'none') return;
+  if (plan.kind === 'lineup') {
+    g.lineup = plan.lineup;
+    g.gkId = plan.gkId;
     save();
     buzz();
     render();
     return;
   }
-  const eid = newGk
-    ? addEvent(g, { type: 'gk', playerId: newGk })
-    : addEvent(g, { type: 'pos', playerId: id, slot });
+  const eid =
+    plan.kind === 'gk'
+      ? addEvent(g, { type: 'gk', playerId: plan.playerId })
+      : addEvent(g, { type: 'pos', playerId: id, slot });
   render();
   toast(
-    newGk ? t('inGoalToast', { p: g.names[newGk].name }) : t('posToast', { p: g.names[id].name }),
+    plan.kind === 'gk'
+      ? t('inGoalToast', { p: g.names[plan.playerId].name })
+      : t('posToast', { p: g.names[id].name }),
     undoBtn(eid),
   );
 }
@@ -630,16 +414,6 @@ function describe(g, e) {
       return t('evEnd', { p: periodName(g, e.period) });
   }
   return '';
-}
-
-// Timeline time: a period start shows its regular start, everything else the game clock.
-// Events logged during a break sit exactly on the end of the period before it, and
-// show at the start of the next one (a half-time sub is at 20:00, not 20:00 (+00:02)).
-function timeOf(g, e) {
-  if (e.type === 'start') return fmtInPeriod(g, e.period, 0);
-  const brk =
-    e.type !== 'end' && g.marks.find((m) => m.type === 'end' && m.t === e.t && m.period < g.periods);
-  return brk ? fmtInPeriod(g, brk.period + 1, 0) : fmtAt(g, e.t);
 }
 
 // ---------- Routing ----------
@@ -2849,22 +2623,7 @@ function statsTeam() {
   return getTeam(id) ? id : getTeam(db.lastTeamId) ? db.lastTeamId : db.teams[0]?.id || '';
 }
 
-const finishedGames = (teamId) =>
-  db.games
-    .filter((g) => g.teamId === teamId && g.status === 'finished')
-    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
-
-// Seasons the team has finished games in, newest first.
-const statsSeasons = (teamId) =>
-  [
-    ...new Set(
-      finishedGames(teamId)
-        .map((g) => seasonOf(g.date))
-        .filter(Boolean),
-    ),
-  ]
-    .sort()
-    .reverse();
+const statsSeasons = (teamId) => seasonsOfTeam(db.games, teamId);
 
 function statsSeason(teamId) {
   const seasons = statsSeasons(teamId);
@@ -2872,49 +2631,12 @@ function statsSeason(teamId) {
   return seasons.includes(s) ? s : seasons[0] || '';
 }
 
-// Everything the stats page and a player's sheet need, for one team and season.
-function teamStats(teamId, season) {
-  const games = finishedGames(teamId)
-    .filter((g) => seasonOf(g.date) === season)
-    .map((g) => ({ g, d: derive(g) }));
-  const record = { w: 0, d: 0, l: 0, gf: 0, ga: 0 };
-  for (const { d } of games) {
-    record[d.us > d.them ? 'w' : d.us < d.them ? 'l' : 'd']++;
-    record.gf += d.us;
-    record.ga += d.them;
-  }
-  const players = teamPlayers(teamId)
-    .sort(byNumber)
-    .map((p) => playerStats(p, games));
-  return { games, record, players };
-}
-
-function playerStats(p, games) {
-  const rows = games.map(({ g, d }) => {
-    const s = d.stats[p.id] || null;
-    return { g, d, s, started: !!s && g.starters.includes(p.id), played: !!s && s.intervals.length > 0 };
-  });
-  const sum = (k) => rows.reduce((n, r) => n + (r.s ? r.s[k] : 0), 0);
-  return {
-    p,
-    rows,
-    teamGames: rows.length,
-    called: rows.filter((r) => r.s).length,
-    played: rows.filter((r) => r.played).length,
-    starts: rows.filter((r) => r.started).length,
-    minutes: Math.floor(sum('played') / 60000),
-    goals: sum('goals'),
-    yellow: sum('yellow'),
-    red: sum('red'),
-  };
-}
+const teamStats = (teamId, season) => teamSeason(db.games, teamPlayers(teamId), teamId, season, Date.now());
 
 const ddmm = (g) => {
   const [, m, d] = String(g.date).split('-');
   return d ? `${d}/${m}` : '';
 };
-const gameLength = (g) => g.periods * g.periodMin;
-const resultOf = (d) => (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw');
 const playerFullName = (p) => p.fullName || p.name;
 
 // What a player did in one game, as a short line ("60' · 2 goals · yellow").
@@ -3220,13 +2942,6 @@ function pdfDoc({ W = 842, H = 595 } = {}) {
       return Uint8Array.from(out, (c) => c.charCodeAt(0));
     },
   };
-}
-
-// Football seasons run August to July.
-function seasonOf(date) {
-  const [y, m] = String(date).split('-').map(Number);
-  if (!y) return '';
-  return m >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
 }
 
 function buildPdf(g) {
