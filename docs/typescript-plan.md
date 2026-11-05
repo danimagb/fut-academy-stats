@@ -14,8 +14,8 @@ keeps deploying from the branch exactly as it does today.
 | --- | --------------------------------------------------------------------------- | ------------ | ----------------------------- |
 | 0   | Plan and code standards                                                     | ✅ merged    | danimagb/fut-academy-stats#32 |
 | 1   | Tooling skeleton (Vite, TypeScript, `package.json`)                         | ✅ merged    | danimagb/fut-academy-stats#33 |
-| 2   | CI: oxlint, tsc, Vitest, build                                              | 🔄 in review | danimagb/fut-academy-stats#35 |
-| 3   | Supabase and config as modules (drop `vendor/`)                             | ⏳ todo      |                               |
+| 2   | CI: oxlint, tsc, Vitest, build                                              | ✅ merged    | danimagb/fut-academy-stats#35 |
+| 3   | Supabase and config as modules (drop `vendor/`)                             | 🔄 in review | danimagb/fut-academy-stats#36 |
 | 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                           | ⏳ todo      |                               |
 | 5   | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo      |                               |
 | 5b  | Database checks on what is stored (new migration)                           | ⏳ todo      |                               |
@@ -71,6 +71,16 @@ keeps deploying from the branch exactly as it does today.
   They go away as the code moves into modules (steps 5–6). Warnings don't fail CI; errors do.
 - The first real module is `src/shared/lib/html.ts` (`esc`, with tests in `html.test.ts`).
   `src/main.js` imports it. Modules are always strict, so `'use strict'` was removed.
+- Done in step 3: Supabase comes from npm and the config is a module.
+  - `@supabase/supabase-js` is pinned to 2.118.0 (the version that was in `vendor/`) and is
+    bundled into `assets/app.js`, which is now about 342 KB (97 KB gzipped). That's about the
+    same as before, when `app.js` (127 KB) and the vendored file (218 KB) were separate.
+  - `src/shared/config.ts` exports `CLOUD`, holding the public URL and the publishable key
+    (the same values as before). `config.js`, `vendor/` and `window.FAS_CONFIG` /
+    `window.supabase` are gone, and so are Vite's two "can't be bundled" warnings.
+  - The build writes `dist/licenses.md` with the licences of the bundled packages (MIT for
+    supabase-js). Before, `vendor/supabase-js-LICENSE` did this job.
+  - `public/sw.js` no longer lists those two files; `CACHE` is v54.
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").

@@ -121,7 +121,7 @@ In **Project Settings → API Keys** (or **Settings → API**), copy:
 - the **Project URL** (`https://<something>.supabase.co`);
 - the **publishable key** (`sb_publishable_…`), or, on older projects, the **anon public** key.
 
-Both are **meant to be public**: they go into the app's `config.js` and anyone can see them.
+Both are **meant to be public**: they go into the app's `src/shared/config.ts` and anyone can see them.
 Access is protected by the database's Row Level Security rules.
 
 **Never share or commit the `secret` / `service_role` key** or the database password. Those

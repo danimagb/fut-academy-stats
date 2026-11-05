@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js';
+import { CLOUD } from '@/shared/config';
 import { esc } from '@/shared/lib/html';
 
 // ---------- Config ----------
@@ -1647,18 +1649,16 @@ function viewGames() {
 // the app keeps working without signing in.
 
 const ACCOUNT_KEY = 'fut-academy-stats.account'; // last known accounts row, for offline display
-const CLOUD = window.FAS_CONFIG || {};
-const sb =
-  window.supabase?.createClient && CLOUD.supabaseUrl
-    ? window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: false,
-          storageKey: 'fut-academy-stats.auth',
-        },
-      })
-    : null;
+const sb = CLOUD.supabaseUrl
+  ? createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        storageKey: 'fut-academy-stats.auth',
+      },
+    })
+  : null;
 
 const readJSON = (key) => {
   try {
