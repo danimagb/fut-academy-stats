@@ -13,7 +13,7 @@ keeps deploying from the branch exactly as it does today.
 | # | Step | Status | PR |
 |---|------|--------|----|
 | 0 | Plan and code standards | 🔄 in review | danimagb/fut-academy-stats#32 |
-| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | 🔄 in review | (this PR) |
+| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | 🔄 in review | danimagb/fut-academy-stats#33 |
 | 2 | CI: oxlint, tsc, Vitest, build | ⏳ todo | |
 | 3 | Supabase and config as modules (drop `vendor/`) | ⏳ todo | |
 | 4 | Service worker via vite-plugin-pwa (drop `sw.js`) | ⏳ todo | |
