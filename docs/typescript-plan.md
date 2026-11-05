@@ -21,9 +21,12 @@ keeps deploying from the branch exactly as it does today.
 | 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ✅ merged    | danimagb/fut-academy-stats#39 |
 | 5.3 | Storage, change tracking, validating data that comes in            | ✅ merged    | danimagb/fut-academy-stats#40 |
 | 5.4 | Supabase client, sync and sign-in logic                            | ✅ merged    | danimagb/fut-academy-stats#41 |
-| 5.5 | Database checks on what is stored (new migration)                  | 🔄 in review | danimagb/fut-academy-stats#42 |
-| 6   | Router, UI and screens as modules + event delegation               | ⏳ todo      |                               |
-| 7   | End-to-end smoke tests (Playwright) in CI                          | ⏳ todo      |                               |
+| 5.5 | Database checks on what is stored (new migration)                  | ✅ merged    | danimagb/fut-academy-stats#42 |
+| 7   | End-to-end tests (Playwright) in CI, moved before step 6           | 🔄 in review | danimagb/fut-academy-stats#43 |
+| 6.1 | App shell: router, tab bar, action listeners, shared UI            | ⏳ todo      |                               |
+| 6.2 | Team and account screens                                           | ⏳ todo      |                               |
+| 6.3 | Game screens                                                       | ⏳ todo      |                               |
+| 6.4 | Report, stats, PDF; styles split; legacy removed                   | ⏳ todo      |                               |
 | 8   | Strict TypeScript                                                  | ⏳ todo      |                               |
 | 9   | Deploy workflow to GitHub Pages + docs                             | ⏳ todo      |                               |
 | 10  | Merge `feature/typescript` into `main`                             | ⏳ todo      |                               |
@@ -235,9 +238,37 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - **Owner:** apply the migration to the Supabase project (SQL editor, or
     `supabase db push`). It doesn't depend on the app changes, and today's app on `main`
     writes data that passes. If it prints a notice, run the queries at the end of the file.
-- **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
+- Done in step 7, which comes **before step 6**: step 6 rewires every screen, and the screens
+  had no automated tests. Each step 6 PR now runs against these flows in CI.
+  - `@playwright/test` 1.63.0 (the version installed in cloud sessions). `playwright.config.ts`
+    runs the tests against `vite preview` at 390×844, with an en-GB locale and the
+    Europe/Lisbon time zone, keeping traces and screenshots on failure.
+  - `npm run e2e` builds and then runs the tests. The new CI job **End to end** installs
+    Chromium, runs them, and uploads the report and traces when a test fails.
+  - 10 tests in `e2e/`:
+    - **game:** a whole game (too many starters refused; a goal, a goal conceded and undo; a
+      sub; half time; the 2nd half at 20:00; full time; the report 1–1; the PDF download),
+      and "To goal"
+    - **fix-times:** the sheet ends a forgotten half
+    - **stats:** the season record and a player's sheet
+    - **settings:** a pt-PT phone opens in Portuguese and the switch to English is kept;
+      both themes are kept
+    - **offline:** the app opens with no network after one visit
+    - **data:** a damaged record on the phone is kept aside with a toast; a backup's bad game
+      is left out
+    - **signin:** the server's error is shown. Supabase is stubbed with `page.route`, so the
+      tests never call the real project.
+  - **Checked:**
+    - 30 out of 30 passed over three runs (`--repeat-each 3`)
+    - breaking the substitution handler on purpose made the game test fail
+  - Helpers in `e2e/helpers.ts`: `createTeam`, `createGame`, `playGame`, `watchErrors` (fails
+    a test on page or console errors), `action`, `confirmDialog`. Pitch tokens and icon
+    buttons have no accessible name, so they're found by `data-action`.
+  - Step 6 is now split into 6.1–6.4 (see the table). Existing `data-action` names stay as
+    they are during the move.
+- **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
-  "Types", "Unit tests", "Build").
+  "Types", "Unit tests", "Build" and, from step 7, "End to end").
 
 ## Why
 

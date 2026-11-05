@@ -48,6 +48,12 @@
       }
     },
     {
+      "files": ["*.config.ts", "e2e/**"],
+      "env": {
+        "node": true
+      }
+    },
+    {
       "files": ["src/shared/**"],
       "rules": {
         "no-restricted-imports": [

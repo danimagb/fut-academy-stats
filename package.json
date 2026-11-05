@@ -12,10 +12,12 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.sw.json",
     "lint": "oxlint",
     "test": "vitest run",
+    "e2e": "npm run build && playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "happy-dom": "21.0.4",
     "oxlint": "1.89.0",
     "prettier": "3.9.10",
