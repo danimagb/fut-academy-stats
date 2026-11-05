@@ -13,7 +13,7 @@ keeps deploying from the branch exactly as it does today.
 | # | Step | Status | PR |
 |---|------|--------|----|
 | 0 | Plan and code standards | 🔄 in review | danimagb/fut-academy-stats#32 |
-| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | ⏳ todo | |
+| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | 🔄 in review | (this PR) |
 | 2 | CI: oxlint, tsc, Vitest, build | ⏳ todo | |
 | 3 | Supabase and config as modules (drop `vendor/`) | ⏳ todo | |
 | 4 | Service worker via vite-plugin-pwa (drop `sw.js`) | ⏳ todo | |
@@ -28,7 +28,28 @@ keeps deploying from the branch exactly as it does today.
 **Where things stand (update this with every PR):**
 
 - Code standards are in `docs/standards/` (this PR). Every step follows them.
-- Nothing has been built yet. The app is still `app.js` / `styles.css` / `sw.js`, with no build.
+- Done in step 1: the app is built by Vite.
+  - Commands: `npm ci`, then `npm run dev` (local server), `npm run build` (writes `dist/`) and
+    `npm run preview` (serves `dist/`).
+  - The code hasn't changed apart from moving files:
+    - `app.js` → `src/main.js`, loaded as an ES module
+    - `styles.css` → `src/styles.css`
+  - `public/` is copied as-is into `dist/`. It holds the icons, the manifest, `.nojekyll`, and
+    three files that later steps replace: `config.js` and `vendor/` (step 3, which also stops
+    Vite's two "can't be bundled" warnings) and `sw.js` (step 4).
+  - Until step 4, Vite writes fixed file names with no content hash (`assets/app.js`,
+    `assets/index.css`), because `public/sw.js` lists them in `ASSETS`. Keep bumping `CACHE`
+    there until step 4.
+  - The feature branch can't be served straight from its files any more: open it with
+    `npm run dev` or `npm run preview`. `main` keeps deploying from its files until step 10.
+  - Dependencies are added in the step that first uses them: oxlint in step 2,
+    `@supabase/supabase-js` in step 3, vite-plugin-pwa in step 4, `@playwright/test` in
+    step 7. Step 1 adds `vite`, `typescript`, `vitest`, `happy-dom` and `prettier`.
+  - Versions are pinned exactly. Vitest is 5.1.0 because `npm install` crashes on 5.0.5
+    (an npm peer-dependency bug, `Cannot read properties of null (reading 'edgesOut')`).
+  - TypeScript 7 (the native compiler) checks only `.ts` files for now (`checkJs: false`). The
+    formatter is set up, but the code is only reformatted in step 2, so `npm run format:check`
+    fails until then.
 
 ## Why
 
