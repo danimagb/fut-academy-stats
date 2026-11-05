@@ -15,8 +15,8 @@ keeps deploying from the branch exactly as it does today.
 | 0   | Plan and code standards                                                     | ✅ merged    | danimagb/fut-academy-stats#32 |
 | 1   | Tooling skeleton (Vite, TypeScript, `package.json`)                         | ✅ merged    | danimagb/fut-academy-stats#33 |
 | 2   | CI: oxlint, tsc, Vitest, build                                              | ✅ merged    | danimagb/fut-academy-stats#35 |
-| 3   | Supabase and config as modules (drop `vendor/`)                             | 🔄 in review | danimagb/fut-academy-stats#36 |
-| 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                           | ⏳ todo      |                               |
+| 3   | Supabase and config as modules (drop `vendor/`)                             | ✅ merged    | danimagb/fut-academy-stats#36 |
+| 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                           | 🔄 in review | (this PR)                     |
 | 5   | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo      |                               |
 | 5b  | Database checks on what is stored (new migration)                           | ⏳ todo      |                               |
 | 6   | Router, UI and screens as modules + event delegation                        | ⏳ todo      |                               |
@@ -81,6 +81,26 @@ keeps deploying from the branch exactly as it does today.
   - The build writes `dist/licenses.md` with the licences of the bundled packages (MIT for
     supabase-js). Before, `vendor/supabase-js-LICENSE` did this job.
   - `public/sw.js` no longer lists those two files; `CACHE` is v54.
+- Done in step 4: the service worker is built from `src/sw.ts` by vite-plugin-pwa (the
+  `injectManifest` strategy, with Workbox 7.4).
+  - It **precaches every built file**, so the app opens offline. File names carry content
+    hashes again, and **there's no `CACHE` to bump**: every build gets a new precache list,
+    and installed apps update on their next visits.
+  - The built file is still `dist/sw.js`, at the same scope, and `src/main.js` still registers
+    `sw.js`. Installed apps find the new worker where the old one was.
+  - A new version takes over straight away (`skipWaiting` + `clientsClaim`, as before).
+    Opening any `#/…` route serves the precached `index.html`.
+  - On activation it deletes the caches of the old hand-written worker
+    (`fut-academy-stats-v*`).
+  - **Upgrade tested:** I installed the step 3 build (old `sw.js`, cache v54) in a browser and
+    saved a team, then served the new build at the same address.
+    - The first reload still showed the old app, served from its cache, while the new worker
+      installed. This is the same "updates on the next visit" behaviour as before.
+    - The next reload served the new app with hashed files. The v54 cache was gone, the team
+      was still there, and an offline reload worked.
+  - `public/manifest.webmanifest` is used as it is (`manifest: false`).
+  - The worker is type-checked separately (`tsconfig.sw.json`, with the `WebWorker` lib), so
+    `npm run typecheck` now runs two `tsc` passes.
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").
