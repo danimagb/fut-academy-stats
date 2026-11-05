@@ -106,8 +106,9 @@ a { color: inherit; text-decoration: none; }
 .btn.block { width: 100%; margin-top: 16px; }
 
 /* Forms */
-input, select {
-  font: inherit; color: var(--text);
+/* Fields are at least 16px: iPhone Safari zooms in on smaller ones when tapped (and stays zoomed). */
+input, select, textarea {
+  font: inherit; font-size: max(16px, 1rem); color: var(--text);
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   min-height: 46px; padding: 0 12px; width: 100%;
 }
@@ -473,13 +474,13 @@ label.inline input { width: 90px; min-height: 40px; }
 .admin-team .members .email, .people .email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; overflow-wrap: normal; }
 .people-section > .btn { margin-top: 4px; }
 .add-coach { margin-top: 12px; }
-select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; flex: none; }
+select.mini { width: auto; min-height: 36px; padding: 0 8px; flex: none; }
 .admin-team { display: grid; gap: 8px; align-items: stretch; }
 .admin-team .members { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .admin-team .members li { padding: 6px 0; border-top: 1px solid var(--line); }
 .admin-team .add-member { margin: 4px 0 0; }
-.admin-team .add-member select.grow { min-height: 36px; font-size: .9rem; padding: 0 8px; }
-.admin-team .members select { width: auto; flex: none; min-height: 36px; font-size: .9rem; padding: 0 8px; }
+.admin-team .add-member select.grow { min-height: 36px; padding: 0 8px; }
+.admin-team .members select { width: auto; flex: none; min-height: 36px; padding: 0 8px; }
 .link-btn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .privacy p { margin: 0 0 10px; font-size: .92rem; }
 .tabbar.five { grid-template-columns: repeat(5, 1fr); }
