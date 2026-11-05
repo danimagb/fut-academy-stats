@@ -16,19 +16,21 @@ that build HTML strings, and later with Vue: only `pages/` and the UI parts of `
 change. `domain/`, `data/` and `shared/` stay as they are.
 
 ## Layers
+
 From top to bottom. **A module may import only from layers below its own.** Inside a layer,
 see "Slices" below.
 
-| Layer | What goes in it | Example (this app) |
-|---|---|---|
-| `app/` | Startup and wiring. The only code that runs when it's imported. | `main.ts` (boot, timers, wake lock), `router.ts` (route → page, tab bar), `actions.ts` (the one `data-action` listener), `pwa.ts`, `styles.css` (imports the base styles) |
-| `pages/` | One folder per screen (route). A page arranges the features and domain data for that screen. | `games`, `teams`, `team`, `game-edit`, `game`, `report`, `stats`, `player`, `profile`, `admin` |
+| Layer       | What goes in it                                                                                                   | Example (this app)                                                                                                                                                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`      | Startup and wiring. The only code that runs when it's imported.                                                   | `main.ts` (boot, timers, wake lock), `router.ts` (route → page, tab bar), `actions.ts` (the one `data-action` listener), `pwa.ts`, `styles.css` (imports the base styles)                                                     |
+| `pages/`    | One folder per screen (route). A page arranges the features and domain data for that screen.                      | `games`, `teams`, `team`, `game-edit`, `game`, `report`, `stats`, `player`, `profile`, `admin`                                                                                                                                |
 | `features/` | Something the user does, used on one or more pages. Holds its UI (HTML, handlers, sheets) and the logic it needs. | `substitution`, `log-event` (goal, cards, to goal), `fix-times`, `formation-picker`, `undo`, `sign-in`, `team-people` (directors, coaches, invites), `backup` (export/import), `share-pdf`, `language-switch`, `theme-switch` |
-| `data/` | Where data is stored and how it is loaded and saved. No HTML. | `store.ts` (`state`, `save()`, change tracking, migrations), `supabase.ts` (client), `sync.ts` (sync engine), `persist.ts` (persistent storage request) |
-| `domain/` | **Pure** app logic and types: data in, data out. No DOM, no storage, no network, no `Date.now()`. | `types.ts`, `clock.ts`, `game-state.ts`, `pitch.ts` (formations, slots, lineups), `stats.ts`, `report.ts` (report table model), `formats.ts` (age groups and their presets), `titles.ts` (team/match titles and score order) |
-| `shared/` | Building blocks that know nothing about football. They could be reused in another app. | `lib/` (`esc`, `pad`, `$`/`$$`, date formatting), `ui/` (sheet, `confirmSheet`, `alertSheet`, toast, icons), `i18n/` (`I18N`, `t()`, `locale()`), `styles/` (variables, both themes, base, layout), `config.ts` |
+| `data/`     | Where data is stored and how it is loaded and saved. No HTML.                                                     | `store.ts` (`state`, `save()`, change tracking, migrations), `supabase.ts` (client), `sync.ts` (sync engine), `persist.ts` (persistent storage request)                                                                       |
+| `domain/`   | **Pure** app logic and types: data in, data out. No DOM, no storage, no network, no `Date.now()`.                 | `types.ts`, `clock.ts`, `game-state.ts`, `pitch.ts` (formations, slots, lineups), `stats.ts`, `report.ts` (report table model), `formats.ts` (age groups and their presets), `titles.ts` (team/match titles and score order)  |
+| `shared/`   | Building blocks that know nothing about football. They could be reused in another app.                            | `lib/` (`esc`, `pad`, `$`/`$$`, date formatting), `ui/` (sheet, `confirmSheet`, `alertSheet`, toast, icons), `i18n/` (`I18N`, `t()`, `locale()`), `styles/` (variables, both themes, base, layout), `config.ts`               |
 
 What each layer may import:
+
 ```
 app       → pages, features, data, domain, shared
 pages     → features, data, domain, shared
@@ -37,6 +39,7 @@ data      → domain, shared
 domain    → shared/lib only (and other domain modules)
 shared    → shared only
 ```
+
 - **`domain/` matters most.** It's where minutes, scores and clock times are calculated,
   everything that has to come out the same on the game screen, in the report, in the PDF
   and in stats. Because it is pure, it's easy to test, and it can be reused unchanged when
@@ -47,6 +50,7 @@ shared    → shared only
 - **No import cycles**, in any layer.
 
 ## Slices (folders inside a layer)
+
 - In `pages/` and `features/`, each folder is a **slice**. A slice **doesn't import from
   another slice in the same layer**: one feature doesn't import another feature, and one page
   doesn't import another page.
@@ -70,6 +74,7 @@ shared    → shared only
   wrong place.
 
 ## Pages and features in practice
+
 - A page is a function `renderGamePage(id: string): void`. It reads `state`, gets what it
   shows from `domain/` (`deriveState(game, now)`), builds HTML from feature pieces
   (`substitutionSheetHtml(…)`, `logEventButtonsHtml(…)`) and writes it to `#main`.
@@ -77,14 +82,16 @@ shared    → shared only
   - functions that return HTML, ending in `Html`;
   - `register…Actions()`, which `app/actions.ts` calls to register its `data-action`
     handlers named `'<feature>.<verb>'`.
-  
+
   Handlers change `state`, call `save()` and then `render()`.
+
 - **Pages and features never do calculations themselves.** If code works out a number, a
   time or an order, it belongs in `domain/` and has a test.
 - When we move to Vue, a page becomes a route component and a feature becomes a component
   (or a composable). `domain/` and `data/` don't change.
 
 ## State
+
 - There is one app state, `state`, in `data/store.ts` (`state.db`, `state.draft`, …). Only
   `data/` writes to `localStorage`.
 - To change data: edit `state.db`, then call `save()`. Never write to `localStorage`
@@ -95,25 +102,34 @@ shared    → shared only
   startup.
 
 ## How this is checked
-- **oxlint** (configured in step 2):
-  - `import/no-cycle`;
-  - `no-restricted-imports`, set per layer with `overrides`, so `domain/**` can't import
-    `data`, `features`, `pages` or `app`, and so on;
-  - `import/no-default-export`.
-- **Slices importing each other:** an oxlint `no-restricted-imports` pattern blocks
-  `features/*` → `features/*` and `pages/*` → `pages/*`. If oxlint can't express a rule,
-  step 2 adds [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) as a CI
-  check instead.
+
+- **oxlint** (`.oxlintrc.json`):
+  - `import/no-cycle`
+  - `import/no-default-export` (config files such as `vite.config.ts` are exempt)
+  - `no-restricted-imports`, set per layer with `overrides`:
+    - a module can't import from a higher layer (for example `domain/**` can't import
+      `@/data/**`, `@/features/**`, `@/pages/**` or `@/app/**`)
+    - a feature can't import another feature (`@/features/**`), and a page can't import
+      another page
+- **How imports are written:**
+  - **Between folders, use `@/`** (for example `import { esc } from '@/shared/lib/html'`).
+  - **Inside a folder or slice, use `./`.**
+  - `../` isn't allowed in `shared`, `domain`, `data`, `features` or `pages`, because a
+    relative path could get around the layer rules.
+  - So keep a slice one level deep: `features/substitution/*.ts`, with no subfolders.
+- These rules are tested: an import from a higher layer, a feature importing another
+  feature, and a `../` import out of a slice each fail the lint.
 - Reviewers check whatever the tools can't, using the checklist in `git-and-prs.md`.
 
 ## Where things go
-| You're adding… | Put it in |
-|---|---|
-| A new screen | `pages/<name>/`, plus a route in `app/router.ts` |
-| A button, sheet or action used on a screen | `features/<name>/` |
-| A calculation (minutes, order, totals, time) | `domain/` + a test next to it |
-| A new field on a team, player or game | `domain/types.ts` + a migration in `data/store.ts` |
-| Anything that talks to Supabase | `data/` |
-| A generic helper or UI building block (no football in it) | `shared/lib` or `shared/ui` |
-| Text users see | `shared/i18n` (`en` + `pt`) |
-| A colour | `shared/styles/variables.css` (dark + light) |
+
+| You're adding…                                            | Put it in                                          |
+| --------------------------------------------------------- | -------------------------------------------------- |
+| A new screen                                              | `pages/<name>/`, plus a route in `app/router.ts`   |
+| A button, sheet or action used on a screen                | `features/<name>/`                                 |
+| A calculation (minutes, order, totals, time)              | `domain/` + a test next to it                      |
+| A new field on a team, player or game                     | `domain/types.ts` + a migration in `data/store.ts` |
+| Anything that talks to Supabase                           | `data/`                                            |
+| A generic helper or UI building block (no football in it) | `shared/lib` or `shared/ui`                        |
+| Text users see                                            | `shared/i18n` (`en` + `pt`)                        |
+| A colour                                                  | `shared/styles/variables.css` (dark + light)       |

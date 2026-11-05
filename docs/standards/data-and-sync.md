@@ -4,6 +4,7 @@ Read `docs/cloud-sync-plan.md` before changing anything here. This file is a sum
 rules.
 
 ## Local data
+
 - Everything is stored under one `localStorage` key: `fut-academy-stats.v1`. **Its shape is
   a contract.** Phones that are already installed, exported backups and the cloud all depend
   on it.
@@ -24,6 +25,7 @@ rules.
 - Wrap every `localStorage` read and write in try/catch, and fall back to defaults.
 
 ## Game data is events
+
 - A game's truth is its **list of events**. The lineup, minutes, score and current period
   are calculated from them (`domain/game-state.ts`) and never stored. Undo removes events.
 - Times: `t` is match time in milliseconds (only time actually played) and `at` is the
@@ -31,6 +33,7 @@ rules.
   `domain/clock.ts`). Don't add a stored field that duplicates something calculated.
 
 ## Never trust data that comes in
+
 - Row Level Security decides **who** can write: only a team's directors can write its players
   and games. Nothing decides **what** they write, except our own checks. A director can call
   the Supabase API directly, without the app.
@@ -44,6 +47,7 @@ rules.
 - Text from the data is always escaped in HTML (see `ui.md`).
 
 ## Supabase and sync
+
 - `src/shared/config.ts` holds only the public URL and the **publishable** key. **Never commit a
   secret or `service_role` key, passwords, or personal data** (including in test fixtures:
   use made-up names).

@@ -1,10 +1,12 @@
 # UI: HTML, events, CSS, I18N, accessibility
 
 ## HTML strings and escaping (security)
+
 Screens build HTML strings and assign them to `innerHTML`, so **any value that comes from
 data must be escaped.** Data includes player and team names, opponents, emails and anything
 from the cloud. The data is shared between coaches, so one unescaped name is a cross-site
 scripting (XSS) hole on every phone that syncs it.
+
 - Escape every value from data with `esc()` when you put it into the HTML, including
   inside attributes (`value="${esc(p.name)}"`). Only HTML built in code and strings from
   `I18N` that may contain markup go in unescaped.
@@ -16,6 +18,7 @@ scripting (XSS) hole on every phone that syncs it.
   it in all new code.)
 
 ## Events
+
 - **Don't use inline handlers** (`onclick="…"`). A button declares what it does:
   `<button data-action="game.goal" data-id="${esc(p.id)}">`. One listener in `app/actions.ts`
   reads it and calls the matching handler.
@@ -30,6 +33,7 @@ scripting (XSS) hole on every phone that syncs it.
   or `alert()`.
 
 ## CSS and themes
+
 - Every colour is a **CSS variable** on `:root` (dark), with its light value under
   `[data-theme="light"]`. A new colour needs both, and is checked in both themes.
 - Don't write raw hex colours in components, or inline `style="…"` except for values
@@ -43,6 +47,7 @@ scripting (XSS) hole on every phone that syncs it.
   iPhone doesn't zoom in when one is tapped.
 
 ## Text (I18N)
+
 - **Every string users see is in `I18N` in both `en` and `pt`** (European Portuguese: `tu`
   forms as used today, "equipa" not "time", "golo" not "gol"). TypeScript checks that both
   have the same keys.
@@ -53,6 +58,7 @@ scripting (XSS) hole on every phone that syncs it.
 - Write in plain words for a coach on the touchline: short, no jargon, no "error code".
 
 ## Accessibility and touch
+
 - Tap targets are at least **44×44 px** (WCAG 2.2 asks for 24×24 at minimum; 44 is what
   works on a pitch with cold hands).
 - Use real `<button>` elements for actions and `<a href="#/…">` for navigation, never a

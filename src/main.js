@@ -1,4 +1,4 @@
-'use strict';
+import { esc } from '@/shared/lib/html';
 
 // ---------- Config ----------
 
@@ -38,280 +38,789 @@ const FORMATIONS = {
 
 const I18N = {
   en: {
-    newGame: '+ New game', teamsBtn: 'Teams ({n})',
+    newGame: '+ New game',
+    teamsBtn: 'Teams ({n})',
     noGames: 'No games yet.<br>Create your team and its players, then create a game.',
-    exportBackup: 'Export backup', importBackup: 'Import backup', backupTitle: 'Backup',
-    storageKept: 'This browser keeps the app\'s data stored (it won\'t clear it on its own).',
-    storageNotKept: 'This browser may clear the app\'s data if it runs short of space or the app isn\'t used for a while. Export a backup regularly; adding the app to the home screen helps.',
+    exportBackup: 'Export backup',
+    importBackup: 'Import backup',
+    backupTitle: 'Backup',
+    storageKept: "This browser keeps the app's data stored (it won't clear it on its own).",
+    storageNotKept:
+      "This browser may clear the app's data if it runs short of space or the app isn't used for a while. Export a backup regularly; adding the app to the home screen helps.",
     backupHint: 'Save a copy of your teams and games to a file, or restore one.',
-    privacyLink: 'How your data is handled', privacyTitle: 'Your data',
-    privacyBody: '<p><b>Without an account</b>, everything stays on this device. Nothing is sent anywhere.</p>'
-      + '<p><b>Synced teams</b> are stored in the app\'s cloud database (Supabase, in the EU): the team and club name, players\' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to, and who are members of that team, can see it; the admin can see which teams exist and who is in them. Nothing else is collected: no photos, birth dates or contact details of players.</p>'
-      + '<p><b>Your account</b> is your email and a password. The password is stored only as a one-way hash (it can\'t be read back, not even by the admin); the email is also used to send you codes the first time and if you forget your password.</p>'
-      + '<p><b>Deleting</b>: a director can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>'
-      + '<p>The club is responsible for agreeing to store players\' names, and for parents\' consent where needed.</p>',
-    opponent: 'Opponent', gkPlus: '1 GK + {n}', gk: 'GK',
-    res_win: 'Win', res_draw: 'Draw', res_loss: 'Loss', roundN: 'Round {n}',
-    st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
-    teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
-    playersCount: '{n} players', playersCount1: '1 player', staffCount: '{n} people', staffCount1: '1 person', unnamedTeam: 'My team',
-    club: 'Club', clubPh: 'e.g. Padroense F.C.', team: 'Team', ageGroup: 'Age group', teamPh: 'e.g. U7 B',
-    players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
+    privacyLink: 'How your data is handled',
+    privacyTitle: 'Your data',
+    privacyBody:
+      '<p><b>Without an account</b>, everything stays on this device. Nothing is sent anywhere.</p>' +
+      "<p><b>Synced teams</b> are stored in the app's cloud database (Supabase, in the EU): the team and club name, players' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to, and who are members of that team, can see it; the admin can see which teams exist and who is in them. Nothing else is collected: no photos, birth dates or contact details of players.</p>" +
+      "<p><b>Your account</b> is your email and a password. The password is stored only as a one-way hash (it can't be read back, not even by the admin); the email is also used to send you codes the first time and if you forget your password.</p>" +
+      '<p><b>Deleting</b>: a director can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>' +
+      "<p>The club is responsible for agreeing to store players' names, and for parents' consent where needed.</p>",
+    opponent: 'Opponent',
+    gkPlus: '1 GK + {n}',
+    gk: 'GK',
+    res_win: 'Win',
+    res_draw: 'Draw',
+    res_loss: 'Loss',
+    roundN: 'Round {n}',
+    st_scheduled: 'Scheduled',
+    st_live: 'Live',
+    st_break: 'Break',
+    st_finished: 'Finished',
+    teams: 'Teams',
+    newTeam: '+ New team',
+    noTeams: 'No teams yet. Create your team, then add its players.',
+    playersCount: '{n} players',
+    playersCount1: '1 player',
+    staffCount: '{n} people',
+    staffCount1: '1 person',
+    unnamedTeam: 'My team',
+    club: 'Club',
+    clubPh: 'e.g. Padroense F.C.',
+    team: 'Team',
+    ageGroup: 'Age group',
+    teamPh: 'e.g. U7 B',
+    players: 'Players',
+    shirtName: 'Shirt name (game screen)',
+    fullName: 'Full name (report)',
+    add: 'Add',
+    edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
-    deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
-    editPlayer: 'Edit player', addPlayer: '+ Add player', newPlayer: 'New player', playerAdded: '{name} added', done: 'Done', editGoal: 'Fix goal · {t}', whoScored: 'Who scored?', removeGoal: '🗑 Remove goal', confirmRemoveGoal: 'Remove this goal?', gameInfo: '✎ Game details', homeAway: 'Home / Away', shirtNumber: 'Shirt number', save: 'Save',
+    deleteTeam: 'Delete team',
+    teamHasPlayers: 'Remove the players from this team first.',
+    confirmDeleteTeam: 'Delete this team?',
+    editPlayer: 'Edit player',
+    addPlayer: '+ Add player',
+    newPlayer: 'New player',
+    playerAdded: '{name} added',
+    done: 'Done',
+    editGoal: 'Fix goal · {t}',
+    whoScored: 'Who scored?',
+    removeGoal: '🗑 Remove goal',
+    confirmRemoveGoal: 'Remove this goal?',
+    gameInfo: '✎ Game details',
+    homeAway: 'Home / Away',
+    shirtNumber: 'Shirt number',
+    save: 'Save',
     confirmRemovePlayer: 'Remove {name} from the roster? Past games keep their stats.',
-    editGame: 'Edit game', newGameTitle: 'New game', needTeam: 'Create your team and add its players first.', goTeams: 'Go to Teams',
-    opponentPh: 'e.g. Sporting U8', home: 'Home', away: 'Away', round: 'Round (optional)',
-    date: 'Date', time: 'Time', format: 'Age group / format', custom: 'Custom',
-    fieldPlayers: 'Field players', periods: 'Periods', minPeriod: 'Min/period',
+    editGame: 'Edit game',
+    newGameTitle: 'New game',
+    needTeam: 'Create your team and add its players first.',
+    goTeams: 'Go to Teams',
+    opponentPh: 'e.g. Sporting U8',
+    home: 'Home',
+    away: 'Away',
+    round: 'Round (optional)',
+    date: 'Date',
+    time: 'Time',
+    format: 'Age group / format',
+    custom: 'Custom',
+    fieldPlayers: 'Field players',
+    periods: 'Periods',
+    minPeriod: 'Min/period',
     autoStop: 'Auto-stop a half after this many extra minutes (in case you forget)',
-    squad: 'Squad', squadHint: 'Choose Bench or Start for each player called up, then tap 🧤 on the goalkeeper.',
-    startersCount: 'Starters {s}/{n}', benchCount: 'Bench {n}',
-    selOut: 'Out', selBench: 'Bench', selStart: 'Start', gkAria: 'Goalkeeper', addNewPlayer: 'Add a new player',
-    saveChanges: 'Save changes', createGame: 'Create game',
-    errField: 'Set the number of field players.', errPeriods: 'Set the number of periods and minutes per period.',
-    errDate: 'Set the game date.', errStarters: 'Pick exactly {need} starters (1 GK + {field}). You have {n}.',
+    squad: 'Squad',
+    squadHint: 'Choose Bench or Start for each player called up, then tap 🧤 on the goalkeeper.',
+    startersCount: 'Starters {s}/{n}',
+    benchCount: 'Bench {n}',
+    selOut: 'Out',
+    selBench: 'Bench',
+    selStart: 'Start',
+    gkAria: 'Goalkeeper',
+    addNewPlayer: 'Add a new player',
+    saveChanges: 'Save changes',
+    createGame: 'Create game',
+    errField: 'Set the number of field players.',
+    errPeriods: 'Set the number of periods and minutes per period.',
+    errDate: 'Set the game date.',
+    errStarters: 'Pick exactly {need} starters (1 GK + {field}). You have {n}.',
     errGk: 'Tap 🧤 to choose the goalkeeper among the starters.',
-    kickoff: '▶ Kick off', resume: '▶ Resume', fullTimeBtn: '🏁 Full time', fullTime: 'Full time',
-    endPeriod: 'End {p}', startPeriod: '▶ Start {p}', viewReport: '📋 View report',
-    notStarted: 'Not started · {n} × {m} min', paused: 'paused', breakAfter: 'Break after {p}',
-    autoStoppedToast: '⏱ {p} auto-stopped at +{m} min', fixTimes: 'Fix times',
-    timeUp: '⏰ {p}: time is up', extraMin: '⏰ {p}: +{m} min extra',
-    evGoal: '⚽ Goal: {p}', evOppGoal: '🥅 Goal conceded',
-    evYellow: '🟨 Yellow: {p}', evRed: '🟥 Red: {p}', evGk: '🧤 In goal: {p}', evStart: '⏱ Start of {p}', evEnd: '⏱ End of {p}',
-    notFound: 'Not found', gameGone: 'This game no longer exists.', back: 'Back',
-    autoStoppedAlert: '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
-    oppGoalBtn: '+ Goal conceded', fixTimesBtn: '⏱ Fix times',
+    kickoff: '▶ Kick off',
+    resume: '▶ Resume',
+    fullTimeBtn: '🏁 Full time',
+    fullTime: 'Full time',
+    endPeriod: 'End {p}',
+    startPeriod: '▶ Start {p}',
+    viewReport: '📋 View report',
+    notStarted: 'Not started · {n} × {m} min',
+    paused: 'paused',
+    breakAfter: 'Break after {p}',
+    autoStoppedToast: '⏱ {p} auto-stopped at +{m} min',
+    fixTimes: 'Fix times',
+    timeUp: '⏰ {p}: time is up',
+    extraMin: '⏰ {p}: +{m} min extra',
+    evGoal: '⚽ Goal: {p}',
+    evOppGoal: '🥅 Goal conceded',
+    evYellow: '🟨 Yellow: {p}',
+    evRed: '🟥 Red: {p}',
+    evGk: '🧤 In goal: {p}',
+    evStart: '⏱ Start of {p}',
+    evEnd: '⏱ End of {p}',
+    notFound: 'Not found',
+    gameGone: 'This game no longer exists.',
+    back: 'Back',
+    autoStoppedAlert:
+      '⏱ {p} was stopped automatically at +{m} min. If it ended earlier or the next half already started, tap <b>{fix}</b>.',
+    oppGoalBtn: '+ Goal conceded',
+    fixTimesBtn: '⏱ Fix times',
     formation: 'Formation',
-    tabTeam: 'My Team', tabMatches: 'Matches', tabStats: 'Stats', tabProfile: 'Profile',
-    allTeams: 'All', noGamesTeam: 'No games for this team yet.',
-    removePlayerTitle: 'Remove player?', restoreBtn: 'Restore',
-    password: 'Password', signInPw: 'Sign in', tabSignIn: 'Sign in', tabSignUp: 'Activate account',
+    tabTeam: 'My Team',
+    tabMatches: 'Matches',
+    tabStats: 'Stats',
+    tabProfile: 'Profile',
+    allTeams: 'All',
+    noGamesTeam: 'No games for this team yet.',
+    removePlayerTitle: 'Remove player?',
+    restoreBtn: 'Restore',
+    password: 'Password',
+    signInPw: 'Sign in',
+    tabSignIn: 'Sign in',
+    tabSignUp: 'Activate account',
     signUpIntro: 'Use the email the admin registered.',
-    resetTitle: 'Reset your password', resetIntro: '',
-    stepOf: 'Step {n} of 3', stepEmail: 'Your email', stepCode: 'Code from the email', stepPassword: 'Choose a password',
-    confirmCode: 'Confirm', createAccount: 'Activate account', forgotPassword: 'Forgot your password?', backToSignIn: 'Back to sign in',
-    setPwTitle: 'Choose a password', setPwHint: 'At least 8 characters.',
-    newPassword: 'New password', repeatPassword: 'Repeat the password', savePassword: 'Save password', changePassword: 'Change password',
-    pwSaved: 'Password saved', pwMismatch: 'The passwords don\'t match.', pwShort: 'Use at least 8 characters.', pwWeak: 'That password is too weak. Try a longer one.',
-    pwSame: 'That\'s already your password. Choose a different one.', authBadPassword: 'Wrong email or password. First time here? Use "Activate account".',
-    tabAdmin: 'Admin', notSignedIn: 'Not signed in', backupSummary: 'Export or import a copy of your data',
-    account: 'Account', accountHint: 'Only for people the admin gave access to.',
-    email: 'Email', sendCode: 'Send code', codeLabel: 'Code from the email', signIn: 'Sign in', codeSent: 'Sent to {email} (check spam too).',
-    otherEmail: 'Use a different email', resendCode: 'Resend code', signOut: 'Sign out', signOutConfirm: 'Sign out?', signedIn: 'Signed in',
-    acctDirector: 'Director account', acctCoach: 'Coach account', acctAdmin: 'Admin', acctNone: 'This user has no access set up yet. Ask the admin.',
-    authNoAccess: 'This email doesn\'t have access. Ask the admin.', authBadCode: 'Wrong or expired code. Try again or ask for a new one.',
-    authRateLimit: 'Too many attempts. Wait a minute and try again.', authOffline: 'No internet connection. Try again when you have signal.',
-    authFailed: 'Couldn\'t sign in ({msg}).', cloudUnavailable: 'Signing in isn\'t available.',
-    syncing: 'Syncing…', syncedAgo: 'Synced · {ago}', agoNow: 'just now', agoMin: '{n} min ago', agoHour: '{n} h ago',
-    syncWaiting: '{n} changes waiting', syncWaiting1: '1 change waiting', syncOffline: 'Offline · will sync when back online',
-    syncWaitingOffline: '{n} changes waiting (offline)', syncWaitingOffline1: '1 change waiting (offline)',
-    syncFailed: 'Couldn\'t sync, will try again', syncUploadFailed: 'Couldn\'t sync a team (not allowed).',
-    syncNever: 'Not synced yet', syncNow: 'Sync now', badgeCloud: 'Synced', badgeLocal: 'Local',
-    uploadTeam: 'Sync this team', uploadTeamHint: 'You\'ll be its director and can add coaches.',
-    uploadTitle: 'Sync your teams?', uploadHint: 'Choose the teams to sync. You\'ll be their director.',
-    uploadSelected: 'Sync selected', notNow: 'Not now', uploading: 'Syncing…',
-    signOutLose: '{n} changes not uploaded yet will be lost.', signOutLose1: '1 change not uploaded yet will be lost.',
-    signOutCloud: 'Synced teams won\'t show here until you sign in again.',
-    settings: 'Settings', language: 'Language', theme: 'Theme', themeLight: 'Light', themeDark: 'Dark', themeAuto: 'Auto',
-    soonTitle: 'Coming soon', soonMsg: '{x} will be available in a future version.', ok: 'OK', evPos: '↔ Position: {p}', posToast: '↔ {p} moved',
-    onPitch: 'On pitch', bench: 'Bench', noSubs: 'No substitutes.', sentOff: 'Sent off', timeline: 'Timeline',
-    undoX: '↶ Undo: {x}', undo: 'Undo', nothingYet: 'Nothing yet.', report: 'Report', deleteGame: 'Delete game', menu: 'Menu', deleteGameTitle: 'Delete game?', deleteBtn: 'Delete',
-    goalBtn: 'Goal', yellowBtn: 'Yellow', redBtn: 'Red', toGoal: 'To goal', benchState: 'Bench', played: '{t} played',
-    subOff: '🔁 Sub off, bring on:', subOn: '🔁 Sub on, replacing:', noAvail: 'No players available.', cancel: 'Cancel',
-    fixTitle: '⏱ Fix times · {p}', whenEnd: '{p}: when did it really end?', regular: "{v}' regular", now: 'Now',
-    other: 'Other:', nextStarted: '{p}: has it already started?', notYet: 'Not yet', minAgo: '{n} min ago',
-    startedPre: 'Started', startedPost: 'min ago',
-    previewEnds: '{p} ends at {t}', previewBreak: ' · now on break', previewStarted: ' · {p} started {n} min ago',
-    apply: 'Apply', errFixEnd: 'The end must be between {a} and {b}.', errFixStart: '{p} ended less time ago than that.',
+    resetTitle: 'Reset your password',
+    resetIntro: '',
+    stepOf: 'Step {n} of 3',
+    stepEmail: 'Your email',
+    stepCode: 'Code from the email',
+    stepPassword: 'Choose a password',
+    confirmCode: 'Confirm',
+    createAccount: 'Activate account',
+    forgotPassword: 'Forgot your password?',
+    backToSignIn: 'Back to sign in',
+    setPwTitle: 'Choose a password',
+    setPwHint: 'At least 8 characters.',
+    newPassword: 'New password',
+    repeatPassword: 'Repeat the password',
+    savePassword: 'Save password',
+    changePassword: 'Change password',
+    pwSaved: 'Password saved',
+    pwMismatch: "The passwords don't match.",
+    pwShort: 'Use at least 8 characters.',
+    pwWeak: 'That password is too weak. Try a longer one.',
+    pwSame: "That's already your password. Choose a different one.",
+    authBadPassword: 'Wrong email or password. First time here? Use "Activate account".',
+    tabAdmin: 'Admin',
+    notSignedIn: 'Not signed in',
+    backupSummary: 'Export or import a copy of your data',
+    account: 'Account',
+    accountHint: 'Only for people the admin gave access to.',
+    email: 'Email',
+    sendCode: 'Send code',
+    codeLabel: 'Code from the email',
+    signIn: 'Sign in',
+    codeSent: 'Sent to {email} (check spam too).',
+    otherEmail: 'Use a different email',
+    resendCode: 'Resend code',
+    signOut: 'Sign out',
+    signOutConfirm: 'Sign out?',
+    signedIn: 'Signed in',
+    acctDirector: 'Director account',
+    acctCoach: 'Coach account',
+    acctAdmin: 'Admin',
+    acctNone: 'This user has no access set up yet. Ask the admin.',
+    authNoAccess: "This email doesn't have access. Ask the admin.",
+    authBadCode: 'Wrong or expired code. Try again or ask for a new one.',
+    authRateLimit: 'Too many attempts. Wait a minute and try again.',
+    authOffline: 'No internet connection. Try again when you have signal.',
+    authFailed: "Couldn't sign in ({msg}).",
+    cloudUnavailable: "Signing in isn't available.",
+    syncing: 'Syncing…',
+    syncedAgo: 'Synced · {ago}',
+    agoNow: 'just now',
+    agoMin: '{n} min ago',
+    agoHour: '{n} h ago',
+    syncWaiting: '{n} changes waiting',
+    syncWaiting1: '1 change waiting',
+    syncOffline: 'Offline · will sync when back online',
+    syncWaitingOffline: '{n} changes waiting (offline)',
+    syncWaitingOffline1: '1 change waiting (offline)',
+    syncFailed: "Couldn't sync, will try again",
+    syncUploadFailed: "Couldn't sync a team (not allowed).",
+    syncNever: 'Not synced yet',
+    syncNow: 'Sync now',
+    badgeCloud: 'Synced',
+    badgeLocal: 'Local',
+    uploadTeam: 'Sync this team',
+    uploadTeamHint: "You'll be its director and can add coaches.",
+    uploadTitle: 'Sync your teams?',
+    uploadHint: "Choose the teams to sync. You'll be their director.",
+    uploadSelected: 'Sync selected',
+    notNow: 'Not now',
+    uploading: 'Syncing…',
+    signOutLose: '{n} changes not uploaded yet will be lost.',
+    signOutLose1: '1 change not uploaded yet will be lost.',
+    signOutCloud: "Synced teams won't show here until you sign in again.",
+    settings: 'Settings',
+    language: 'Language',
+    theme: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeAuto: 'Auto',
+    soonTitle: 'Coming soon',
+    soonMsg: '{x} will be available in a future version.',
+    ok: 'OK',
+    evPos: '↔ Position: {p}',
+    posToast: '↔ {p} moved',
+    onPitch: 'On pitch',
+    bench: 'Bench',
+    noSubs: 'No substitutes.',
+    sentOff: 'Sent off',
+    timeline: 'Timeline',
+    undoX: '↶ Undo: {x}',
+    undo: 'Undo',
+    nothingYet: 'Nothing yet.',
+    report: 'Report',
+    deleteGame: 'Delete game',
+    menu: 'Menu',
+    deleteGameTitle: 'Delete game?',
+    deleteBtn: 'Delete',
+    goalBtn: 'Goal',
+    yellowBtn: 'Yellow',
+    redBtn: 'Red',
+    toGoal: 'To goal',
+    benchState: 'Bench',
+    played: '{t} played',
+    subOff: '🔁 Sub off, bring on:',
+    subOn: '🔁 Sub on, replacing:',
+    noAvail: 'No players available.',
+    cancel: 'Cancel',
+    fixTitle: '⏱ Fix times · {p}',
+    whenEnd: '{p}: when did it really end?',
+    regular: "{v}' regular",
+    now: 'Now',
+    other: 'Other:',
+    nextStarted: '{p}: has it already started?',
+    notYet: 'Not yet',
+    minAgo: '{n} min ago',
+    startedPre: 'Started',
+    startedPost: 'min ago',
+    previewEnds: '{p} ends at {t}',
+    previewBreak: ' · now on break',
+    previewStarted: ' · {p} started {n} min ago',
+    apply: 'Apply',
+    errFixEnd: 'The end must be between {a} and {b}.',
+    errFixStart: '{p} ended less time ago than that.',
     timesFixed: '⏱ Times fixed',
-    gameReport: 'Game report', gameTime: 'Game time {t}', inProgress: 'game still in progress',
-    didNotPlay: 'Did not play', notCalled: 'Not called up',
-    reportHint: 'Preview of the PDF (scroll sideways to see every column). Each half starts at its regular time; extra time shows as (+mm:ss).',
+    gameReport: 'Game report',
+    gameTime: 'Game time {t}',
+    inProgress: 'game still in progress',
+    didNotPlay: 'Did not play',
+    notCalled: 'Not called up',
+    reportHint:
+      'Preview of the PDF (scroll sideways to see every column). Each half starts at its regular time; extra time shows as (+mm:ss).',
     pdf: '📄 Share PDF',
     statsNoTeams: 'Create a team and its players first.',
     statsNoGames: 'No finished games yet. Stats show up here after full time.',
     statsHint: 'Finished games only. Tap a player to see their sheet and share it as a PDF.',
-    statGamesN1: '1 game', statGamesN: '{n} games', statW: '{n}W', statD: '{n}D', statL: '{n}L', statGoalsFor: 'Goals {f}–{a}',
-    statGames: 'Games', statMin: 'Min', statGoals: 'Goals', statCalled: 'Called up', statStarts: 'Starts',
-    statMinutes: 'Minutes', statCards: 'Cards', statMinPerGame: 'Minutes in each game',
-    statGamesList: 'Games', statNumber: 'Number {n}', statRange: '{a} to {b}', statSubIn: 'sub',
-    statGoalN1: '1 goal', statGoalN: '{n} goals', statYellowWord: 'yellow', statRedWord: 'red',
-    confirmFullTime: 'End the game (full time)?', confirmDeleteGame: 'Delete this game and all its stats?',
-    gkSentOff: '🟥 GK sent off: tap a player › To goal', inGoalToast: '🧤 {p} in goal',
+    statGamesN1: '1 game',
+    statGamesN: '{n} games',
+    statW: '{n}W',
+    statD: '{n}D',
+    statL: '{n}L',
+    statGoalsFor: 'Goals {f}–{a}',
+    statGames: 'Games',
+    statMin: 'Min',
+    statGoals: 'Goals',
+    statCalled: 'Called up',
+    statStarts: 'Starts',
+    statMinutes: 'Minutes',
+    statCards: 'Cards',
+    statMinPerGame: 'Minutes in each game',
+    statGamesList: 'Games',
+    statNumber: 'Number {n}',
+    statRange: '{a} to {b}',
+    statSubIn: 'sub',
+    statGoalN1: '1 goal',
+    statGoalN: '{n} goals',
+    statYellowWord: 'yellow',
+    statRedWord: 'red',
+    confirmFullTime: 'End the game (full time)?',
+    confirmDeleteGame: 'Delete this game and all its stats?',
+    gkSentOff: '🟥 GK sent off: tap a player › To goal',
+    inGoalToast: '🧤 {p} in goal',
     confirmRestore: 'Replace all data with this backup ({p} players, {g} games)?',
-    restored: 'Backup restored', badBackup: 'That file is not a valid backup.',
-    p1: '1st half', p2: '2nd half', pQ: 'Q{n}', pGame: 'Game', pN: 'Period {n}',
-    pdfTitle: 'Stats sheet', pdfSeason: 'Season', pdfGame: 'GAME:', pdfRound: 'ROUND:', pdfDate: 'DATE:',
-    pdfNo: 'No.', pdfPlayer: 'Player', pdfShirt: 'Shirt', pdfStints: 'ON – OFF', pdfMinutes: 'MINUTES',
-    pdfGoals: 'GOALS', pdfYellow: 'YELLOW', pdfRed: 'RED', pdfTotal: 'Total', pdfStarter: 'STARTER', pdfSub: 'SUB', fileRound: 'Round', fileStats: 'Stats',
-    readOnly: 'Read-only', readOnlyToast: 'Read-only: you\'re a coach on this team',
-    readOnlyHint: 'You\'re a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.',
-    newGameCoachOnly: 'You\'re a coach on these teams, so only directors create games. To log your own games, create a local team.',
+    restored: 'Backup restored',
+    badBackup: 'That file is not a valid backup.',
+    p1: '1st half',
+    p2: '2nd half',
+    pQ: 'Q{n}',
+    pGame: 'Game',
+    pN: 'Period {n}',
+    pdfTitle: 'Stats sheet',
+    pdfSeason: 'Season',
+    pdfGame: 'GAME:',
+    pdfRound: 'ROUND:',
+    pdfDate: 'DATE:',
+    pdfNo: 'No.',
+    pdfPlayer: 'Player',
+    pdfShirt: 'Shirt',
+    pdfStints: 'ON – OFF',
+    pdfMinutes: 'MINUTES',
+    pdfGoals: 'GOALS',
+    pdfYellow: 'YELLOW',
+    pdfRed: 'RED',
+    pdfTotal: 'Total',
+    pdfStarter: 'STARTER',
+    pdfSub: 'SUB',
+    fileRound: 'Round',
+    fileStats: 'Stats',
+    readOnly: 'Read-only',
+    readOnlyToast: "Read-only: you're a coach on this team",
+    readOnlyHint:
+      "You're a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.",
+    newGameCoachOnly:
+      "You're a coach on these teams, so only directors create games. To log your own games, create a local team.",
     newTeamCloud: 'Synced team. You can add coaches under People.',
-    people: 'Staff', loading: 'Loading…', needsInternet: 'Needs internet. Try again when you have signal.', tryAgain: 'Try again',
-    roleDirector: 'Director', roleCoach: 'Coach', you: 'you', peopleSignIn: 'Sign in to see who has access to this team.',
+    people: 'Staff',
+    loading: 'Loading…',
+    needsInternet: 'Needs internet. Try again when you have signal.',
+    tryAgain: 'Try again',
+    roleDirector: 'Director',
+    roleCoach: 'Coach',
+    you: 'you',
+    peopleSignIn: 'Sign in to see who has access to this team.',
     addCoach: 'Add coach',
-    addCoachHint: 'Only people the admin has given access. Coaches see the team, its games and reports, but can\'t change anything.',
-    coachAdded: '{email} was added as a coach.', coachAlready: '{email} is already in this team.',
-    coachNoAccount: 'This person doesn\'t have access yet. Ask the admin.',
-    notAllowed: 'You\'re not allowed to do that.', actionFailed: 'Couldn\'t do that ({msg}).',
-    removeFromTeam: 'Remove from team', removeMemberConfirm: 'Remove {email} from this team?',
-    removed: 'Removed', leaveTeam: 'Leave team', leftTeam: 'You left the team',
-    leaveTeamConfirm: 'Leave this team? You\'ll only see it again if a director adds you back.',
+    addCoachHint:
+      "Only people the admin has given access. Coaches see the team, its games and reports, but can't change anything.",
+    coachAdded: '{email} was added as a coach.',
+    coachAlready: '{email} is already in this team.',
+    coachNoAccount: "This person doesn't have access yet. Ask the admin.",
+    notAllowed: "You're not allowed to do that.",
+    actionFailed: "Couldn't do that ({msg}).",
+    removeFromTeam: 'Remove from team',
+    removeMemberConfirm: 'Remove {email} from this team?',
+    removed: 'Removed',
+    leaveTeam: 'Leave team',
+    leftTeam: 'You left the team',
+    leaveTeamConfirm: "Leave this team? You'll only see it again if a director adds you back.",
     lastDirector: 'A team must keep at least one director.',
-    admin: 'Admin', adminHint: 'Give access, manage accounts and teams.', adminOnly: 'Only the admin can open this page.',
-    giveAccess: 'Give access', accountKind: 'Account type',
-    giveAccessHint: 'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Activate account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
-    accessGivenTitle: 'Access given', accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
-    errExists: 'This email already has access.', errEmail: 'Check the email address.', errNotAdmin: 'Only the admin can do this.',
-    errSession: 'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
-    errSelf: 'You can\'t do that to your own account.', errIsAdmin: 'Admins can only be removed in the Supabase dashboard.',
-    accounts: 'Accounts', kindChanged: 'Account type changed', removeAccess: 'Remove access', accessRemoved: 'Access removed',
-    removeAccessConfirm: 'Remove access for {email}? They can\'t sign in any more and leave all their teams. Teams, players and games stay.',
-    cloudTeams: 'Synced teams', noCloudTeams: 'No synced teams yet.', noMembers: 'No members.', noDirector: 'No director',
-    addMember: 'Add', pickAccount: 'Choose an account…', roleChanged: 'Role changed', memberAdded: 'Added', teamsN: '{n} teams', teamsN1: '1 team',
+    admin: 'Admin',
+    adminHint: 'Give access, manage accounts and teams.',
+    adminOnly: 'Only the admin can open this page.',
+    giveAccess: 'Give access',
+    accountKind: 'Account type',
+    giveAccessHint:
+      'Creates an account for this email. No email is sent: the person then opens the app (Profile → Account → Activate account), enters this email and the code they receive, and chooses a password. Email sending (SMTP) must be set up for the code to arrive.',
+    accessGivenTitle: 'Access given',
+    accessGiven: '{email} can now sign in. Let them know: in the app, Profile → Account, with this email.',
+    errExists: 'This email already has access.',
+    errEmail: 'Check the email address.',
+    errNotAdmin: 'Only the admin can do this.',
+    errSession:
+      'The admin function refused your sign-in ({msg}). Sign out and in again; if it keeps happening, see "Verify JWT" in docs/supabase-setup.md.',
+    errSelf: "You can't do that to your own account.",
+    errIsAdmin: 'Admins can only be removed in the Supabase dashboard.',
+    accounts: 'Accounts',
+    kindChanged: 'Account type changed',
+    removeAccess: 'Remove access',
+    accessRemoved: 'Access removed',
+    removeAccessConfirm:
+      "Remove access for {email}? They can't sign in any more and leave all their teams. Teams, players and games stay.",
+    cloudTeams: 'Synced teams',
+    noCloudTeams: 'No synced teams yet.',
+    noMembers: 'No members.',
+    noDirector: 'No director',
+    addMember: 'Add',
+    pickAccount: 'Choose an account…',
+    roleChanged: 'Role changed',
+    memberAdded: 'Added',
+    teamsN: '{n} teams',
+    teamsN1: '1 team',
   },
   pt: {
-    newGame: '+ Novo jogo', teamsBtn: 'Equipas ({n})',
+    newGame: '+ Novo jogo',
+    teamsBtn: 'Equipas ({n})',
     noGames: 'Ainda não há jogos.<br>Cria a tua equipa com os jogadores e depois um jogo.',
-    exportBackup: 'Exportar cópia', importBackup: 'Importar cópia', backupTitle: 'Cópia de segurança',
+    exportBackup: 'Exportar cópia',
+    importBackup: 'Importar cópia',
+    backupTitle: 'Cópia de segurança',
     storageKept: 'Este navegador mantém os dados da app guardados (não os apaga por iniciativa própria).',
-    storageNotKept: 'Este navegador pode apagar os dados da app se ficar sem espaço ou se a app não for usada durante algum tempo. Exporta uma cópia com regularidade; adicionar a app ao ecrã principal ajuda.',
+    storageNotKept:
+      'Este navegador pode apagar os dados da app se ficar sem espaço ou se a app não for usada durante algum tempo. Exporta uma cópia com regularidade; adicionar a app ao ecrã principal ajuda.',
     backupHint: 'Guarda uma cópia das equipas e jogos num ficheiro, ou restaura uma.',
-    privacyLink: 'Como são tratados os dados', privacyTitle: 'Os teus dados',
-    privacyBody: '<p><b>Sem conta</b>, fica tudo neste dispositivo. Nada é enviado para lado nenhum.</p>'
-      + '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o nome da equipa e do clube, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso e que são membros dessa equipa a podem ver; o administrador vê que equipas existem e quem pertence a cada uma. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>'
-      + '<p><b>A tua conta</b> é o teu email e uma palavra-passe. A palavra-passe só é guardada como um código irreversível (hash) e não pode ser lida, nem pelo administrador; o email serve também para te enviar códigos na primeira vez e se te esqueceres da palavra-passe.</p>'
-      + '<p><b>Apagar</b>: um diretor pode apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>'
-      + '<p>Cabe ao clube aceitar que os nomes dos jogadores sejam guardados e obter o consentimento dos pais quando necessário.</p>',
-    opponent: 'Adversário', gkPlus: '1 GR + {n}', gk: 'GR',
-    res_win: 'Vitória', res_draw: 'Empate', res_loss: 'Derrota', roundN: 'Jornada {n}',
-    st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
-    teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
-    playersCount: '{n} jogadores', playersCount1: '1 jogador', staffCount: '{n} pessoas', staffCount1: '1 pessoa', unnamedTeam: 'A minha equipa',
-    club: 'Clube', clubPh: 'ex.: Padroense F.C.', team: 'Equipa', ageGroup: 'Escalão', teamPh: 'ex.: Sub-7B',
-    players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
+    privacyLink: 'Como são tratados os dados',
+    privacyTitle: 'Os teus dados',
+    privacyBody:
+      '<p><b>Sem conta</b>, fica tudo neste dispositivo. Nada é enviado para lado nenhum.</p>' +
+      '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o nome da equipa e do clube, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso e que são membros dessa equipa a podem ver; o administrador vê que equipas existem e quem pertence a cada uma. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>' +
+      '<p><b>A tua conta</b> é o teu email e uma palavra-passe. A palavra-passe só é guardada como um código irreversível (hash) e não pode ser lida, nem pelo administrador; o email serve também para te enviar códigos na primeira vez e se te esqueceres da palavra-passe.</p>' +
+      '<p><b>Apagar</b>: um diretor pode apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>' +
+      '<p>Cabe ao clube aceitar que os nomes dos jogadores sejam guardados e obter o consentimento dos pais quando necessário.</p>',
+    opponent: 'Adversário',
+    gkPlus: '1 GR + {n}',
+    gk: 'GR',
+    res_win: 'Vitória',
+    res_draw: 'Empate',
+    res_loss: 'Derrota',
+    roundN: 'Jornada {n}',
+    st_scheduled: 'Agendado',
+    st_live: 'A decorrer',
+    st_break: 'Intervalo',
+    st_finished: 'Terminado',
+    teams: 'Equipas',
+    newTeam: '+ Nova equipa',
+    noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
+    playersCount: '{n} jogadores',
+    playersCount1: '1 jogador',
+    staffCount: '{n} pessoas',
+    staffCount1: '1 pessoa',
+    unnamedTeam: 'A minha equipa',
+    club: 'Clube',
+    clubPh: 'ex.: Padroense F.C.',
+    team: 'Equipa',
+    ageGroup: 'Escalão',
+    teamPh: 'ex.: Sub-7B',
+    players: 'Jogadores',
+    shirtName: 'Nome na camisola (ecrã de jogo)',
+    fullName: 'Nome completo (relatório)',
+    add: 'Adicionar',
+    edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
-    deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
-    editPlayer: 'Editar jogador', addPlayer: '+ Adicionar jogador', newPlayer: 'Novo jogador', playerAdded: '{name} adicionado', done: 'Concluído', editGoal: 'Corrigir golo · {t}', whoScored: 'Quem marcou?', removeGoal: '🗑 Apagar golo', confirmRemoveGoal: 'Apagar este golo?', gameInfo: '✎ Dados do jogo', homeAway: 'Casa / Fora', shirtNumber: 'Número da camisola', save: 'Guardar',
+    deleteTeam: 'Apagar equipa',
+    teamHasPlayers: 'Remove primeiro os jogadores desta equipa.',
+    confirmDeleteTeam: 'Apagar esta equipa?',
+    editPlayer: 'Editar jogador',
+    addPlayer: '+ Adicionar jogador',
+    newPlayer: 'Novo jogador',
+    playerAdded: '{name} adicionado',
+    done: 'Concluído',
+    editGoal: 'Corrigir golo · {t}',
+    whoScored: 'Quem marcou?',
+    removeGoal: '🗑 Apagar golo',
+    confirmRemoveGoal: 'Apagar este golo?',
+    gameInfo: '✎ Dados do jogo',
+    homeAway: 'Casa / Fora',
+    shirtNumber: 'Número da camisola',
+    save: 'Guardar',
     confirmRemovePlayer: 'Remover {name} do plantel? Os jogos anteriores mantêm as estatísticas.',
-    editGame: 'Editar jogo', newGameTitle: 'Novo jogo', needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.', goTeams: 'Ir para Equipas',
-    opponentPh: 'ex.: Sporting Sub-8', home: 'Casa', away: 'Fora', round: 'Jornada (opcional)',
-    date: 'Data', time: 'Hora', format: 'Escalão / formato', custom: 'Personalizado',
-    fieldPlayers: 'Jogadores de campo', periods: 'Partes', minPeriod: 'Min/parte',
+    editGame: 'Editar jogo',
+    newGameTitle: 'Novo jogo',
+    needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.',
+    goTeams: 'Ir para Equipas',
+    opponentPh: 'ex.: Sporting Sub-8',
+    home: 'Casa',
+    away: 'Fora',
+    round: 'Jornada (opcional)',
+    date: 'Data',
+    time: 'Hora',
+    format: 'Escalão / formato',
+    custom: 'Personalizado',
+    fieldPlayers: 'Jogadores de campo',
+    periods: 'Partes',
+    minPeriod: 'Min/parte',
     autoStop: 'Parar automaticamente uma parte após estes minutos extra (caso te esqueças)',
-    squad: 'Convocados', squadHint: 'Escolhe Suplente ou Titular para cada convocado e toca em 🧤 no guarda-redes.',
-    startersCount: 'Titulares {s}/{n}', benchCount: 'Suplentes {n}',
-    selOut: 'Fora', selBench: 'Suplente', selStart: 'Titular', gkAria: 'Guarda-redes', addNewPlayer: 'Adicionar novo jogador',
-    saveChanges: 'Guardar alterações', createGame: 'Criar jogo',
-    errField: 'Indica o número de jogadores de campo.', errPeriods: 'Indica o número de partes e os minutos por parte.',
-    errDate: 'Indica a data do jogo.', errStarters: 'Escolhe exatamente {need} titulares (1 GR + {field}). Tens {n}.',
+    squad: 'Convocados',
+    squadHint: 'Escolhe Suplente ou Titular para cada convocado e toca em 🧤 no guarda-redes.',
+    startersCount: 'Titulares {s}/{n}',
+    benchCount: 'Suplentes {n}',
+    selOut: 'Fora',
+    selBench: 'Suplente',
+    selStart: 'Titular',
+    gkAria: 'Guarda-redes',
+    addNewPlayer: 'Adicionar novo jogador',
+    saveChanges: 'Guardar alterações',
+    createGame: 'Criar jogo',
+    errField: 'Indica o número de jogadores de campo.',
+    errPeriods: 'Indica o número de partes e os minutos por parte.',
+    errDate: 'Indica a data do jogo.',
+    errStarters: 'Escolhe exatamente {need} titulares (1 GR + {field}). Tens {n}.',
     errGk: 'Toca em 🧤 para escolher o guarda-redes entre os titulares.',
-    kickoff: '▶ Início', resume: '▶ Retomar', fullTimeBtn: '🏁 Fim do jogo', fullTime: 'Fim do jogo',
-    endPeriod: 'Terminar {p}', startPeriod: '▶ Iniciar {p}', viewReport: '📋 Ver relatório',
-    notStarted: 'Por começar · {n} × {m} min', paused: 'em pausa', breakAfter: 'Intervalo após {p}',
-    autoStoppedToast: '⏱ {p} parada automaticamente aos +{m} min', fixTimes: 'Corrigir tempos',
-    timeUp: '⏰ {p}: tempo esgotado', extraMin: '⏰ {p}: +{m} min extra',
-    evGoal: '⚽ Golo: {p}', evOppGoal: '🥅 Golo sofrido',
-    evYellow: '🟨 Amarelo: {p}', evRed: '🟥 Vermelho: {p}', evGk: '🧤 Na baliza: {p}', evStart: '⏱ Início: {p}', evEnd: '⏱ Fim: {p}',
-    notFound: 'Não encontrado', gameGone: 'Este jogo já não existe.', back: 'Voltar',
-    autoStoppedAlert: '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
-    oppGoalBtn: '+ Golo sofrido', fixTimesBtn: '⏱ Corrigir tempos',
+    kickoff: '▶ Início',
+    resume: '▶ Retomar',
+    fullTimeBtn: '🏁 Fim do jogo',
+    fullTime: 'Fim do jogo',
+    endPeriod: 'Terminar {p}',
+    startPeriod: '▶ Iniciar {p}',
+    viewReport: '📋 Ver relatório',
+    notStarted: 'Por começar · {n} × {m} min',
+    paused: 'em pausa',
+    breakAfter: 'Intervalo após {p}',
+    autoStoppedToast: '⏱ {p} parada automaticamente aos +{m} min',
+    fixTimes: 'Corrigir tempos',
+    timeUp: '⏰ {p}: tempo esgotado',
+    extraMin: '⏰ {p}: +{m} min extra',
+    evGoal: '⚽ Golo: {p}',
+    evOppGoal: '🥅 Golo sofrido',
+    evYellow: '🟨 Amarelo: {p}',
+    evRed: '🟥 Vermelho: {p}',
+    evGk: '🧤 Na baliza: {p}',
+    evStart: '⏱ Início: {p}',
+    evEnd: '⏱ Fim: {p}',
+    notFound: 'Não encontrado',
+    gameGone: 'Este jogo já não existe.',
+    back: 'Voltar',
+    autoStoppedAlert:
+      '⏱ {p} foi parada automaticamente aos +{m} min. Se terminou antes ou se a parte seguinte já começou, toca em <b>{fix}</b>.',
+    oppGoalBtn: '+ Golo sofrido',
+    fixTimesBtn: '⏱ Corrigir tempos',
     formation: 'Tática',
-    tabTeam: 'Equipa', tabMatches: 'Jogos', tabStats: 'Estatísticas', tabProfile: 'Perfil',
-    allTeams: 'Todas', noGamesTeam: 'Ainda não há jogos desta equipa.',
-    removePlayerTitle: 'Remover jogador?', restoreBtn: 'Restaurar',
-    password: 'Palavra-passe', signInPw: 'Entrar', tabSignIn: 'Entrar', tabSignUp: 'Ativar conta',
+    tabTeam: 'Equipa',
+    tabMatches: 'Jogos',
+    tabStats: 'Estatísticas',
+    tabProfile: 'Perfil',
+    allTeams: 'Todas',
+    noGamesTeam: 'Ainda não há jogos desta equipa.',
+    removePlayerTitle: 'Remover jogador?',
+    restoreBtn: 'Restaurar',
+    password: 'Palavra-passe',
+    signInPw: 'Entrar',
+    tabSignIn: 'Entrar',
+    tabSignUp: 'Ativar conta',
     signUpIntro: 'Usa o email que o administrador registou.',
-    resetTitle: 'Recuperar a palavra-passe', resetIntro: '',
-    stepOf: 'Passo {n} de 3', stepEmail: 'O teu email', stepCode: 'Código do email', stepPassword: 'Escolhe uma palavra-passe',
-    confirmCode: 'Confirmar', createAccount: 'Ativar conta', forgotPassword: 'Esqueceste-te da palavra-passe?', backToSignIn: 'Voltar a entrar',
-    setPwTitle: 'Escolhe uma palavra-passe', setPwHint: 'Pelo menos 8 caracteres.',
-    newPassword: 'Nova palavra-passe', repeatPassword: 'Repete a palavra-passe', savePassword: 'Guardar palavra-passe', changePassword: 'Mudar palavra-passe',
-    pwSaved: 'Palavra-passe guardada', pwMismatch: 'As palavras-passe não coincidem.', pwShort: 'Usa pelo menos 8 caracteres.', pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
-    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.', authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Ativar conta".',
-    tabAdmin: 'Admin', notSignedIn: 'Sessão não iniciada', backupSummary: 'Exportar ou importar uma cópia dos dados',
-    account: 'Conta', accountHint: 'Só para quem recebeu acesso do administrador.',
-    email: 'Email', sendCode: 'Enviar código', codeLabel: 'Código do email', signIn: 'Entrar', codeSent: 'Enviado para {email} (vê também o spam).',
-    otherEmail: 'Usar outro email', resendCode: 'Reenviar código', signOut: 'Terminar sessão', signOutConfirm: 'Terminar sessão?', signedIn: 'Sessão iniciada',
-    acctDirector: 'Conta de diretor', acctCoach: 'Conta de treinador', acctAdmin: 'Admin', acctNone: 'Este utilizador ainda não tem acesso configurado. Fala com o administrador.',
-    authNoAccess: 'Este email não tem acesso. Fala com o administrador.', authBadCode: 'Código errado ou expirado. Tenta outra vez ou pede um novo.',
-    authRateLimit: 'Demasiadas tentativas. Espera um minuto e tenta outra vez.', authOffline: 'Sem ligação à internet. Tenta outra vez quando tiveres rede.',
-    authFailed: 'Não foi possível entrar ({msg}).', cloudUnavailable: 'Não é possível iniciar sessão.',
-    syncing: 'A sincronizar…', syncedAgo: 'Sincronizado · {ago}', agoNow: 'agora mesmo', agoMin: 'há {n} min', agoHour: 'há {n} h',
-    syncWaiting: '{n} alterações por enviar', syncWaiting1: '1 alteração por enviar', syncOffline: 'Sem rede · sincroniza quando voltar',
-    syncWaitingOffline: '{n} alterações à espera (sem rede)', syncWaitingOffline1: '1 alteração à espera (sem rede)',
-    syncFailed: 'Não foi possível sincronizar, vamos tentar outra vez', syncUploadFailed: 'Não foi possível sincronizar uma equipa (sem permissão).',
-    syncNever: 'Ainda não sincronizado', syncNow: 'Sincronizar agora', badgeCloud: 'Sincronizada', badgeLocal: 'Local',
-    uploadTeam: 'Sincronizar esta equipa', uploadTeamHint: 'Ficas como diretor e podes adicionar treinadores.',
-    uploadTitle: 'Sincronizar as tuas equipas?', uploadHint: 'Escolhe as equipas a sincronizar. Ficas como diretor.',
-    uploadSelected: 'Sincronizar selecionadas', notNow: 'Agora não', uploading: 'A sincronizar…',
-    signOutLose: '{n} alterações ainda não enviadas vão perder-se.', signOutLose1: '1 alteração ainda não enviada vai perder-se.',
+    resetTitle: 'Recuperar a palavra-passe',
+    resetIntro: '',
+    stepOf: 'Passo {n} de 3',
+    stepEmail: 'O teu email',
+    stepCode: 'Código do email',
+    stepPassword: 'Escolhe uma palavra-passe',
+    confirmCode: 'Confirmar',
+    createAccount: 'Ativar conta',
+    forgotPassword: 'Esqueceste-te da palavra-passe?',
+    backToSignIn: 'Voltar a entrar',
+    setPwTitle: 'Escolhe uma palavra-passe',
+    setPwHint: 'Pelo menos 8 caracteres.',
+    newPassword: 'Nova palavra-passe',
+    repeatPassword: 'Repete a palavra-passe',
+    savePassword: 'Guardar palavra-passe',
+    changePassword: 'Mudar palavra-passe',
+    pwSaved: 'Palavra-passe guardada',
+    pwMismatch: 'As palavras-passe não coincidem.',
+    pwShort: 'Usa pelo menos 8 caracteres.',
+    pwWeak: 'Essa palavra-passe é demasiado fraca. Experimenta uma mais longa.',
+    pwSame: 'Essa já é a tua palavra-passe. Escolhe outra.',
+    authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Ativar conta".',
+    tabAdmin: 'Admin',
+    notSignedIn: 'Sessão não iniciada',
+    backupSummary: 'Exportar ou importar uma cópia dos dados',
+    account: 'Conta',
+    accountHint: 'Só para quem recebeu acesso do administrador.',
+    email: 'Email',
+    sendCode: 'Enviar código',
+    codeLabel: 'Código do email',
+    signIn: 'Entrar',
+    codeSent: 'Enviado para {email} (vê também o spam).',
+    otherEmail: 'Usar outro email',
+    resendCode: 'Reenviar código',
+    signOut: 'Terminar sessão',
+    signOutConfirm: 'Terminar sessão?',
+    signedIn: 'Sessão iniciada',
+    acctDirector: 'Conta de diretor',
+    acctCoach: 'Conta de treinador',
+    acctAdmin: 'Admin',
+    acctNone: 'Este utilizador ainda não tem acesso configurado. Fala com o administrador.',
+    authNoAccess: 'Este email não tem acesso. Fala com o administrador.',
+    authBadCode: 'Código errado ou expirado. Tenta outra vez ou pede um novo.',
+    authRateLimit: 'Demasiadas tentativas. Espera um minuto e tenta outra vez.',
+    authOffline: 'Sem ligação à internet. Tenta outra vez quando tiveres rede.',
+    authFailed: 'Não foi possível entrar ({msg}).',
+    cloudUnavailable: 'Não é possível iniciar sessão.',
+    syncing: 'A sincronizar…',
+    syncedAgo: 'Sincronizado · {ago}',
+    agoNow: 'agora mesmo',
+    agoMin: 'há {n} min',
+    agoHour: 'há {n} h',
+    syncWaiting: '{n} alterações por enviar',
+    syncWaiting1: '1 alteração por enviar',
+    syncOffline: 'Sem rede · sincroniza quando voltar',
+    syncWaitingOffline: '{n} alterações à espera (sem rede)',
+    syncWaitingOffline1: '1 alteração à espera (sem rede)',
+    syncFailed: 'Não foi possível sincronizar, vamos tentar outra vez',
+    syncUploadFailed: 'Não foi possível sincronizar uma equipa (sem permissão).',
+    syncNever: 'Ainda não sincronizado',
+    syncNow: 'Sincronizar agora',
+    badgeCloud: 'Sincronizada',
+    badgeLocal: 'Local',
+    uploadTeam: 'Sincronizar esta equipa',
+    uploadTeamHint: 'Ficas como diretor e podes adicionar treinadores.',
+    uploadTitle: 'Sincronizar as tuas equipas?',
+    uploadHint: 'Escolhe as equipas a sincronizar. Ficas como diretor.',
+    uploadSelected: 'Sincronizar selecionadas',
+    notNow: 'Agora não',
+    uploading: 'A sincronizar…',
+    signOutLose: '{n} alterações ainda não enviadas vão perder-se.',
+    signOutLose1: '1 alteração ainda não enviada vai perder-se.',
     signOutCloud: 'As equipas sincronizadas deixam de aparecer aqui até voltares a entrar.',
-    settings: 'Definições', language: 'Idioma', theme: 'Tema', themeLight: 'Claro', themeDark: 'Escuro', themeAuto: 'Auto',
-    soonTitle: 'Em breve', soonMsg: '{x} estará disponível numa próxima versão.', ok: 'OK', evPos: '↔ Posição: {p}', posToast: '↔ {p} mudou de posição',
-    onPitch: 'Em campo', bench: 'Suplentes', noSubs: 'Sem suplentes.', sentOff: 'Expulsos', timeline: 'Cronologia',
-    undoX: '↶ Desfazer: {x}', undo: 'Desfazer', nothingYet: 'Ainda nada.', report: 'Relatório', deleteGame: 'Apagar jogo', menu: 'Menu', deleteGameTitle: 'Apagar jogo?', deleteBtn: 'Apagar',
-    goalBtn: 'Golo', yellowBtn: 'Amarelo', redBtn: 'Vermelho', toGoal: 'Para a baliza', benchState: 'Suplente', played: '{t} jogados',
-    subOff: '🔁 Sai, entra:', subOn: '🔁 Entra, para o lugar de:', noAvail: 'Sem jogadores disponíveis.', cancel: 'Cancelar',
-    fixTitle: '⏱ Corrigir tempos · {p}', whenEnd: '{p}: quando terminou realmente?', regular: "{v}' regulamentar", now: 'Agora',
-    other: 'Outro:', nextStarted: '{p}: já começou?', notYet: 'Ainda não', minAgo: 'há {n} min',
-    startedPre: 'Começou há', startedPost: 'min',
-    previewEnds: '{p} termina aos {t}', previewBreak: ' · agora em intervalo', previewStarted: ' · {p} começou há {n} min',
-    apply: 'Aplicar', errFixEnd: 'O fim tem de estar entre {a} e {b}.', errFixStart: '{p} terminou há menos tempo do que isso.',
+    settings: 'Definições',
+    language: 'Idioma',
+    theme: 'Tema',
+    themeLight: 'Claro',
+    themeDark: 'Escuro',
+    themeAuto: 'Auto',
+    soonTitle: 'Em breve',
+    soonMsg: '{x} estará disponível numa próxima versão.',
+    ok: 'OK',
+    evPos: '↔ Posição: {p}',
+    posToast: '↔ {p} mudou de posição',
+    onPitch: 'Em campo',
+    bench: 'Suplentes',
+    noSubs: 'Sem suplentes.',
+    sentOff: 'Expulsos',
+    timeline: 'Cronologia',
+    undoX: '↶ Desfazer: {x}',
+    undo: 'Desfazer',
+    nothingYet: 'Ainda nada.',
+    report: 'Relatório',
+    deleteGame: 'Apagar jogo',
+    menu: 'Menu',
+    deleteGameTitle: 'Apagar jogo?',
+    deleteBtn: 'Apagar',
+    goalBtn: 'Golo',
+    yellowBtn: 'Amarelo',
+    redBtn: 'Vermelho',
+    toGoal: 'Para a baliza',
+    benchState: 'Suplente',
+    played: '{t} jogados',
+    subOff: '🔁 Sai, entra:',
+    subOn: '🔁 Entra, para o lugar de:',
+    noAvail: 'Sem jogadores disponíveis.',
+    cancel: 'Cancelar',
+    fixTitle: '⏱ Corrigir tempos · {p}',
+    whenEnd: '{p}: quando terminou realmente?',
+    regular: "{v}' regulamentar",
+    now: 'Agora',
+    other: 'Outro:',
+    nextStarted: '{p}: já começou?',
+    notYet: 'Ainda não',
+    minAgo: 'há {n} min',
+    startedPre: 'Começou há',
+    startedPost: 'min',
+    previewEnds: '{p} termina aos {t}',
+    previewBreak: ' · agora em intervalo',
+    previewStarted: ' · {p} começou há {n} min',
+    apply: 'Aplicar',
+    errFixEnd: 'O fim tem de estar entre {a} e {b}.',
+    errFixStart: '{p} terminou há menos tempo do que isso.',
     timesFixed: '⏱ Tempos corrigidos',
-    gameReport: 'Relatório do jogo', gameTime: 'Tempo de jogo {t}', inProgress: 'jogo ainda a decorrer',
-    didNotPlay: 'Não jogou', notCalled: 'Não convocado',
-    reportHint: 'Pré-visualização do PDF (desliza para o lado para ver todas as colunas). Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
+    gameReport: 'Relatório do jogo',
+    gameTime: 'Tempo de jogo {t}',
+    inProgress: 'jogo ainda a decorrer',
+    didNotPlay: 'Não jogou',
+    notCalled: 'Não convocado',
+    reportHint:
+      'Pré-visualização do PDF (desliza para o lado para ver todas as colunas). Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
     pdf: '📄 Partilhar PDF',
     statsNoTeams: 'Cria primeiro uma equipa e os seus jogadores.',
     statsNoGames: 'Ainda não há jogos terminados. As estatísticas aparecem aqui depois do fim do jogo.',
     statsHint: 'Só jogos terminados. Toca num jogador para ver a ficha e partilhá-la em PDF.',
-    statGamesN1: '1 jogo', statGamesN: '{n} jogos', statW: '{n}V', statD: '{n}E', statL: '{n}D', statGoalsFor: 'Golos {f}–{a}',
-    statGames: 'Jogos', statMin: 'Min', statGoals: 'Golos', statCalled: 'Convocado', statStarts: 'Titular',
-    statMinutes: 'Minutos', statCards: 'Cartões', statMinPerGame: 'Minutos em cada jogo',
-    statGamesList: 'Jogos', statNumber: 'Número {n}', statRange: '{a} a {b}', statSubIn: 'suplente',
-    statGoalN1: '1 golo', statGoalN: '{n} golos', statYellowWord: 'amarelo', statRedWord: 'vermelho',
-    confirmFullTime: 'Terminar o jogo?', confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
-    gkSentOff: '🟥 GR expulso: toca num jogador › Para a baliza', inGoalToast: '🧤 {p} na baliza',
+    statGamesN1: '1 jogo',
+    statGamesN: '{n} jogos',
+    statW: '{n}V',
+    statD: '{n}E',
+    statL: '{n}D',
+    statGoalsFor: 'Golos {f}–{a}',
+    statGames: 'Jogos',
+    statMin: 'Min',
+    statGoals: 'Golos',
+    statCalled: 'Convocado',
+    statStarts: 'Titular',
+    statMinutes: 'Minutos',
+    statCards: 'Cartões',
+    statMinPerGame: 'Minutos em cada jogo',
+    statGamesList: 'Jogos',
+    statNumber: 'Número {n}',
+    statRange: '{a} a {b}',
+    statSubIn: 'suplente',
+    statGoalN1: '1 golo',
+    statGoalN: '{n} golos',
+    statYellowWord: 'amarelo',
+    statRedWord: 'vermelho',
+    confirmFullTime: 'Terminar o jogo?',
+    confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
+    gkSentOff: '🟥 GR expulso: toca num jogador › Para a baliza',
+    inGoalToast: '🧤 {p} na baliza',
     confirmRestore: 'Substituir todos os dados por esta cópia ({p} jogadores, {g} jogos)?',
-    restored: 'Cópia restaurada', badBackup: 'Esse ficheiro não é uma cópia válida.',
-    p1: '1ª parte', p2: '2ª parte', pQ: '{n}.º período', pGame: 'Jogo', pN: '{n}.º período',
-    pdfTitle: 'Folha de estatísticas', pdfSeason: 'Época', pdfGame: 'JOGO:', pdfRound: 'JORNADA:', pdfDate: 'DATA:',
-    pdfNo: 'Nº', pdfPlayer: 'Atleta', pdfShirt: 'Cam.', pdfStints: 'ENTRADA – SAÍDA', pdfMinutes: 'MINUTOS',
-    pdfGoals: 'GOLOS', pdfYellow: 'AMARELO', pdfRed: 'VERMELHO', pdfTotal: 'Total', pdfStarter: 'TITULAR', pdfSub: 'SUPLENTE', fileRound: 'Jornada', fileStats: 'Estatisticas',
-    readOnly: 'Só leitura', readOnlyToast: 'Só leitura: és treinador nesta equipa',
-    readOnlyHint: 'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
-    newGameCoachOnly: 'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa local.',
+    restored: 'Cópia restaurada',
+    badBackup: 'Esse ficheiro não é uma cópia válida.',
+    p1: '1ª parte',
+    p2: '2ª parte',
+    pQ: '{n}.º período',
+    pGame: 'Jogo',
+    pN: '{n}.º período',
+    pdfTitle: 'Folha de estatísticas',
+    pdfSeason: 'Época',
+    pdfGame: 'JOGO:',
+    pdfRound: 'JORNADA:',
+    pdfDate: 'DATA:',
+    pdfNo: 'Nº',
+    pdfPlayer: 'Atleta',
+    pdfShirt: 'Cam.',
+    pdfStints: 'ENTRADA – SAÍDA',
+    pdfMinutes: 'MINUTOS',
+    pdfGoals: 'GOLOS',
+    pdfYellow: 'AMARELO',
+    pdfRed: 'VERMELHO',
+    pdfTotal: 'Total',
+    pdfStarter: 'TITULAR',
+    pdfSub: 'SUPLENTE',
+    fileRound: 'Jornada',
+    fileStats: 'Estatisticas',
+    readOnly: 'Só leitura',
+    readOnlyToast: 'Só leitura: és treinador nesta equipa',
+    readOnlyHint:
+      'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
+    newGameCoachOnly:
+      'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa local.',
     newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
-    people: 'Staff', loading: 'A carregar…', needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.', tryAgain: 'Tentar outra vez',
-    roleDirector: 'Diretor', roleCoach: 'Treinador', you: 'tu', peopleSignIn: 'Entra na tua conta para ver quem tem acesso a esta equipa.',
+    people: 'Staff',
+    loading: 'A carregar…',
+    needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.',
+    tryAgain: 'Tentar outra vez',
+    roleDirector: 'Diretor',
+    roleCoach: 'Treinador',
+    you: 'tu',
+    peopleSignIn: 'Entra na tua conta para ver quem tem acesso a esta equipa.',
     addCoach: 'Adicionar treinador',
-    addCoachHint: 'Só pessoas a quem o administrador deu acesso. Os treinadores veem a equipa, os jogos e os relatórios, mas não podem alterar nada.',
-    coachAdded: '{email} foi adicionado como treinador.', coachAlready: '{email} já está nesta equipa.',
+    addCoachHint:
+      'Só pessoas a quem o administrador deu acesso. Os treinadores veem a equipa, os jogos e os relatórios, mas não podem alterar nada.',
+    coachAdded: '{email} foi adicionado como treinador.',
+    coachAlready: '{email} já está nesta equipa.',
     coachNoAccount: 'Esta pessoa ainda não tem acesso. Fala com o administrador.',
-    notAllowed: 'Não tens permissão para fazer isso.', actionFailed: 'Não foi possível ({msg}).',
-    removeFromTeam: 'Remover da equipa', removeMemberConfirm: 'Remover {email} desta equipa?',
-    removed: 'Removido', leaveTeam: 'Sair da equipa', leftTeam: 'Saíste da equipa',
+    notAllowed: 'Não tens permissão para fazer isso.',
+    actionFailed: 'Não foi possível ({msg}).',
+    removeFromTeam: 'Remover da equipa',
+    removeMemberConfirm: 'Remover {email} desta equipa?',
+    removed: 'Removido',
+    leaveTeam: 'Sair da equipa',
+    leftTeam: 'Saíste da equipa',
     leaveTeamConfirm: 'Sair desta equipa? Só a voltas a ver se um diretor te adicionar outra vez.',
     lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
-    admin: 'Admin', adminHint: 'Dar acesso, gerir contas e equipas.', adminOnly: 'Só o administrador pode abrir esta página.',
-    giveAccess: 'Dar acesso', accountKind: 'Tipo de conta',
-    giveAccessHint: 'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Ativar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
-    accessGivenTitle: 'Acesso dado', accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
-    errExists: 'Este email já tem acesso.', errEmail: 'Verifica o endereço de email.', errNotAdmin: 'Só o administrador pode fazer isto.',
-    errSession: 'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
-    errSelf: 'Não podes fazer isso à tua própria conta.', errIsAdmin: 'Os administradores só podem ser removidos no painel do Supabase.',
-    accounts: 'Contas', kindChanged: 'Tipo de conta alterado', removeAccess: 'Retirar acesso', accessRemoved: 'Acesso retirado',
-    removeAccessConfirm: 'Retirar o acesso a {email}? Deixa de poder entrar e sai de todas as equipas. As equipas, jogadores e jogos ficam.',
-    cloudTeams: 'Equipas sincronizadas', noCloudTeams: 'Ainda não há equipas sincronizadas.', noMembers: 'Sem membros.', noDirector: 'Sem diretor',
-    addMember: 'Adicionar', pickAccount: 'Escolhe uma conta…', roleChanged: 'Função alterada', memberAdded: 'Adicionado', teamsN: '{n} equipas', teamsN1: '1 equipa',
+    admin: 'Admin',
+    adminHint: 'Dar acesso, gerir contas e equipas.',
+    adminOnly: 'Só o administrador pode abrir esta página.',
+    giveAccess: 'Dar acesso',
+    accountKind: 'Tipo de conta',
+    giveAccessHint:
+      'Cria uma conta para este email. Não é enviado nenhum email: a pessoa abre depois a app (Perfil → Conta → Ativar conta), indica este email e o código que recebe e escolhe uma palavra-passe. O envio de emails (SMTP) tem de estar configurado para o código chegar.',
+    accessGivenTitle: 'Acesso dado',
+    accessGiven: '{email} já pode entrar. Avisa essa pessoa: na app, Perfil → Conta, com este email.',
+    errExists: 'Este email já tem acesso.',
+    errEmail: 'Verifica o endereço de email.',
+    errNotAdmin: 'Só o administrador pode fazer isto.',
+    errSession:
+      'A função de administração recusou a tua sessão ({msg}). Termina a sessão e entra outra vez; se continuar, vê "Verify JWT" em docs/supabase-setup.md.',
+    errSelf: 'Não podes fazer isso à tua própria conta.',
+    errIsAdmin: 'Os administradores só podem ser removidos no painel do Supabase.',
+    accounts: 'Contas',
+    kindChanged: 'Tipo de conta alterado',
+    removeAccess: 'Retirar acesso',
+    accessRemoved: 'Acesso retirado',
+    removeAccessConfirm:
+      'Retirar o acesso a {email}? Deixa de poder entrar e sai de todas as equipas. As equipas, jogadores e jogos ficam.',
+    cloudTeams: 'Equipas sincronizadas',
+    noCloudTeams: 'Ainda não há equipas sincronizadas.',
+    noMembers: 'Sem membros.',
+    noDirector: 'Sem diretor',
+    addMember: 'Adicionar',
+    pickAccount: 'Escolhe uma conta…',
+    roleChanged: 'Função alterada',
+    memberAdded: 'Adicionado',
+    teamsN: '{n} equipas',
+    teamsN1: '1 equipa',
   },
 };
 
-let lang = localStorage.getItem(LANG_KEY) || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en');
+let lang =
+  localStorage.getItem(LANG_KEY) || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en');
 document.documentElement.lang = lang;
 
 function t(key, vars = {}) {
@@ -331,7 +840,9 @@ function applyTheme() {
   if (meta) meta.content = resolved === 'light' ? '#eef0f3' : '#0e0f12';
 }
 applyTheme();
-darkMq.addEventListener?.('change', () => { if (theme === 'auto') applyTheme(); });
+darkMq.addEventListener?.('change', () => {
+  if (theme === 'auto') applyTheme();
+});
 
 const locale = () => (lang === 'pt' ? 'pt-PT' : 'en-GB');
 
@@ -339,8 +850,8 @@ const locale = () => (lang === 'pt' ? 'pt-PT' : 'en-GB');
 
 // Random ids that are unique across phones (needed once data is shared). Older records keep
 // their shorter ids; both are plain strings.
-const uid = () => (crypto.randomUUID ? crypto.randomUUID()
-  : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+const uid = () =>
+  crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
 
 // Synced record types (per-phone settings like db.formations and db.lastTeamId are not records).
 const RECORD_KINDS = ['teams', 'players', 'games'];
@@ -360,7 +871,9 @@ function normalize(data) {
   if (!Array.isArray(data.teams)) data.teams = [];
   data.sync = normalizeSync(data.sync);
   // Players of a cloud team are left alone (moving them would move them in the cloud too).
-  const orphans = data.players.filter((p) => !data.teams.some((tm) => tm.id === p.teamId) && !data.sync.teams[p.teamId]);
+  const orphans = data.players.filter(
+    (p) => !data.teams.some((tm) => tm.id === p.teamId) && !data.sync.teams[p.teamId],
+  );
   if (orphans.length) {
     if (!data.teams.length) data.teams.push({ id: uid(), club: '', name: '' });
     for (const p of orphans) p.teamId = data.teams[0].id;
@@ -413,11 +926,17 @@ const isCloudTeam = (teamId) => !!(teamId && db.sync.teams[teamId]);
 // Team of a record as it was at the last save (from its snapshot JSON).
 function savedTeamId(kind, id, key) {
   if (kind === 'teams') return id;
-  try { return JSON.parse(key).teamId ?? null; } catch { return null; }
+  try {
+    return JSON.parse(key).teamId ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function snapshotOf(data) {
-  return Object.fromEntries(RECORD_KINDS.map((kind) => [kind, new Map(data[kind].map((r) => [r.id, recordKey(r)]))]));
+  return Object.fromEntries(
+    RECORD_KINDS.map((kind) => [kind, new Map(data[kind].map((r) => [r.id, recordKey(r)]))]),
+  );
 }
 
 let saved = snapshotOf(db);
@@ -447,8 +966,9 @@ function trackChanges(now = Date.now()) {
     }
     // A record that is back (e.g. restored from a backup) is no longer deleted.
     const recs = new Map(db[kind].map((r) => [r.id, r]));
-    db.deleted = db.deleted.filter((d) => d.kind !== kind || !recs.has(d.id)
-      || (d.moved && !isCloudTeam(teamIdOf(kind, recs.get(d.id)))));
+    db.deleted = db.deleted.filter(
+      (d) => d.kind !== kind || !recs.has(d.id) || (d.moved && !isCloudTeam(teamIdOf(kind, recs.get(d.id)))),
+    );
     db.deleted.push(...gone);
   }
   saved = next;
@@ -490,8 +1010,6 @@ async function requestPersistence() {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 const main = $('#main');
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
 
 function fmtClock(ms) {
@@ -508,13 +1026,23 @@ function isoDate(d) {
 function fmtDate(g) {
   const d = new Date(`${g.date}T${g.time || '00:00'}`);
   if (isNaN(d)) return g.date || '';
-  return d.toLocaleString(locale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale(), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 const getGame = (id) => db.games.find((g) => g.id === id);
 const getTeam = (id) => db.teams.find((tm) => tm.id === id);
 // A team is shown as "Club - Age group" everywhere (screens, PDFs), or whichever of the two is set.
-const teamFull = (club, name) => [club, name].map((x) => String(x || '').trim()).filter(Boolean).join(' - ');
+const teamFull = (club, name) =>
+  [club, name]
+    .map((x) => String(x || '').trim())
+    .filter(Boolean)
+    .join(' - ');
 const teamLabel = (tm) => teamFull(tm.club, tm.name) || t('unnamedTeam');
 // The same for a game (which keeps a copy of its team's club and name).
 const gameTeam = (g) => teamFull(g.club, g.team);
@@ -540,7 +1068,8 @@ function periodName(g, n) {
   return t('pN', { n });
 }
 
-const formatLine = (g) => `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
+const formatLine = (g) =>
+  `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
 
 // "Club x Opponent" (or the other way round when playing away).
 function matchTitle(g) {
@@ -638,10 +1167,14 @@ function fmtNow(g) {
 function periodLabel(g) {
   const c = g.clock;
   switch (g.status) {
-    case 'scheduled': return t('notStarted', { n: g.periods, m: g.periodMin });
-    case 'live': return `${periodName(g, c.period)}${c.running ? '' : ` (${t('paused')})`}`;
-    case 'break': return t('breakAfter', { p: periodName(g, c.period) });
-    default: return t('fullTime');
+    case 'scheduled':
+      return t('notStarted', { n: g.periods, m: g.periodMin });
+    case 'live':
+      return `${periodName(g, c.period)}${c.running ? '' : ` (${t('paused')})`}`;
+    case 'break':
+      return t('breakAfter', { p: periodName(g, c.period) });
+    default:
+      return t('fullTime');
   }
 }
 
@@ -672,7 +1205,10 @@ function checkTime(g) {
     navigator.vibrate?.([500, 200, 500]);
     if (onThisGame) {
       render();
-      toast(t('autoStoppedToast', { p: periodName(g, p), m: g.maxExtra ?? 10 }), `<button data-action="fix-open">${t('fixTimes')}</button>`);
+      toast(
+        t('autoStoppedToast', { p: periodName(g, p), m: g.maxExtra ?? 10 }),
+        `<button data-action="fix-open">${t('fixTimes')}</button>`,
+      );
     }
     return;
   }
@@ -683,8 +1219,14 @@ function checkTime(g) {
     save();
     navigator.vibrate?.([300, 150, 300]);
     if (onThisGame) {
-      const msg = n === 0 ? t('timeUp', { p: periodName(g, p) }) : t('extraMin', { p: periodName(g, p), m: Math.floor((pt - regular) / 60000) });
-      toast(msg, `<button data-action="end-period">${last ? t('fullTime') : t('endPeriod', { p: periodName(g, p) })}</button>`);
+      const msg =
+        n === 0
+          ? t('timeUp', { p: periodName(g, p) })
+          : t('extraMin', { p: periodName(g, p), m: Math.floor((pt - regular) / 60000) });
+      toast(
+        msg,
+        `<button data-action="end-period">${last ? t('fullTime') : t('endPeriod', { p: periodName(g, p) })}</button>`,
+      );
     }
   }
 }
@@ -752,7 +1294,9 @@ function fitLineup(prev, starters, gkId, size) {
   const slots = Array(size).fill(null);
   slots[0] = starters.includes(gkId) ? gkId : null;
   const rest = starters.filter((id) => id !== slots[0]);
-  (prev || []).forEach((id, i) => { if (i > 0 && i < size && rest.includes(id)) slots[i] = id; });
+  (prev || []).forEach((id, i) => {
+    if (i > 0 && i < size && rest.includes(id)) slots[i] = id;
+  });
   const left = rest.filter((id) => !slots.includes(id));
   for (let i = 1; i < size; i++) if (!slots[i]) slots[i] = left.shift() ?? null;
   return slots;
@@ -770,7 +1314,8 @@ function derive(g) {
   let us = 0;
   let them = 0;
   const stats = {};
-  for (const id of g.squad) stats[id] = { intervals: [], open: null, goals: 0, yellow: 0, red: 0, redAt: null };
+  for (const id of g.squad)
+    stats[id] = { intervals: [], open: null, goals: 0, yellow: 0, red: 0, redAt: null };
   for (const id of g.starters) stats[id].open = 0;
 
   const close = (s, t) => {
@@ -790,9 +1335,16 @@ function derive(g) {
         if (slots.includes(e.playerId)) slots[slots.indexOf(e.playerId)] = e.inId;
         else if (slots.includes(null)) slots[slots.indexOf(null)] = e.inId;
         break;
-      case 'goal': s.goals++; us++; break;
-      case 'oppgoal': them++; break;
-      case 'yellow': s.yellow++; break;
+      case 'goal':
+        s.goals++;
+        us++;
+        break;
+      case 'oppgoal':
+        them++;
+        break;
+      case 'yellow':
+        s.yellow++;
+        break;
       case 'red':
         s.red++;
         s.redAt = e.t;
@@ -807,9 +1359,11 @@ function derive(g) {
         if (i > 0) [slots[0], slots[i]] = [e.playerId, slots[0]];
         break;
       }
-      case 'pos': { // move an outfield player to another outfield slot, swapping with whoever is there
+      case 'pos': {
+        // move an outfield player to another outfield slot, swapping with whoever is there
         const i = slots.indexOf(e.playerId);
-        if (i > 0 && e.slot > 0 && e.slot < slots.length) [slots[i], slots[e.slot]] = [slots[e.slot], e.playerId];
+        if (i > 0 && e.slot > 0 && e.slot < slots.length)
+          [slots[i], slots[e.slot]] = [slots[e.slot], e.playerId];
         break;
       }
     }
@@ -858,9 +1412,14 @@ function movePlayer(g, id, slot) {
     render();
     return;
   }
-  const eid = newGk ? addEvent(g, { type: 'gk', playerId: newGk }) : addEvent(g, { type: 'pos', playerId: id, slot });
+  const eid = newGk
+    ? addEvent(g, { type: 'gk', playerId: newGk })
+    : addEvent(g, { type: 'pos', playerId: id, slot });
   render();
-  toast(newGk ? t('inGoalToast', { p: g.names[newGk].name }) : t('posToast', { p: g.names[id].name }), undoBtn(eid));
+  toast(
+    newGk ? t('inGoalToast', { p: g.names[newGk].name }) : t('posToast', { p: g.names[id].name }),
+    undoBtn(eid),
+  );
 }
 
 // Substitution line: green ▲ for the player coming on, red ▼ for the one going off.
@@ -870,15 +1429,24 @@ const subLine = (inName, outName) =>
 
 function describe(g, e) {
   switch (e.type) {
-    case 'sub': return subLine(esc(pname(g, e.inId)), esc(pname(g, e.playerId)));
-    case 'goal': return t('evGoal', { p: esc(pname(g, e.playerId)) });
-    case 'oppgoal': return t('evOppGoal');
-    case 'yellow': return t('evYellow', { p: esc(pname(g, e.playerId)) });
-    case 'red': return t('evRed', { p: esc(pname(g, e.playerId)) });
-    case 'gk': return t('evGk', { p: esc(pname(g, e.playerId)) });
-    case 'pos': return t('evPos', { p: esc(pname(g, e.playerId)) });
-    case 'start': return t('evStart', { p: periodName(g, e.period) });
-    case 'end': return t('evEnd', { p: periodName(g, e.period) });
+    case 'sub':
+      return subLine(esc(pname(g, e.inId)), esc(pname(g, e.playerId)));
+    case 'goal':
+      return t('evGoal', { p: esc(pname(g, e.playerId)) });
+    case 'oppgoal':
+      return t('evOppGoal');
+    case 'yellow':
+      return t('evYellow', { p: esc(pname(g, e.playerId)) });
+    case 'red':
+      return t('evRed', { p: esc(pname(g, e.playerId)) });
+    case 'gk':
+      return t('evGk', { p: esc(pname(g, e.playerId)) });
+    case 'pos':
+      return t('evPos', { p: esc(pname(g, e.playerId)) });
+    case 'start':
+      return t('evStart', { p: periodName(g, e.period) });
+    case 'end':
+      return t('evEnd', { p: periodName(g, e.period) });
   }
   return '';
 }
@@ -888,7 +1456,8 @@ function describe(g, e) {
 // show at the start of the next one (a half-time sub is at 20:00, not 20:00 (+00:02)).
 function timeOf(g, e) {
   if (e.type === 'start') return fmtInPeriod(g, e.period, 0);
-  const brk = e.type !== 'end' && g.marks.find((m) => m.type === 'end' && m.t === e.t && m.period < g.periods);
+  const brk =
+    e.type !== 'end' && g.marks.find((m) => m.type === 'end' && m.t === e.t && m.period < g.periods);
   return brk ? fmtInPeriod(g, brk.period + 1, 0) : fmtAt(g, e.t);
 }
 
@@ -906,9 +1475,18 @@ function render() {
   closeSheet();
   const { view, id } = route();
   const views = {
-    games: viewGames, teams: viewTeams, players: viewTeams, team: viewTeam,
-    new: viewEdit, edit: viewEdit, game: viewGame, report: viewReport, profile: viewProfile, admin: viewAdmin,
-    stats: viewStats, player: viewPlayer,
+    games: viewGames,
+    teams: viewTeams,
+    players: viewTeams,
+    team: viewTeam,
+    new: viewEdit,
+    edit: viewEdit,
+    game: viewGame,
+    report: viewReport,
+    profile: viewProfile,
+    admin: viewAdmin,
+    stats: viewStats,
+    player: viewPlayer,
   };
   (views[view] || viewGames)(id);
   renderTabbar(view);
@@ -919,19 +1497,26 @@ function render() {
 
 const TAB_ICONS = {
   team: '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/>',
-  matches: '<circle cx="12" cy="12" r="9"/><path class="f" d="M12 7.5l4.3 3.1-1.6 5h-5.4l-1.6-5z"/><path d="M12 3v4.5M20.6 9.2l-4.3 1.4M17.3 19.4l-2.6-3.8M6.7 19.4l2.6-3.8M3.4 9.2l4.3 1.4"/>',
+  matches:
+    '<circle cx="12" cy="12" r="9"/><path class="f" d="M12 7.5l4.3 3.1-1.6 5h-5.4l-1.6-5z"/><path d="M12 3v4.5M20.6 9.2l-4.3 1.4M17.3 19.4l-2.6-3.8M6.7 19.4l2.6-3.8M3.4 9.2l4.3 1.4"/>',
   stats: '<path d="M5 20V12M10 20V5M15 20V9M20 20V14"/>',
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
   admin: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
 };
 
 function renderTabbar(view) {
-  const active = ['teams', 'team', 'players'].includes(view) ? 'team' : ['stats', 'player'].includes(view) ? 'stats'
-    : ['profile', 'admin'].includes(view) ? view : 'matches';
+  const active = ['teams', 'team', 'players'].includes(view)
+    ? 'team'
+    : ['stats', 'player'].includes(view)
+      ? 'stats'
+      : ['profile', 'admin'].includes(view)
+        ? view
+        : 'matches';
   const isAdmin = !!(cloud.session && cloud.account?.isAdmin && !cloud.needsPassword);
   const myTeam = db.teams.length === 1 ? `#/team/${db.teams[0].id}` : '#/teams';
   const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
-  const tab = (k, label, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
+  const tab = (k, label, attrs) =>
+    `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
   $('#tabbar').innerHTML =
     tab('team', t('tabTeam'), `href="${myTeam}"`) +
     tab('matches', t('tabMatches'), 'href="#/games"') +
@@ -951,11 +1536,15 @@ window.addEventListener('hashchange', () => {
 // `menu` is optional HTML for the items of a ⋯ menu shown on the right of the bar; `extra` is
 // shown right after the title (e.g. the "Read-only" pill).
 function bar(title, back, menu = '', extra = '') {
-  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1>${extra}${menu ? `
+  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1>${extra}${
+    menu
+      ? `
     <div class="menu">
       <button class="menu-btn" data-action="menu-toggle" aria-label="${t('menu')}" aria-haspopup="true" aria-expanded="false">⋯</button>
       <div class="menu-list" role="menu" hidden>${menu}</div>
-    </div>` : ''}</header>`;
+    </div>`
+      : ''
+  }</header>`;
 }
 
 function closeMenus() {
@@ -986,7 +1575,12 @@ function askConfirm({ title, message, ok, danger = false, cancel = true }) {
       window.removeEventListener('hashchange', onHash);
       resolve(v);
     };
-    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        done(false);
+      }
+    };
     const onHash = () => done(false);
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-v]');
@@ -1018,20 +1612,32 @@ function gamesTeam() {
 
 function viewGames() {
   const team = gamesTeam();
-  const games = db.games.filter((g) => !team || g.teamId === team).sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
+  const games = db.games
+    .filter((g) => !team || g.teamId === team)
+    .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
   main.innerHTML = `
     ${bar('⚽ Fut Academy Stats')}
     <div class="row gap">
       <a class="btn primary grow" href="#/new">${t('newGame')}</a>
       <a class="btn" href="#/teams">${t('teamsBtn', { n: db.teams.length })}</a>
     </div>
-    ${db.teams.length > 1 ? `<div class="pick-row filter" role="tablist">
-      ${[['', t('allTeams')], ...db.teams.map((tm) => [tm.id, esc(teamLabel(tm))])].map(([id, label]) =>
-        `<button class="pick ${id === team ? 'on' : ''}" role="tab" aria-selected="${id === team}" data-action="games-team" data-id="${id}">${label}</button>`).join('')}
-    </div>` : ''}
-    ${games.length
-      ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
-      : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`}`;
+    ${
+      db.teams.length > 1
+        ? `<div class="pick-row filter" role="tablist">
+      ${[['', t('allTeams')], ...db.teams.map((tm) => [tm.id, esc(teamLabel(tm))])]
+        .map(
+          ([id, label]) =>
+            `<button class="pick ${id === team ? 'on' : ''}" role="tab" aria-selected="${id === team}" data-action="games-team" data-id="${id}">${label}</button>`,
+        )
+        .join('')}
+    </div>`
+        : ''
+    }
+    ${
+      games.length
+        ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
+        : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`
+    }`;
 }
 
 // ---------- Cloud account (Supabase sign-in) ----------
@@ -1042,13 +1648,25 @@ function viewGames() {
 
 const ACCOUNT_KEY = 'fut-academy-stats.account'; // last known accounts row, for offline display
 const CLOUD = window.FAS_CONFIG || {};
-const sb = window.supabase?.createClient && CLOUD.supabaseUrl
-  ? window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'fut-academy-stats.auth' },
-  })
-  : null;
+const sb =
+  window.supabase?.createClient && CLOUD.supabaseUrl
+    ? window.supabase.createClient(CLOUD.supabaseUrl, CLOUD.supabaseKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          storageKey: 'fut-academy-stats.auth',
+        },
+      })
+    : null;
 
-const readJSON = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
+const readJSON = (key) => {
+  try {
+    return JSON.parse(localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+};
 // mode: 'signin' (email + password) | 'signup' (create account) | 'reset' (forgot password).
 // signup and reset are 3 steps: email -> code by email -> choose a password. `step` is
 // 'email' or 'code'; after the code the user is signed in and must choose a password
@@ -1056,18 +1674,33 @@ const readJSON = (key) => { try { return JSON.parse(localStorage.getItem(key)); 
 // mode for the step title).
 const SETPW_KEY = 'fut-academy-stats.setPassword';
 const cloud = {
-  session: null, account: readJSON(ACCOUNT_KEY), mode: 'signin', step: 'email', email: '', busy: false, error: '',
-  needsPassword: !!localStorage.getItem(SETPW_KEY), pwMode: localStorage.getItem(SETPW_KEY) || 'signup', changingPassword: false,
+  session: null,
+  account: readJSON(ACCOUNT_KEY),
+  mode: 'signin',
+  step: 'email',
+  email: '',
+  busy: false,
+  error: '',
+  needsPassword: !!localStorage.getItem(SETPW_KEY),
+  pwMode: localStorage.getItem(SETPW_KEY) || 'signup',
+  changingPassword: false,
 };
 
 // Re-render account screens; elsewhere just refresh the tab bar (the Admin tab follows the account).
-const renderIfProfile = () => { if (['profile', 'admin'].includes(route().view)) render(); else renderTabbar(route().view); };
+const renderIfProfile = () => {
+  if (['profile', 'admin'].includes(route().view)) render();
+  else renderTabbar(route().view);
+};
 
 // Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline.
 async function refreshAccount() {
   const uid = cloud.session?.user?.id;
   if (!sb || !uid) return;
-  const { data, error } = await sb.from('accounts').select('email, kind, is_admin').eq('user_id', uid).maybeSingle();
+  const { data, error } = await sb
+    .from('accounts')
+    .select('email, kind, is_admin')
+    .eq('user_id', uid)
+    .maybeSingle();
   if (error) return; // offline or transient: keep what we had
   cloud.account = data ? { email: data.email, kind: data.kind, isAdmin: data.is_admin } : { none: true };
   localStorage.setItem(ACCOUNT_KEY, JSON.stringify(cloud.account));
@@ -1098,14 +1731,16 @@ if (sb) {
 
 function authMessage(error) {
   const msg = `${error?.code || ''} ${error?.message || ''}`;
-  if (!navigator.onLine || error?.name === 'AuthRetryableFetchError' || error?.status === 0) return t('authOffline');
+  if (!navigator.onLine || error?.name === 'AuthRetryableFetchError' || error?.status === 0)
+    return t('authOffline');
   if (error?.status === 429 || /rate.?limit/i.test(msg)) return t('authRateLimit');
   if (/otp_disabled|signup_disabled|user_not_found|signups not allowed/i.test(msg)) return t('authNoAccess');
   if (/invalid_credentials|invalid login credentials/i.test(msg)) return t('authBadPassword');
   if (/same_password|should be different/i.test(msg)) return t('pwSame');
   if (/weak_password|password should|weak/i.test(msg)) return t('pwWeak');
   if (/otp_expired|invalid|expired/i.test(msg)) return t('authBadCode');
-  if (error instanceof Error && !error.status && !error.code && !error.name?.startsWith('Auth')) return esc(error.message);
+  if (error instanceof Error && !error.status && !error.code && !error.name?.startsWith('Auth'))
+    return esc(error.message);
   return t('authFailed', { msg: esc(error?.message || error) });
 }
 
@@ -1122,41 +1757,45 @@ async function cloudStep(fn) {
   renderIfProfile();
 }
 
-const sendCode = (email) => cloudStep(async () => {
-  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-  if (error) throw error;
-  Object.assign(cloud, { step: 'code', email });
-});
+const sendCode = (email) =>
+  cloudStep(async () => {
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error) throw error;
+    Object.assign(cloud, { step: 'code', email });
+  });
 
-const verifyCode = (token) => cloudStep(async () => {
-  const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
-  if (error) throw error;
-  // Signed in with a code: first time or forgotten password, so a password is chosen next.
-  const pwMode = cloud.mode === 'reset' ? 'reset' : 'signup';
-  localStorage.setItem(SETPW_KEY, pwMode);
-  Object.assign(cloud, { mode: 'signin', step: 'email', needsPassword: true, pwMode });
-});
+const verifyCode = (token) =>
+  cloudStep(async () => {
+    const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
+    if (error) throw error;
+    // Signed in with a code: first time or forgotten password, so a password is chosen next.
+    const pwMode = cloud.mode === 'reset' ? 'reset' : 'signup';
+    localStorage.setItem(SETPW_KEY, pwMode);
+    Object.assign(cloud, { mode: 'signin', step: 'email', needsPassword: true, pwMode });
+  });
 
-const signInPassword = (email, password) => cloudStep(async () => {
-  cloud.email = email; // kept if it fails (the form is drawn again), e.g. for "get a code"
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  Object.assign(cloud, { mode: 'signin', step: 'email', email: '' });
-  toast(t('signedIn'));
-});
+const signInPassword = (email, password) =>
+  cloudStep(async () => {
+    cloud.email = email; // kept if it fails (the form is drawn again), e.g. for "get a code"
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    Object.assign(cloud, { mode: 'signin', step: 'email', email: '' });
+    toast(t('signedIn'));
+  });
 
 // Supabase Auth stores only a bcrypt hash of the password (in auth.users); the app never keeps it.
-const setPassword = (pw, pw2) => cloudStep(async () => {
-  if (pw.length < 8) throw new Error(t('pwShort'));
-  if (pw !== pw2) throw new Error(t('pwMismatch'));
-  const { error } = await sb.auth.updateUser({ password: pw });
-  if (error) throw error;
-  const wasNew = cloud.needsPassword;
-  localStorage.removeItem(SETPW_KEY);
-  Object.assign(cloud, { needsPassword: false, changingPassword: false, email: '' });
-  toast(wasNew ? t('signedIn') : t('pwSaved'));
-  if (wasNew) setTimeout(syncNow); // sync was held back until the password was chosen
-});
+const setPassword = (pw, pw2) =>
+  cloudStep(async () => {
+    if (pw.length < 8) throw new Error(t('pwShort'));
+    if (pw !== pw2) throw new Error(t('pwMismatch'));
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if (error) throw error;
+    const wasNew = cloud.needsPassword;
+    localStorage.removeItem(SETPW_KEY);
+    Object.assign(cloud, { needsPassword: false, changingPassword: false, email: '' });
+    toast(wasNew ? t('signedIn') : t('pwSaved'));
+    if (wasNew) setTimeout(syncNow); // sync was held back until the password was chosen
+  });
 
 function setPasswordForm(busy, err, cancel) {
   const step3 = cloud.needsPassword;
@@ -1188,20 +1827,35 @@ function accountSectionBody() {
   }
   if (cloud.session) {
     const a = cloud.account;
-    const kind = a && !a.none ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')].filter(Boolean).join(' · ') : '';
+    const kind =
+      a && !a.none
+        ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')]
+            .filter(Boolean)
+            .join(' · ')
+        : '';
     return `${head}
       <ul class="list settings">
         <li class="item"><span class="grow"><strong class="acct-email" title="${esc(cloud.session.user.email)}">${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span></li>
-        ${canSync() ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
-          <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>` : ''}
+        ${
+          canSync()
+            ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
+          <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>`
+            : ''
+        }
       </ul>
       ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
-      ${cloud.changingPassword ? setPasswordForm(busy, err, true)
-        : `${err}<div class="row gap wrap acct-actions">
+      ${
+        cloud.changingPassword
+          ? setPasswordForm(busy, err, true)
+          : `${err}<div class="row gap wrap acct-actions">
             <button class="btn small ghost" data-action="change-password">${t('changePassword')}</button>
-            <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></div>`}`;
+            <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></div>`
+      }`;
   }
-  const tabs = cloud.mode === 'reset' ? '' : `<div class="seg big auth-tabs" role="tablist">
+  const tabs =
+    cloud.mode === 'reset'
+      ? ''
+      : `<div class="seg big auth-tabs" role="tablist">
       <button role="tab" class="${cloud.mode === 'signin' ? 'on' : ''}" aria-selected="${cloud.mode === 'signin'}" data-action="auth-mode" data-v="signin" ${busy}>${t('tabSignIn')}</button>
       <button role="tab" class="${cloud.mode === 'signup' ? 'on' : ''}" aria-selected="${cloud.mode === 'signup'}" data-action="auth-mode" data-v="signup" ${busy}>${t('tabSignUp')}</button>
     </div>`;
@@ -1219,7 +1873,10 @@ function accountSectionBody() {
   // signup / reset: step 1 (email) or step 2 (code)
   const title = cloud.mode === 'reset' ? `<h3 class="sub-title">${t('resetTitle')}</h3>` : '';
   const intro = cloud.mode === 'reset' ? t('resetIntro') : t('signUpIntro');
-  const back = cloud.mode === 'reset' ? `<p class="hint"><button class="link-btn" data-action="auth-mode" data-v="signin" ${busy}>${t('backToSignIn')}</button></p>` : '';
+  const back =
+    cloud.mode === 'reset'
+      ? `<p class="hint"><button class="link-btn" data-action="auth-mode" data-v="signin" ${busy}>${t('backToSignIn')}</button></p>`
+      : '';
   if (cloud.step === 'code') {
     return `${head}${tabs}<section class="auth-steps">${title}
       <p class="step-label">${t('stepOf', { n: 2 })}</p>
@@ -1265,35 +1922,67 @@ const COLUMNS = {
   players: 'id, team_id, number, name, full_name, updated_at, deleted_at',
   games: 'id, team_id, data, updated_at, deleted_at',
 };
-const validDate = (s) => (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) ? s : null);
+const validDate = (s) =>
+  typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) ? s : null;
 // App record -> database row. deleted_at: null, so uploading a record again undeletes it.
 const toRow = {
   teams: (r) => ({ id: r.id, club: r.club || '', name: r.name || '', deleted_at: null }),
-  players: (r) => ({ id: r.id, team_id: r.teamId, number: String(r.number ?? ''), name: r.name || '', full_name: r.fullName || '', deleted_at: null }),
-  games: ({ updatedAt, dirty, ...g }) => ({ id: g.id, team_id: g.teamId, date: validDate(g.date), status: g.status ?? null, data: g, deleted_at: null }),
+  players: (r) => ({
+    id: r.id,
+    team_id: r.teamId,
+    number: String(r.number ?? ''),
+    name: r.name || '',
+    full_name: r.fullName || '',
+    deleted_at: null,
+  }),
+  games: ({ updatedAt, dirty, ...g }) => ({
+    id: g.id,
+    team_id: g.teamId,
+    date: validDate(g.date),
+    status: g.status ?? null,
+    data: g,
+    deleted_at: null,
+  }),
 };
 // Database row -> app record (the app stores shirt numbers as text too).
 const fromRow = {
   teams: (row) => ({ id: row.id, club: row.club ?? '', name: row.name ?? '' }),
-  players: (row) => ({ id: row.id, teamId: row.team_id, number: row.number ?? '', name: row.name ?? '', fullName: row.full_name ?? '' }),
+  players: (row) => ({
+    id: row.id,
+    teamId: row.team_id,
+    number: row.number ?? '',
+    name: row.name ?? '',
+    fullName: row.full_name ?? '',
+  }),
   games: (row) => ({ ...row.data, id: row.id, teamId: row.team_id }),
 };
 // Key-order-independent JSON (jsonb doesn't keep key order), without the sync fields.
-const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(',')}]`
-  : v && typeof v === 'object' ? `{${Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(',')}}`
-    : JSON.stringify(v));
-const sameRecord = (a, b) => canon({ ...a, updatedAt: undefined, dirty: undefined }) === canon({ ...b, updatedAt: undefined, dirty: undefined });
+const canon = (v) =>
+  Array.isArray(v)
+    ? `[${v.map(canon).join(',')}]`
+    : v && typeof v === 'object'
+      ? `{${Object.keys(v)
+          .filter((k) => v[k] !== undefined)
+          .sort()
+          .map((k) => `${JSON.stringify(k)}:${canon(v[k])}`)
+          .join(',')}}`
+      : JSON.stringify(v);
+const sameRecord = (a, b) =>
+  canon({ ...a, updatedAt: undefined, dirty: undefined }) ===
+  canon({ ...b, updatedAt: undefined, dirty: undefined });
 
 const roleOf = (teamId) => db.sync.teams[teamId] || null;
 const canSync = () => !!(sb && cloud.session && cloud.account && !cloud.account.none && !cloud.needsPassword);
 const canUpload = () => canSync() && (cloud.account.kind === 'director' || cloud.account.isAdmin);
 const localTeams = () => db.teams.filter((tm) => !isCloudTeam(tm.id));
 const pushable = (kind, r) => r.dirty && roleOf(teamIdOf(kind, r)) === 'director';
-const hasCloudChanges = () => RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && isCloudTeam(teamIdOf(kind, r))))
-  || db.deleted.some((d) => isCloudTeam(d.teamId));
+const hasCloudChanges = () =>
+  RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && isCloudTeam(teamIdOf(kind, r)))) ||
+  db.deleted.some((d) => isCloudTeam(d.teamId));
 // Changes this phone still has to upload.
-const pendingCount = () => RECORD_KINDS.reduce((n, kind) => n + db[kind].filter((r) => pushable(kind, r)).length, 0)
-  + db.deleted.filter((d) => roleOf(d.teamId) === 'director').length;
+const pendingCount = () =>
+  RECORD_KINDS.reduce((n, kind) => n + db[kind].filter((r) => pushable(kind, r)).length, 0) +
+  db.deleted.filter((d) => roleOf(d.teamId) === 'director').length;
 
 const syncState = { status: 'idle', error: '' }; // status: idle | running | ok | offline | failed
 const forceFull = new Set(); // teams to download in full on the next pull (role changed, refused)
@@ -1312,7 +2001,9 @@ class SyncError extends Error {
 }
 const isOffline = (e) => e?.status === 0 || !navigator.onLine || /fetch|network/i.test(e?.message || '');
 const ABORTED = new Error('sync aborted');
-const checkEpoch = (epoch) => { if (epoch !== syncEpoch) throw ABORTED; };
+const checkEpoch = (epoch) => {
+  if (epoch !== syncEpoch) throw ABORTED;
+};
 
 // Remove teams (and their players, games and pending deletes) from this phone, without
 // leaving tombstones: they are only gone from here, not from the cloud.
@@ -1344,7 +2035,8 @@ function scheduleSync(ms = 3000) {
 // Single flight: a call while a sync runs makes it run once more afterwards.
 function syncNow() {
   // Signed in but the account row couldn't be loaded yet (offline at start): load it first.
-  if (sb && cloud.session && !cloud.account) return refreshAccount().then(() => (cloud.account ? syncNow() : undefined));
+  if (sb && cloud.session && !cloud.account)
+    return refreshAccount().then(() => (cloud.account ? syncNow() : undefined));
   if (!canSync()) return Promise.resolve();
   if (syncRun) {
     syncAgain = true;
@@ -1355,7 +2047,9 @@ function syncNow() {
       syncAgain = false;
       await syncOnce();
     } while (syncAgain && canSync());
-  })().finally(() => { syncRun = null; });
+  })().finally(() => {
+    syncRun = null;
+  });
   return syncRun;
 }
 
@@ -1387,7 +2081,8 @@ async function syncOnce() {
   }
   // The team screen was waiting for its upload to show People.
   const ppl = remote.people;
-  if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId)) loadPeople(ppl.teamId);
+  if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId))
+    loadPeople(ppl.teamId);
   if (offerUploadAfterSync && syncState.status === 'ok') {
     offerUploadAfterSync = false;
     if (canUpload() && localTeams().length) offerUpload();
@@ -1422,7 +2117,9 @@ async function push(epoch) {
           continue;
         }
         // Edits made while the request was on its way stay dirty for the next push.
-        batch.forEach((r, j) => { if (recordKey(r) === keys[j]) r.dirty = false; });
+        batch.forEach((r, j) => {
+          if (recordKey(r) === keys[j]) r.dirty = false;
+        });
         if (kind === 'teams') db.sync.uploads = db.sync.uploads.filter((id) => id !== tid);
         saveQuiet();
       }
@@ -1436,12 +2133,20 @@ async function push(epoch) {
     if (role === 'director' && !refused.has(d.teamId)) toSend.push(d);
     else if (role === 'coach') forceFull.add(d.teamId); // get the deleted record back
   }
-  db.deleted = db.deleted.filter((d) => toSend.includes(d) || (refused.has(d.teamId) && roleOf(d.teamId) === 'director'));
+  db.deleted = db.deleted.filter(
+    (d) => toSend.includes(d) || (refused.has(d.teamId) && roleOf(d.teamId) === 'director'),
+  );
   for (const kind of RECORD_KINDS) {
     const ds = toSend.filter((d) => d.kind === kind);
     for (let i = 0; i < ds.length; i += PUSH_BATCH) {
       const batch = ds.slice(i, i + PUSH_BATCH);
-      const { error, status } = await sb.from(kind).update({ deleted_at: new Date().toISOString() }).in('id', batch.map((d) => d.id));
+      const { error, status } = await sb
+        .from(kind)
+        .update({ deleted_at: new Date().toISOString() })
+        .in(
+          'id',
+          batch.map((d) => d.id),
+        );
       checkEpoch(epoch);
       if (error) throw new SyncError(error, status);
       db.deleted = db.deleted.filter((d) => !batch.includes(d));
@@ -1474,9 +2179,15 @@ async function fetchRows(kind, teamIds, since, epoch) {
   if (!teamIds.length) return [];
   const rows = [];
   for (let from = 0; ; from += PAGE) {
-    let q = sb.from(kind).select(COLUMNS[kind]).in(kind === 'teams' ? 'id' : 'team_id', teamIds);
+    let q = sb
+      .from(kind)
+      .select(COLUMNS[kind])
+      .in(kind === 'teams' ? 'id' : 'team_id', teamIds);
     if (since) q = q.gt('updated_at', since);
-    const { data, error, status } = await q.order('updated_at').order('id').range(from, from + PAGE - 1);
+    const { data, error, status } = await q
+      .order('updated_at')
+      .order('id')
+      .range(from, from + PAGE - 1);
     checkEpoch(epoch);
     if (error) throw new SyncError(error, status);
     rows.push(...data);
@@ -1485,7 +2196,11 @@ async function fetchRows(kind, teamIds, since, epoch) {
 }
 
 async function pull(epoch, userId) {
-  const { data: members, error, status } = await sb.from('team_members').select('team_id, role').eq('user_id', userId);
+  const {
+    data: members,
+    error,
+    status,
+  } = await sb.from('team_members').select('team_id, role').eq('user_id', userId);
   checkEpoch(epoch);
   if (error) throw new SyncError(error, status);
   const prev = db.sync.teams;
@@ -1495,14 +2210,29 @@ async function pull(epoch, userId) {
   const ids = Object.keys(teams);
   // Download in full: new teams, teams whose role changed, refused ones, and coach teams with
   // local edits (so the cloud version comes back).
-  const full = new Set(ids.filter((id) => !prev[id] || prev[id] !== teams[id] || forceFull.has(id)
-    || (teams[id] === 'coach' && RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && teamIdOf(kind, r) === id)))));
-  const since = db.sync.lastPulledAt ? new Date(Date.parse(db.sync.lastPulledAt) - PULL_OVERLAP_MS).toISOString() : null;
+  const full = new Set(
+    ids.filter(
+      (id) =>
+        !prev[id] ||
+        prev[id] !== teams[id] ||
+        forceFull.has(id) ||
+        (teams[id] === 'coach' &&
+          RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && teamIdOf(kind, r) === id))),
+    ),
+  );
+  const since = db.sync.lastPulledAt
+    ? new Date(Date.parse(db.sync.lastPulledAt) - PULL_OVERLAP_MS).toISOString()
+    : null;
   const rows = {};
   for (const kind of RECORD_KINDS) {
     rows[kind] = [
-      ...await fetchRows(kind, ids.filter((id) => !full.has(id)), since, epoch),
-      ...await fetchRows(kind, [...full], null, epoch),
+      ...(await fetchRows(
+        kind,
+        ids.filter((id) => !full.has(id)),
+        since,
+        epoch,
+      )),
+      ...(await fetchRows(kind, [...full], null, epoch)),
     ];
   }
 
@@ -1590,10 +2320,14 @@ function offerUpload() {
     <h3>${t('uploadTitle')}</h3>
     <p class="hint">${t('uploadHint')}</p>
     <form class="form" data-form="upload-teams">
-      <div class="check-list">${localTeams().map((tm) => `
+      <div class="check-list">${localTeams()
+        .map(
+          (tm) => `
         <label class="check"><input type="checkbox" name="team" value="${esc(tm.id)}" checked>
           <span class="grow"><strong>${esc(teamLabel(tm))}</strong>
-          <span class="muted small sub-line">${t('playersCount', { n: teamPlayers(tm.id).length })}</span></span></label>`).join('')}
+          <span class="muted small sub-line">${t('playersCount', { n: teamPlayers(tm.id).length })}</span></span></label>`,
+        )
+        .join('')}
       </div>
       <button class="btn primary block">${t('uploadSelected')}</button>
       <button type="button" class="btn ghost block" data-action="close-sheet">${t('notNow')}</button>
@@ -1623,7 +2357,8 @@ function syncStatusText() {
   if (status === 'running') s = t('syncing');
   else if (status === 'offline') s = n ? plural('syncWaitingOffline', n) : t('syncOffline');
   else if (status === 'failed') s = t('syncFailed');
-  else if (db.sync.lastSyncAt) s = t('syncedAgo', { ago: agoText(db.sync.lastSyncAt) }) + (n ? ` · ${plural('syncWaiting', n)}` : '');
+  else if (db.sync.lastSyncAt)
+    s = t('syncedAgo', { ago: agoText(db.sync.lastSyncAt) }) + (n ? ` · ${plural('syncWaiting', n)}` : '');
   else s = n ? plural('syncWaiting', n) : t('syncNever');
   return error ? `${s}<br>${esc(error)}` : s;
 }
@@ -1639,17 +2374,27 @@ function showSyncStatus() {
 let renderPending = false;
 function canRenderNow() {
   const a = document.activeElement;
-  return $('#sheet').hidden && !document.querySelector('.dialog') && !document.querySelector('.menu-list:not([hidden])')
-    && !(a && a.matches('input, textarea, select')) && !drag.active && !drag.timer;
+  return (
+    $('#sheet').hidden &&
+    !document.querySelector('.dialog') &&
+    !document.querySelector('.menu-list:not([hidden])') &&
+    !(a && a.matches('input, textarea, select')) &&
+    !drag.active &&
+    !drag.timer
+  );
 }
 function renderSoon() {
   if (canRenderNow()) render();
   else renderPending = true;
 }
-setInterval(() => { if (renderPending && canRenderNow()) render(); }, 1500);
+setInterval(() => {
+  if (renderPending && canRenderNow()) render();
+}, 1500);
 
 // When to sync: coming back to the app, the network returning, and every minute while open.
-document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNow(); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) syncNow();
+});
 window.addEventListener('online', () => syncNow());
 setInterval(() => {
   if (document.hidden || !canSync()) return;
@@ -1684,18 +2429,40 @@ function viewReadOnly() {
 // delete-goal, undo-toast, undo, edit-info, delete-game (and any action added later, until it is
 // listed here). The admin-* actions are only on the Admin page, which is never read-only.
 const READ_ONLY_OK = new Set([
-  'close-sheet', 'menu-toggle', 'games-team', 'soon', // navigation
-  'theme', 'lang', 'backup', // settings
-  'signin-back', 'signin-resend', 'sign-out', 'sync-now', 'privacy', // account and sync
-  'auth-mode', 'change-password', 'cancel-password', 'profile-section',
-  'pdf', 'player-pdf', // share the report / a player's stats sheet
-  'stats-team', 'stats-season', // stats page filters
+  'close-sheet',
+  'menu-toggle',
+  'games-team',
+  'soon', // navigation
+  'theme',
+  'lang',
+  'backup', // settings
+  'signin-back',
+  'signin-resend',
+  'sign-out',
+  'sync-now',
+  'privacy', // account and sync
+  'auth-mode',
+  'change-password',
+  'cancel-password',
+  'profile-section',
+  'pdf',
+  'player-pdf', // share the report / a player's stats sheet
+  'stats-team',
+  'stats-season', // stats page filters
   'player', // opens a read-only info sheet for coaches (see actions.player)
-  'team-section', 'people-reload', 'leave-team', // team screen sections (anyone may leave a team)
+  'team-section',
+  'people-reload',
+  'leave-team', // team screen sections (anyone may leave a team)
   'new-team', // creates a team of their own
 ]);
 // Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
-const READ_ONLY_FORMS = new Set(['signin-email', 'signin-code', 'signin-password', 'set-password', 'upload-teams']);
+const READ_ONLY_FORMS = new Set([
+  'signin-email',
+  'signin-code',
+  'signin-password',
+  'set-password',
+  'upload-teams',
+]);
 
 const refuseReadOnly = () => toast(t('readOnlyToast'));
 const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
@@ -1704,7 +2471,9 @@ const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
 function openPlayerInfo(g, id) {
   const d = derive(g);
   const s = d.stats[id];
-  const bits = [s.goals && `⚽ ${s.goals}`, s.yellow && `🟨 ${s.yellow}`, s.red && `🟥 ${s.red}`].filter(Boolean).join(' · ');
+  const bits = [s.goals && `⚽ ${s.goals}`, s.yellow && `🟨 ${s.yellow}`, s.red && `🟥 ${s.red}`]
+    .filter(Boolean)
+    .join(' · ');
   openSheet(`
     <div class="sheet-head">
       <h3>${esc(pname(g, id))}${id === d.gk ? gkTag() : ''}</h3>
@@ -1749,8 +2518,11 @@ async function fetchMembers(teamIds) {
   const ids = [...new Set(rows.map((r) => r.user_id))];
   const accts = ids.length ? await q(sb.from('accounts').select('user_id, email').in('user_id', ids)) : [];
   const email = new Map(accts.map((a) => [a.user_id, a.email]));
-  return rows.map((r) => ({ ...r, email: email.get(r.user_id) || '?' }))
-    .sort((a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email));
+  return rows
+    .map((r) => ({ ...r, email: email.get(r.user_id) || '?' }))
+    .sort(
+      (a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email),
+    );
 }
 
 async function loadPeople(teamId) {
@@ -1782,13 +2554,20 @@ function peopleHtml(teamId) {
   const director = roleOf(teamId) === 'director';
   const msg = st.msg ? `<p class="hint ${st.msg.ok ? 'ok' : 'warn'}" role="status">${st.msg.text}</p>` : '';
   return `
-    <ul class="list people">${st.members.map((m) => `
+    <ul class="list people">${st.members
+      .map(
+        (m) => `
       <li class="item">
         <span class="grow"><span class="email">${esc(m.email)}</span>${m.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}</span>
         <span class="badge ${m.role === 'director' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
-        ${director && m.role === 'coach' && m.user_id !== me
-          ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>` : ''}
-      </li>`).join('')}</ul>
+        ${
+          director && m.role === 'coach' && m.user_id !== me
+            ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>`
+            : ''
+        }
+      </li>`,
+      )
+      .join('')}</ul>
     ${msg}
     <button class="btn ghost danger small" data-action="leave-team">${t('leaveTeam')}</button>`;
 }
@@ -1827,7 +2606,9 @@ async function addCoach(teamId, email) {
 
 // Delete a membership; RLS skips rows it doesn't allow silently, so check something was deleted.
 async function deleteMember(teamId, userId) {
-  const rows = await q(sb.from('team_members').delete().eq('team_id', teamId).eq('user_id', userId).select('user_id'));
+  const rows = await q(
+    sb.from('team_members').delete().eq('team_id', teamId).eq('user_id', userId).select('user_id'),
+  );
   if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
 }
 
@@ -1909,44 +2690,74 @@ function viewAdmin() {
     <p class="hint">${t('giveAccessHint')}</p>`;
   let body;
   if (!st || st.status === 'loading') body = `<p class="hint">${t('loading')}</p>`;
-  else if (st.status !== 'ok') body = `<p class="hint warn">${t('needsInternet')}</p><button class="btn small ghost" data-action="admin-reload">${t('tryAgain')}</button>`;
+  else if (st.status !== 'ok')
+    body = `<p class="hint warn">${t('needsInternet')}</p><button class="btn small ghost" data-action="admin-reload">${t('tryAgain')}</button>`;
   else {
     const email = new Map(st.accounts.map((a) => [a.user_id, a.email]));
     const teamsOf = (uid) => st.members.filter((m) => m.user_id === uid).length;
-    const kindSelect = (a) => `<select class="mini" data-change="admin-kind" data-id="${esc(a.user_id)}" aria-label="${t('accountKind')}">
+    const kindSelect = (
+      a,
+    ) => `<select class="mini" data-change="admin-kind" data-id="${esc(a.user_id)}" aria-label="${t('accountKind')}">
       ${['director', 'coach'].map((k) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('')}</select>`;
     const accounts = `
       <h2>${t('accounts')} <span class="muted small">${st.accounts.length}</span></h2>
-      <ul class="list admin-accounts">${st.accounts.map((a) => `
+      <ul class="list admin-accounts">${st.accounts
+        .map(
+          (a) => `
         <li class="item wrap">
           <span class="grow"><span class="email">${esc(a.email)}</span>${a.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}
             <div class="muted small">${a.is_admin ? `${t('acctAdmin')} · ` : ''}${plural('teamsN', teamsOf(a.user_id))}</div></span>
-          ${a.user_id === me || a.is_admin ? `<span class="muted small">${kindLabel(a.kind)}</span>` : `${kindSelect(a)}
-          <button class="btn small ghost danger" data-action="admin-remove-account" data-id="${esc(a.user_id)}" aria-label="${t('removeAccess')}">✕</button>`}
-        </li>`).join('')}</ul>`;
-    const roleSelect = (m) => `<select class="mini" data-change="admin-role" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
+          ${
+            a.user_id === me || a.is_admin
+              ? `<span class="muted small">${kindLabel(a.kind)}</span>`
+              : `${kindSelect(a)}
+          <button class="btn small ghost danger" data-action="admin-remove-account" data-id="${esc(a.user_id)}" aria-label="${t('removeAccess')}">✕</button>`
+          }
+        </li>`,
+        )
+        .join('')}</ul>`;
+    const roleSelect = (
+      m,
+    ) => `<select class="mini" data-change="admin-role" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
       ${['director', 'coach'].map((r) => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}</select>`;
-    const teams = st.teams.map((tm) => {
-      const ms = st.members.filter((m) => m.team_id === tm.id)
-        .map((m) => ({ ...m, email: email.get(m.user_id) || '?' }))
-        .sort((a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email));
-      const others = st.accounts.filter((a) => !ms.some((m) => m.user_id === a.user_id));
-      return `<li class="card admin-team">
+    const teams = st.teams
+      .map((tm) => {
+        const ms = st.members
+          .filter((m) => m.team_id === tm.id)
+          .map((m) => ({ ...m, email: email.get(m.user_id) || '?' }))
+          .sort(
+            (a, b) =>
+              (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email),
+          );
+        const others = st.accounts.filter((a) => !ms.some((m) => m.user_id === a.user_id));
+        return `<li class="card admin-team">
         <div class="row gap"><strong class="grow">${esc(teamLabel(tm))}</strong>
           ${ms.some((m) => m.role === 'director') ? '' : `<span class="badge warn">${t('noDirector')}</span>`}</div>
-        ${ms.length ? `<ul class="members">${ms.map((m) => `
+        ${
+          ms.length
+            ? `<ul class="members">${ms
+                .map(
+                  (m) => `
           <li class="row gap"><span class="grow email">${esc(m.email)}</span>${roleSelect(m)}
-            <button class="btn small ghost danger" data-action="admin-remove-member" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button></li>`).join('')}</ul>`
-          : `<p class="muted small">${t('noMembers')}</p>`}
-        ${others.length ? `<form class="row gap add-member" data-form="admin-add-member" data-tid="${esc(tm.id)}">
+            <button class="btn small ghost danger" data-action="admin-remove-member" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button></li>`,
+                )
+                .join('')}</ul>`
+            : `<p class="muted small">${t('noMembers')}</p>`
+        }
+        ${
+          others.length
+            ? `<form class="row gap add-member" data-form="admin-add-member" data-tid="${esc(tm.id)}">
           <select class="grow" name="user" required aria-label="${t('pickAccount')}"><option value="">${t('pickAccount')}</option>
             ${others.map((a) => `<option value="${esc(a.user_id)}">${esc(a.email)}</option>`).join('')}</select>
           <select class="mini" name="role" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
             <option value="coach">${t('roleCoach')}</option><option value="director">${t('roleDirector')}</option></select>
           <button class="btn small">${t('addMember')}</button>
-        </form>` : ''}
+        </form>`
+            : ''
+        }
       </li>`;
-    }).join('');
+      })
+      .join('');
     body = `${accounts}
       <h2>${t('cloudTeams')} <span class="muted small">${st.teams.length}</span></h2>
       ${st.teams.length ? `<ul class="list">${teams}</ul>` : `<p class="empty">${t('noCloudTeams')}</p>`}`;
@@ -1964,13 +2775,27 @@ function viewAdmin() {
 let profileOpen = 'account';
 
 function viewProfile() {
-  const seg = (action, current, options) => `<span class="seg big" role="group">${options.map(([v, label]) =>
-    `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`).join('')}</span>`;
+  const seg = (action, current, options) =>
+    `<span class="seg big" role="group">${options
+      .map(
+        ([v, label]) =>
+          `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`,
+      )
+      .join('')}</span>`;
   const busyAuth = cloud.needsPassword || cloud.step === 'code';
   const open = busyAuth ? 'account' : profileOpen;
   const a = cloud.account;
   const accountSum = cloud.session
-    ? (cloud.needsPassword ? t('stepOf', { n: 3 }) : [cloud.session.user.email, a && !a.none && (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach'))].filter(Boolean).join(' · '))
+    ? cloud.needsPassword
+      ? t('stepOf', { n: 3 })
+      : [
+          cloud.session.user.email,
+          a &&
+            !a.none &&
+            (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')),
+        ]
+          .filter(Boolean)
+          .join(' · ')
     : t('notSignedIn');
   const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[theme];
   const section = (id, title, summary, body) => `
@@ -1985,20 +2810,37 @@ function viewProfile() {
     ${bar(t('tabProfile'))}
     <div class="accordion">
     ${section('account', t('account'), accountSum, accountSection())}
-    ${section('settings', t('settings'), `${lang === 'pt' ? 'Português' : 'English'} · ${themeLabel}`, `
+    ${section(
+      'settings',
+      t('settings'),
+      `${lang === 'pt' ? 'Português' : 'English'} · ${themeLabel}`,
+      `
       <ul class="list settings">
         <li class="item"><span class="grow">${t('language')}</span>
-          ${seg('lang', lang, [['en', 'English'], ['pt', 'Português']])}</li>
+          ${seg('lang', lang, [
+            ['en', 'English'],
+            ['pt', 'Português'],
+          ])}</li>
         <li class="item wrap"><span class="grow">${t('theme')}</span>
-          ${seg('theme', theme, [['light', `☀️ ${t('themeLight')}`], ['dark', `🌙 ${t('themeDark')}`], ['auto', t('themeAuto')]])}</li>
-      </ul>`)}
-    ${section('backup', t('backupTitle'), t('backupSummary'), `
+          ${seg('theme', theme, [
+            ['light', `☀️ ${t('themeLight')}`],
+            ['dark', `🌙 ${t('themeDark')}`],
+            ['auto', t('themeAuto')],
+          ])}</li>
+      </ul>`,
+    )}
+    ${section(
+      'backup',
+      t('backupTitle'),
+      t('backupSummary'),
+      `
       <p class="hint">${t('backupHint')}</p>
       ${persisted === null ? '' : `<p class="hint ${persisted ? 'ok' : 'warn'}">${persisted ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
       <div class="row gap">
         <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
         <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
-      </div>`)}
+      </div>`,
+    )}
     </div>`;
 }
 
@@ -2010,10 +2852,7 @@ function gameCard(g) {
   // Our goals green, theirs red, both neutral on a draw.
   const score = scoreHtml(g, d, '–', true);
   // Only what helps pick a game out of the list (the title already names the team): date and round.
-  const meta = [
-    esc(fmtDate(g)),
-    g.round ? t('roundN', { n: esc(g.round) }) : '',
-  ].filter(Boolean).join(' · ');
+  const meta = [esc(fmtDate(g)), g.round ? t('roundN', { n: esc(g.round) }) : ''].filter(Boolean).join(' · ');
   return `<li><a class="card game ${res}" href="${href}">
     <div class="grow">
       <strong>${esc(matchTitle(g))}</strong>
@@ -2032,7 +2871,11 @@ function viewTeams() {
   main.innerHTML = `
     ${bar(t('teams'), '#/games')}
     <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
-    ${db.teams.length ? `<ul class="list">${db.teams.map((tm) => `
+    ${
+      db.teams.length
+        ? `<ul class="list">${db.teams
+            .map(
+              (tm) => `
       <li><a class="card" href="#/team/${tm.id}">
         <div class="grow">
           <strong>${esc(teamLabel(tm))}</strong>
@@ -2041,7 +2884,11 @@ function viewTeams() {
           <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
           ${teamBadge(tm)}
         </div>
-      </a></li>`).join('')}</ul>` : `<p class="empty">${t('noTeams')}</p>`}`;
+      </a></li>`,
+            )
+            .join('')}</ul>`
+        : `<p class="empty">${t('noTeams')}</p>`
+    }`;
 }
 
 let newCloudTeam = null; // id of a team just created as a cloud team (shows a note once)
@@ -2052,9 +2899,10 @@ function viewTeam(id) {
   const ps = teamPlayers(id).sort(byNumber);
   const ro = readOnlyTeam(id);
   const cloudTeam = isCloudTeam(id);
-  const field = (key, label, ph) => (ro
-    ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
-    : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`);
+  const field = (key, label, ph) =>
+    ro
+      ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
+      : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
   main.innerHTML = `
     ${bar(esc(teamLabel(tm)), '#/teams', teamMenu(id, ro), ro ? readOnlyPill() : '')}
     ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
@@ -2064,21 +2912,49 @@ function viewTeam(id) {
       ${field('club', t('club'), t('clubPh'))}
       ${field('name', t('ageGroup'), t('teamPh'))}
     </div>
-    ${canUpload() && !cloudTeam ? `<div class="upload-team">
+    ${
+      canUpload() && !cloudTeam
+        ? `<div class="upload-team">
       <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
       <p class="hint">${t('uploadTeamHint')}</p>
-    </div>` : ''}
+    </div>`
+        : ''
+    }
     <div class="accordion team-sections">
-    ${teamSection('players', t('players'), plural('playersCount', ps.length), ro ? '' : 'add-player', ps.length ? `<ul class="list">${ps.map((p) => `
+    ${teamSection(
+      'players',
+      t('players'),
+      plural('playersCount', ps.length),
+      ro ? '' : 'add-player',
+      ps.length
+        ? `<ul class="list">${ps
+            .map(
+              (p) => `
       <li class="item">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow">${esc(p.name)}${p.fullName ? `<div class="muted small">${esc(p.fullName)}</div>` : ''}</span>
-        ${ro ? '' : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
-        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`}
-      </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`)}
-    ${cloudTeam ? teamSection('staff', t('people'), staffSummary(id),
-      roleOf(id) === 'director' && canSync() ? 'add-coach' : '',
-      `<div id="people" class="people-section">${peopleHtml(id)}</div>`) : ''}
+        ${
+          ro
+            ? ''
+            : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
+        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`
+        }
+      </li>`,
+            )
+            .join('')}</ul>`
+        : `<p class="empty">${t('noPlayers')}</p>`,
+    )}
+    ${
+      cloudTeam
+        ? teamSection(
+            'staff',
+            t('people'),
+            staffSummary(id),
+            roleOf(id) === 'director' && canSync() ? 'add-coach' : '',
+            `<div id="people" class="people-section">${peopleHtml(id)}</div>`,
+          )
+        : ''
+    }
     </div>`;
   // Members are loaded online, once per visit of this screen (and after changes).
   if (cloudTeam && canSync()) {
@@ -2109,7 +2985,10 @@ function teamSection(id, title, summary, add, body) {
 }
 
 // The ⋯ menu of the team screen: for now only Delete team (for whoever may change the team).
-const teamMenu = (id, ro) => (ro ? '' : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`);
+const teamMenu = (id, ro) =>
+  ro
+    ? ''
+    : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`;
 
 function openAddCoach() {
   openSheet(`
@@ -2150,18 +3029,38 @@ function newDraft(id) {
   const g = id && getGame(id);
   if (g) {
     return {
-      id: g.id, date: g.date, time: g.time, opponent: g.opponent, formatId: g.formatId,
-      field: g.field, periods: g.periods, periodMin: g.periodMin, maxExtra: g.maxExtra ?? 10, gkId: g.gkId,
-      teamId: getTeam(g.teamId) ? g.teamId : defaultTeamId(), home: g.home ?? true, round: g.round ?? '',
+      id: g.id,
+      date: g.date,
+      time: g.time,
+      opponent: g.opponent,
+      formatId: g.formatId,
+      field: g.field,
+      periods: g.periods,
+      periodMin: g.periodMin,
+      maxExtra: g.maxExtra ?? 10,
+      gkId: g.gkId,
+      teamId: getTeam(g.teamId) ? g.teamId : defaultTeamId(),
+      home: g.home ?? true,
+      round: g.round ?? '',
       sel: Object.fromEntries(g.squad.map((p) => [p, g.starters.includes(p) ? 'start' : 'bench'])),
     };
   }
   const f = FORMATS[0];
   const now = new Date();
   return {
-    date: isoDate(now), time: `${pad(now.getHours())}:00`, opponent: '', formatId: f.id,
-    field: f.field, periods: f.periods, periodMin: f.periodMin, maxExtra: 10, gkId: null, sel: {},
-    teamId: defaultTeamId(), home: true, round: '',
+    date: isoDate(now),
+    time: `${pad(now.getHours())}:00`,
+    opponent: '',
+    formatId: f.id,
+    field: f.field,
+    periods: f.periods,
+    periodMin: f.periodMin,
+    maxExtra: 10,
+    gkId: null,
+    sel: {},
+    teamId: defaultTeamId(),
+    home: true,
+    round: '',
   };
 }
 
@@ -2192,7 +3091,12 @@ function viewEdit(id) {
     ${bar(title, back)}
     <div class="form">
       <label>${t('team')}
-        <select data-field="teamId">${writableTeams().map((tm) => `<option value="${tm.id}" ${tm.id === draft.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
+        <select data-field="teamId">${writableTeams()
+          .map(
+            (tm) =>
+              `<option value="${tm.id}" ${tm.id === draft.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`,
+          )
+          .join('')}</select>
       </label>
       <label>${t('opponent')}<input data-field="opponent" value="${esc(draft.opponent)}" placeholder="${t('opponentPh')}" autocomplete="off"></label>
       <div class="row gap">
@@ -2221,9 +3125,10 @@ function viewEdit(id) {
 
     <h2>${t('squad')} <span class="muted small" id="squad-count">${squadCount()}</span></h2>
     <p class="hint">${t('squadHint')}</p>
-    <ul class="list squad-pick">${ps.map((p) => {
-      const v = draft.sel[p.id] || '';
-      return `<li class="item ${v}">
+    <ul class="list squad-pick">${ps
+      .map((p) => {
+        const v = draft.sel[p.id] || '';
+        return `<li class="item ${v}">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow pname">${esc(p.name)}</span>
         <button class="gkbtn ${draft.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="${t('gkAria')}">🧤</button>
@@ -2233,7 +3138,8 @@ function viewEdit(id) {
           <button class="${v === 'start' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="start">${t('selStart')}</button>
         </span>
       </li>`;
-    }).join('')}</ul>
+      })
+      .join('')}</ul>
     <form class="row gap" data-form="add-player-draft">
       <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
       <input class="grow" name="name" placeholder="${t('addNewPlayer')}" required autocomplete="off">
@@ -2255,7 +3161,9 @@ function saveGame() {
   if (!draft.date) return notify(t('errDate'));
 
   const team = getTeam(draft.teamId);
-  const order = teamPlayers(team.id).sort(byNumber).map((p) => p.id);
+  const order = teamPlayers(team.id)
+    .sort(byNumber)
+    .map((p) => p.id);
   const squad = order.filter((id) => draft.sel[id]);
   const starters = squad.filter((id) => draft.sel[id] === 'start');
   const need = field + 1;
@@ -2264,7 +3172,14 @@ function saveGame() {
 
   let g = draft.id && getGame(draft.id);
   if (!g) {
-    g = { id: uid(), status: 'scheduled', clock: { running: false, startedAt: null, elapsedMs: 0, period: 1 }, events: [], marks: [], alerted: {} };
+    g = {
+      id: uid(),
+      status: 'scheduled',
+      clock: { running: false, startedAt: null, elapsedMs: 0, period: 1 },
+      events: [],
+      marks: [],
+      alerted: {},
+    };
     db.games.push(g);
   }
   const names = {};
@@ -2273,9 +3188,23 @@ function saveGame() {
     names[id] = { name: p.name, number: p.number, fullName: p.fullName || '' };
   }
   Object.assign(g, {
-    date: draft.date, time: draft.time, opponent: draft.opponent.trim(), formatId: draft.formatId,
-    field, periods, periodMin, maxExtra, squad, starters, gkId: draft.gkId, names,
-    teamId: team.id, club: team.club, team: team.name, home: draft.home, round: round >= 1 ? String(round) : '',
+    date: draft.date,
+    time: draft.time,
+    opponent: draft.opponent.trim(),
+    formatId: draft.formatId,
+    field,
+    periods,
+    periodMin,
+    maxExtra,
+    squad,
+    starters,
+    gkId: draft.gkId,
+    names,
+    teamId: team.id,
+    club: team.club,
+    team: team.name,
+    home: draft.home,
+    round: round >= 1 ? String(round) : '',
   });
   g.formation = formationOf(g);
   g.lineup = startLineup(g);
@@ -2288,13 +3217,21 @@ function saveGame() {
 
 function clockButtons(g) {
   const c = g.clock;
-  const b = (action, label, cls = '') => `<button class="btn small ${cls}" data-action="${action}">${label}</button>`;
+  const b = (action, label, cls = '') =>
+    `<button class="btn small ${cls}" data-action="${action}">${label}</button>`;
   switch (g.status) {
-    case 'scheduled': return b('kickoff', t('kickoff'), 'primary');
+    case 'scheduled':
+      return b('kickoff', t('kickoff'), 'primary');
     case 'live':
-      return b('end-period', c.period >= g.periods ? t('fullTimeBtn') : t('endPeriod', { p: periodName(g, c.period) }), 'warn');
-    case 'break': return b('next-period', t('startPeriod', { p: periodName(g, c.period + 1) }), 'primary');
-    default: return `<a class="btn primary" href="#/report/${g.id}">${t('viewReport')}</a>`;
+      return b(
+        'end-period',
+        c.period >= g.periods ? t('fullTimeBtn') : t('endPeriod', { p: periodName(g, c.period) }),
+        'warn',
+      );
+    case 'break':
+      return b('next-period', t('startPeriod', { p: periodName(g, c.period + 1) }), 'primary');
+    default:
+      return `<a class="btn primary" href="#/report/${g.id}">${t('viewReport')}</a>`;
   }
 }
 
@@ -2313,10 +3250,17 @@ const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-hidden=
 // They are chips too, so tap and drag work the same. where: 'on' (pitch), 'bench' or 'off' (sent off).
 function token(g, d, id, where, attrs = '') {
   const s = d.stats[id];
-  const cards = s.red ? '<span class="tb tb-card tb-red" aria-hidden="true"></span>'
-    : s.yellow ? `<span class="tb tb-card tb-yellow" aria-hidden="true">${s.yellow > 1 ? s.yellow : ''}</span>` : '';
-  const goals = s.goals ? `<span class="tb tb-goal" aria-hidden="true">⚽${s.goals > 1 ? `<b>${s.goals}</b>` : ''}</span>` : '';
-  const label = [s.goals ? `⚽×${s.goals}` : '', s.yellow ? `🟨×${s.yellow}` : '', s.red ? '🟥' : ''].filter(Boolean).join(' ');
+  const cards = s.red
+    ? '<span class="tb tb-card tb-red" aria-hidden="true"></span>'
+    : s.yellow
+      ? `<span class="tb tb-card tb-yellow" aria-hidden="true">${s.yellow > 1 ? s.yellow : ''}</span>`
+      : '';
+  const goals = s.goals
+    ? `<span class="tb tb-goal" aria-hidden="true">⚽${s.goals > 1 ? `<b>${s.goals}</b>` : ''}</span>`
+    : '';
+  const label = [s.goals ? `⚽×${s.goals}` : '', s.yellow ? `🟨×${s.yellow}` : '', s.red ? '🟥' : '']
+    .filter(Boolean)
+    .join(' ');
   return `<button class="chip round ${where} ${where === 'on' ? 'tok' : ''} ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" ${attrs} ${where === 'off' ? 'disabled' : ''}>
     <span class="face">
       <span class="shirt">${esc(g.names[id].number) || '–'}</span>
@@ -2331,13 +3275,22 @@ function token(g, d, id, where, attrs = '') {
 function pitch(g, d, ro = false) {
   const pts = slotCoords(formationOf(g));
   return `<div class="pitch">${PITCH_LINES}
-    ${ro ? `<span class="pitch-corner left ro" aria-label="${t('formation')}">${formationOf(g)}</span>`
-    : formationsFor(g.field).length > 1 ? `<button class="pitch-corner left" data-action="formation" aria-label="${t('formation')}">${formationOf(g)} ▾</button>` : ''}
+    ${
+      ro
+        ? `<span class="pitch-corner left ro" aria-label="${t('formation')}">${formationOf(g)}</span>`
+        : formationsFor(g.field).length > 1
+          ? `<button class="pitch-corner left" data-action="formation" aria-label="${t('formation')}">${formationOf(g)} ▾</button>`
+          : ''
+    }
     <span class="pitch-corner right" aria-label="${t('onPitch')}">${d.on.size}/${g.field + 1}</span>
-    ${d.slots.map((id, i) => {
-    const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${typeof pts[i].y === 'number' ? `${pts[i].y.toFixed(1)}%` : pts[i].y}"`;
-    return id ? token(g, d, id, 'on', pos) : `<div class="chip round slot-empty" ${pos}><span class="shirt"></span></div>`;
-  }).join('')}</div>`;
+    ${d.slots
+      .map((id, i) => {
+        const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${typeof pts[i].y === 'number' ? `${pts[i].y.toFixed(1)}%` : pts[i].y}"`;
+        return id
+          ? token(g, d, id, 'on', pos)
+          : `<div class="chip round slot-empty" ${pos}><span class="shirt"></span></div>`;
+      })
+      .join('')}</div>`;
 }
 
 // LIVE / PAUSED / BREAK / … pill on top of the scoreboard.
@@ -2353,9 +3306,14 @@ function viewGame(id) {
   const benchIds = g.squad
     .filter((p) => !d.on.has(p) && !d.sentOff.has(p))
     .sort((a, b) => d.stats[a].played - d.stats[b].played || byNumber(g.names[a], g.names[b]));
-  const offIds = sortIds(g, [...d.sentOff].filter((p) => !d.on.has(p)));
+  const offIds = sortIds(
+    g,
+    [...d.sentOff].filter((p) => !d.on.has(p)),
+  );
 
-  const timeline = [...g.events.filter((e) => e.type !== 'pos'), ...g.marks].sort((a, b) => a.t - b.t || (a.wall || 0) - (b.wall || 0)).reverse();
+  const timeline = [...g.events.filter((e) => e.type !== 'pos'), ...g.marks]
+    .sort((a, b) => a.t - b.t || (a.wall || 0) - (b.wall || 0))
+    .reverse();
   const ro = readOnlyGame(g); // coach of this cloud team: no controls that change the game
   const last = ro ? null : g.events[g.events.length - 1];
   const canEdit = g.status === 'scheduled' && g.events.length === 0;
@@ -2365,13 +3323,24 @@ function viewGame(id) {
   const [home, away] = g.home === false ? [them, us] : [us, them];
 
   main.innerHTML = `
-    ${bar(esc(matchTitle(g)), '#/games', ro ? (g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : '') : `
-      ${canEdit
-        ? `<a class="menu-item" role="menuitem" href="#/edit/${g.id}">✎ ${t('edit')}</a>`
-        : `<button class="menu-item" role="menuitem" data-action="edit-info">${t('gameInfo')}</button>`}
+    ${bar(
+      esc(matchTitle(g)),
+      '#/games',
+      ro
+        ? g.status !== 'scheduled'
+          ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>`
+          : ''
+        : `
+      ${
+        canEdit
+          ? `<a class="menu-item" role="menuitem" href="#/edit/${g.id}">✎ ${t('edit')}</a>`
+          : `<button class="menu-item" role="menuitem" data-action="edit-info">${t('gameInfo')}</button>`
+      }
       ${g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : ''}
       ${g.status !== 'scheduled' ? `<button class="menu-item" role="menuitem" data-action="fix-open">${t('fixTimesBtn')}</button>` : ''}
-      <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`, ro ? readOnlyPill() : '')}
+      <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`,
+      ro ? readOnlyPill() : '',
+    )}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
       ${statusPill(g)}
       <div class="clock-line">
@@ -2384,12 +3353,22 @@ function viewGame(id) {
         <span class="score big">${scoreHtml(g, d, ' – ', true)}</span>
         <span class="side">${esc(away)}</span>
       </div>
-      ${g.status === 'break' && g.autoStopped === g.clock.period && !ro ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
-        <div class="row center"><button class="btn small" data-action="fix-open">${t('fixTimesBtn')}</button></div></div>` : ''}
-      ${ro ? (g.status === 'finished' ? `<div class="row gap center wrap score-actions">${clockButtons(g)}</div>` : '') : `<div class="row gap center wrap score-actions">
+      ${
+        g.status === 'break' && g.autoStopped === g.clock.period && !ro
+          ? `<div class="alert">${t('autoStoppedAlert', { p: periodName(g, g.clock.period), m: g.maxExtra ?? 10, fix: t('fixTimes') })}
+        <div class="row center"><button class="btn small" data-action="fix-open">${t('fixTimesBtn')}</button></div></div>`
+          : ''
+      }
+      ${
+        ro
+          ? g.status === 'finished'
+            ? `<div class="row gap center wrap score-actions">${clockButtons(g)}</div>`
+            : ''
+          : `<div class="row gap center wrap score-actions">
         ${g.status === 'live' ? `<button class="btn small ghost" data-action="opp-goal">${t('oppGoalBtn')}</button>` : ''}
         ${clockButtons(g)}
-      </div>`}
+      </div>`
+      }
       ${pitch(g, d, ro)}
     </section>
 
@@ -2400,9 +3379,17 @@ function viewGame(id) {
 
     <h2>${t('timeline')}</h2>
     ${last ? `<button class="btn small ghost" data-action="undo">${t('undoX', { x: describe(g, last) })}</button>` : ''}
-    ${timeline.length ? `<ul class="timeline">${timeline.map((e) => e.type === 'goal' && !ro
-      ? `<li class="tap" data-action="edit-goal" data-id="${e.id}"><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span><span class="edit">✎</span></li>`
-      : `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`).join('')}</ul>` : `<p class="empty small">${t('nothingYet')}</p>`}
+    ${
+      timeline.length
+        ? `<ul class="timeline">${timeline
+            .map((e) =>
+              e.type === 'goal' && !ro
+                ? `<li class="tap" data-action="edit-goal" data-id="${e.id}"><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span><span class="edit">✎</span></li>`
+                : `<li><span class="t">${timeOf(g, e)}</span><span>${describe(g, e)}</span></li>`,
+            )
+            .join('')}</ul>`
+        : `<p class="empty small">${t('nothingYet')}</p>`
+    }
 `;
 }
 
@@ -2438,7 +3425,7 @@ function closeSheet() {
 
 function currentGame() {
   const { view, id } = route();
-  return (view === 'game' || view === 'report') ? getGame(id) : null;
+  return view === 'game' || view === 'report' ? getGame(id) : null;
 }
 
 // One tap on a player: quick actions on top, substitution list right below,
@@ -2446,21 +3433,26 @@ function currentGame() {
 function openPlayerSheet(g, id) {
   const d = derive(g);
   const on = d.on.has(id);
-  const quick = (action, icon, label, show = true) => show
-    ? `<button class="quick" data-action="${action}" data-id="${id}"><span class="qi">${icon}</span>${label}</button>`
-    : '';
+  const quick = (action, icon, label, show = true) =>
+    show
+      ? `<button class="quick" data-action="${action}" data-id="${id}"><span class="qi">${icon}</span>${label}</button>`
+      : '';
 
   // Fewest minutes first when choosing who comes on, most minutes first for who comes off.
   const candidates = on
-    ? g.squad.filter((p) => !d.on.has(p) && !d.sentOff.has(p)).sort((a, b) => d.stats[a].played - d.stats[b].played)
+    ? g.squad
+        .filter((p) => !d.on.has(p) && !d.sentOff.has(p))
+        .sort((a, b) => d.stats[a].played - d.stats[b].played)
     : [...d.on].sort((a, b) => d.stats[b].played - d.stats[a].played);
-  const list = candidates.map((p) => {
-    const [out, inn] = on ? [id, p] : [p, id];
-    return `<button class="opt" data-action="do-sub" data-out="${out}" data-in="${inn}">
+  const list = candidates
+    .map((p) => {
+      const [out, inn] = on ? [id, p] : [p, id];
+      return `<button class="opt" data-action="do-sub" data-out="${out}" data-in="${inn}">
       <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}${p === d.gk ? gkTag() : ''}</span>
       <span class="muted">${fmtMins(d.stats[p].played)}</span>
     </button>`;
-  }).join('');
+    })
+    .join('');
 
   openSheet(`
     <div class="sheet-head">
@@ -2496,7 +3488,11 @@ function fixLimits(g) {
 function fixPreview(g) {
   const p = g.clock.period;
   let text = t('previewEnds', { p: periodName(g, p), t: fmtInPeriod(g, p, fix.end * 60000) });
-  if (p < g.periods) text += fix.started == null ? t('previewBreak') : t('previewStarted', { p: periodName(g, p + 1), n: fix.started });
+  if (p < g.periods)
+    text +=
+      fix.started == null
+        ? t('previewBreak')
+        : t('previewStarted', { p: periodName(g, p + 1), n: fix.started });
   return text;
 }
 
@@ -2505,7 +3501,8 @@ function openFixSheet(g) {
   const off = periodOffsetMin(g);
   const { maxMin } = fixLimits(g);
   if (!fix) fix = { end: Math.min(g.periodMin, maxMin), started: null };
-  const pick = (action, v, label, on) => `<button class="pick ${on ? 'on' : ''}" data-action="${action}" data-v="${v}">${label}</button>`;
+  const pick = (action, v, label, on) =>
+    `<button class="pick ${on ? 'on' : ''}" data-action="${action}" data-v="${v}">${label}</button>`;
   const ends = [0, 1, 2, 3, 5].map((x) => g.periodMin + x).filter((v) => v <= maxMin);
   const canResume = p < g.periods && g.status !== 'finished';
   const room = maxMin - fix.end;
@@ -2517,13 +3514,20 @@ function openFixSheet(g) {
       ${g.status === 'live' ? pick('fix-end', maxMin, t('now'), fix.end === maxMin) : ''}
     </div>
     <label class="inline">${t('other')} <input type="number" inputmode="decimal" min="${off}" step="0.5" data-fix="end" placeholder="${off + g.periodMin}"> min</label>
-    ${canResume ? `
+    ${
+      canResume
+        ? `
       <p class="muted small">${t('nextStarted', { p: periodName(g, p + 1) })}</p>
       <div class="pick-row">
         ${pick('fix-started', '', t('notYet'), fix.started == null)}
-        ${[1, 2, 3, 5, 10, 15].filter((v) => v <= room).map((v) => pick('fix-started', v, t('minAgo', { n: v }), fix.started === v)).join('')}
+        ${[1, 2, 3, 5, 10, 15]
+          .filter((v) => v <= room)
+          .map((v) => pick('fix-started', v, t('minAgo', { n: v }), fix.started === v))
+          .join('')}
       </div>
-      <label class="inline">${t('startedPre')} <input type="number" inputmode="decimal" min="0" step="0.5" data-fix="started"> ${t('startedPost')}</label>` : ''}
+      <label class="inline">${t('startedPre')} <input type="number" inputmode="decimal" min="0" step="0.5" data-fix="started"> ${t('startedPost')}</label>`
+        : ''
+    }
     <p class="alert small" id="fix-preview">${fixPreview(g)}</p>
     <button class="btn primary block" data-action="fix-apply">${t('apply')}</button>
     <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
@@ -2566,12 +3570,19 @@ function statsSheet(g) {
 
   // Players who played, then unused subs, then team players not called up;
   // alphabetical within each group, like the club's sheet.
-  const squad = g.squad.map((id) => ({ p: g.names[id], full: fullName(g, id), s: d.stats[id], starter: g.starters.includes(id) }));
+  const squad = g.squad.map((id) => ({
+    p: g.names[id],
+    full: fullName(g, id),
+    s: d.stats[id],
+    starter: g.starters.includes(id),
+  }));
   const notCalled = (g.teamId ? teamPlayers(g.teamId) : [])
     .filter((p) => !g.squad.includes(p.id))
     .map((p) => ({ p, full: p.fullName || p.name, s: null }));
   const group = (r) => (!r.s ? 2 : r.s.intervals.length ? 0 : 1);
-  const players = [...squad, ...notCalled].sort((a, b) => group(a) - group(b) || a.full.localeCompare(b.full, locale()));
+  const players = [...squad, ...notCalled].sort(
+    (a, b) => group(a) - group(b) || a.full.localeCompare(b.full, locale()),
+  );
   const dash = '—';
   const rows = players.map((r, i) => {
     const played = group(r) === 0;
@@ -2593,7 +3604,8 @@ function statsSheet(g) {
 
   return {
     title: [gameTeam(g), t('pdfTitle'), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
-      .filter(Boolean).join(' — '),
+      .filter(Boolean)
+      .join(' — '),
     // [label, value, column it lines up with]
     meta: [
       [t('pdfGame'), matchTitle(g), 0],
@@ -2602,7 +3614,18 @@ function statsSheet(g) {
     ].filter(Boolean),
     cols,
     rows,
-    total: [[''], [t('pdfTotal')], [''], [''], [''], [''], [''], [sum('goals')], [sum('yellow')], [sum('red')]],
+    total: [
+      [''],
+      [t('pdfTotal')],
+      [''],
+      [''],
+      [''],
+      [''],
+      [''],
+      [sum('goals')],
+      [sum('yellow')],
+      [sum('red')],
+    ],
   };
 }
 
@@ -2652,12 +3675,22 @@ function statsTeam() {
   return getTeam(id) ? id : getTeam(db.lastTeamId) ? db.lastTeamId : db.teams[0]?.id || '';
 }
 
-const finishedGames = (teamId) => db.games
-  .filter((g) => g.teamId === teamId && g.status === 'finished')
-  .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+const finishedGames = (teamId) =>
+  db.games
+    .filter((g) => g.teamId === teamId && g.status === 'finished')
+    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 
 // Seasons the team has finished games in, newest first.
-const statsSeasons = (teamId) => [...new Set(finishedGames(teamId).map((g) => seasonOf(g.date)).filter(Boolean))].sort().reverse();
+const statsSeasons = (teamId) =>
+  [
+    ...new Set(
+      finishedGames(teamId)
+        .map((g) => seasonOf(g.date))
+        .filter(Boolean),
+    ),
+  ]
+    .sort()
+    .reverse();
 
 function statsSeason(teamId) {
   const seasons = statsSeasons(teamId);
@@ -2667,14 +3700,18 @@ function statsSeason(teamId) {
 
 // Everything the stats page and a player's sheet need, for one team and season.
 function teamStats(teamId, season) {
-  const games = finishedGames(teamId).filter((g) => seasonOf(g.date) === season).map((g) => ({ g, d: derive(g) }));
+  const games = finishedGames(teamId)
+    .filter((g) => seasonOf(g.date) === season)
+    .map((g) => ({ g, d: derive(g) }));
   const record = { w: 0, d: 0, l: 0, gf: 0, ga: 0 };
   for (const { d } of games) {
     record[d.us > d.them ? 'w' : d.us < d.them ? 'l' : 'd']++;
     record.gf += d.us;
     record.ga += d.them;
   }
-  const players = teamPlayers(teamId).sort(byNumber).map((p) => playerStats(p, games));
+  const players = teamPlayers(teamId)
+    .sort(byNumber)
+    .map((p) => playerStats(p, games));
   return { games, record, players };
 }
 
@@ -2685,13 +3722,16 @@ function playerStats(p, games) {
   });
   const sum = (k) => rows.reduce((n, r) => n + (r.s ? r.s[k] : 0), 0);
   return {
-    p, rows,
+    p,
+    rows,
     teamGames: rows.length,
     called: rows.filter((r) => r.s).length,
     played: rows.filter((r) => r.played).length,
     starts: rows.filter((r) => r.started).length,
     minutes: Math.floor(sum('played') / 60000),
-    goals: sum('goals'), yellow: sum('yellow'), red: sum('red'),
+    goals: sum('goals'),
+    yellow: sum('yellow'),
+    red: sum('red'),
   };
 }
 
@@ -2713,7 +3753,9 @@ function gameDetail(r) {
     r.s.goals ? plural('statGoalN', r.s.goals) : '',
     r.s.yellow ? t('statYellowWord') + (r.s.yellow > 1 ? ` ×${r.s.yellow}` : '') : '',
     r.s.red ? t('statRedWord') : '',
-  ].filter(Boolean).join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 // Our score first, then the opponent ("2–0 CD Ribeira").
@@ -2721,11 +3763,30 @@ const gameShort = (g, d) => `${d.us}–${d.them} ${g.opponent || t('opponent')}`
 
 // Team (and season) pickers shared by the stats page and a player's sheet.
 function statsFilters(teamId, season, withTeams) {
-  const row = (action, items, on) => `<div class="pick-row filter" role="tablist">${items.map(([id, label]) =>
-    `<button class="pick ${id === on ? 'on' : ''}" role="tab" aria-selected="${id === on}" data-action="${action}" data-id="${esc(id)}">${label}</button>`).join('')}</div>`;
+  const row = (action, items, on) =>
+    `<div class="pick-row filter" role="tablist">${items
+      .map(
+        ([id, label]) =>
+          `<button class="pick ${id === on ? 'on' : ''}" role="tab" aria-selected="${id === on}" data-action="${action}" data-id="${esc(id)}">${label}</button>`,
+      )
+      .join('')}</div>`;
   const seasons = statsSeasons(teamId);
-  return (withTeams && db.teams.length > 1 ? row('stats-team', db.teams.map((tm) => [tm.id, esc(teamLabel(tm))]), teamId) : '')
-    + (seasons.length > 1 ? row('stats-season', seasons.map((s) => [s, `${t('pdfSeason')} ${esc(s)}`]), season) : '');
+  return (
+    (withTeams && db.teams.length > 1
+      ? row(
+          'stats-team',
+          db.teams.map((tm) => [tm.id, esc(teamLabel(tm))]),
+          teamId,
+        )
+      : '') +
+    (seasons.length > 1
+      ? row(
+          'stats-season',
+          seasons.map((s) => [s, `${t('pdfSeason')} ${esc(s)}`]),
+          season,
+        )
+      : '')
+  );
 }
 
 function viewStats() {
@@ -2751,7 +3812,9 @@ function viewStats() {
   main.innerHTML = `
     ${bar(t('tabStats'))}
     ${statsFilters(teamId, season, true)}
-    ${st.games.length ? `
+    ${
+      st.games.length
+        ? `
       <section class="card stats-summary">
         <div class="grow">
           <strong>${esc(teamLabel(getTeam(teamId)))}</strong>
@@ -2762,9 +3825,14 @@ function viewStats() {
           <div class="muted small">${t('statGoalsFor', { f: r.gf, a: r.ga })}</div>
         </div>
       </section>
-      ${st.players.length ? `<ul class="list stat-table">${head}${st.players.map(rowHtml).join('')}</ul>
-        <p class="hint">${t('statsHint')}</p>` : `<p class="empty">${t('noPlayers')}</p>`}`
-    : `<p class="empty">${t('statsNoGames')}</p>`}`;
+      ${
+        st.players.length
+          ? `<ul class="list stat-table">${head}${st.players.map(rowHtml).join('')}</ul>
+        <p class="hint">${t('statsHint')}</p>`
+          : `<p class="empty">${t('noPlayers')}</p>`
+      }`
+        : `<p class="empty">${t('statsNoGames')}</p>`
+    }`;
 }
 
 function viewPlayer(id) {
@@ -2774,19 +3842,22 @@ function viewPlayer(id) {
   const season = statsSeason(p.teamId);
   const st = teamStats(p.teamId, season);
   const ps = st.players.find((x) => x.p.id === id) || playerStats(p, st.games);
-  const tile = (label, value, sub = '') => `<div class="tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const tile = (label, value, sub = '') =>
+    `<div class="tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
 
   // Minutes in each game: one bar per game, as tall as the share of the game played.
   const top = Math.max(1, ...ps.rows.map((r) => Math.max(gameLength(r.g), r.s ? r.s.played / 60000 : 0)));
-  const bars = ps.rows.map((r) => {
-    const m = r.played ? Math.floor(r.s.played / 60000) : 0;
-    const cls = !r.s ? 'out' : !r.played ? 'dnp' : '';
-    const h = Math.min(100, (100 * m) / top);
-    return `<div class="bar-col ${cls}" title="${esc(gameShort(r.g, r.d))}">
+  const bars = ps.rows
+    .map((r) => {
+      const m = r.played ? Math.floor(r.s.played / 60000) : 0;
+      const cls = !r.s ? 'out' : !r.played ? 'dnp' : '';
+      const h = Math.min(100, (100 * m) / top);
+      return `<div class="bar-col ${cls}" title="${esc(gameShort(r.g, r.d))}">
       <div class="bar-area"><div class="bar-fill" style="height:${h}%"></div><span class="v" style="bottom:calc(${h}% + 2px)">${r.s ? `${m}'` : '–'}</span></div>
       <span class="x">${ddmm(r.g)}</span>
     </div>`;
-  }).join('');
+    })
+    .join('');
   // Y axis like the PDF: 0', a quarter, half, three quarters and the top, with a gridline at each.
   const ticks = [0, 1, 2, 3, 4];
   const chart = `<div class="minutes-chart">
@@ -2797,13 +3868,19 @@ function viewPlayer(id) {
     </div></div>
   </div>`;
 
-  const gamesHtml = ps.rows.slice().reverse().map((r) => `<li><a class="card game ${resultOf(r.d)}" href="#/report/${r.g.id}">
+  const gamesHtml = ps.rows
+    .slice()
+    .reverse()
+    .map(
+      (r) => `<li><a class="card game ${resultOf(r.d)}" href="#/report/${r.g.id}">
     <div class="grow">
       <strong>${esc(gameShort(r.g, r.d))}</strong>
       <div class="muted small">${esc(ddmm(r.g))}${r.g.round ? ` · ${t('roundN', { n: esc(r.g.round) })}` : ''}</div>
     </div>
     <div class="right small ${r.played ? '' : 'muted'}">${esc(gameDetail(r))}</div>
-  </a></li>`).join('');
+  </a></li>`,
+    )
+    .join('');
 
   main.innerHTML = `
     ${bar(esc(p.name), '#/stats')}
@@ -2813,7 +3890,9 @@ function viewPlayer(id) {
       <h2>${esc(playerFullName(p))}</h2>
       <div class="small">${[p.number ? t('statNumber', { n: esc(p.number) }) : '', season ? `${t('pdfSeason')} ${esc(season)}` : ''].filter(Boolean).join(' · ')}</div>
     </section>
-    ${st.games.length ? `
+    ${
+      st.games.length
+        ? `
       <div class="tiles">
         ${tile(t('statCalled'), `${pct(ps.called, ps.teamGames)}%`, `${ps.called} / ${ps.teamGames}`)}
         ${tile(t('statGames'), `${ps.played} / ${ps.teamGames}`)}
@@ -2827,7 +3906,8 @@ function viewPlayer(id) {
       <button class="btn primary block" data-action="player-pdf" data-id="${p.id}">${t('pdf')}</button>
       <h2>${t('statGamesList')}</h2>
       <ul class="list">${gamesHtml}</ul>`
-    : `<p class="empty">${t('statsNoGames')}</p>`}`;
+        : `<p class="empty">${t('statsNoGames')}</p>`
+    }`;
 }
 
 // ---------- PDF report ----------
@@ -2836,29 +3916,54 @@ function viewPlayer(id) {
 
 // Glyph widths (per 1000 em) for character codes 32..126.
 const HELV_W = {
-  regular: [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
-    556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
-    1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
-    667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
-    333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
-    556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584],
-  bold: [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278,
-    556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611,
-    975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778,
-    667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556,
-    333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611,
-    611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584],
+  regular: [
+    278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556,
+    556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278,
+    500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469,
+    556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500,
+    278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
+  ],
+  bold: [
+    278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556,
+    556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278,
+    556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584,
+    556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
+    333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
+  ],
 };
 // Unicode -> WinAnsi for the few characters outside Latin-1 that we use.
-const WIN_ANSI = { 0x2014: 0x97, 0x2013: 0x96, 0x2026: 0x85, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95 };
-const WIN_W = { 0x97: 1000, 0x96: 556, 0x85: 1000, 0x91: 222, 0x92: 222, 0x93: 333, 0x94: 333, 0x95: 350, 0xaa: 370, 0xba: 365, 0xb7: 278, 0xa0: 278, 0xb0: 400 };
+const WIN_ANSI = {
+  0x2014: 0x97,
+  0x2013: 0x96,
+  0x2026: 0x85,
+  0x2018: 0x91,
+  0x2019: 0x92,
+  0x201c: 0x93,
+  0x201d: 0x94,
+  0x2022: 0x95,
+};
+const WIN_W = {
+  0x97: 1000,
+  0x96: 556,
+  0x85: 1000,
+  0x91: 222,
+  0x92: 222,
+  0x93: 333,
+  0x94: 333,
+  0x95: 350,
+  0xaa: 370,
+  0xba: 365,
+  0xb7: 278,
+  0xa0: 278,
+  0xb0: 400,
+};
 
 // Text as a string of WinAnsi byte values; anything else becomes "?".
 function winAnsi(s) {
   let out = '';
   for (const ch of String(s)) {
     const c = ch.codePointAt(0);
-    out += String.fromCharCode((c >= 32 && c < 127) || (c >= 160 && c <= 255) ? c : WIN_ANSI[c] ?? 63);
+    out += String.fromCharCode((c >= 32 && c < 127) || (c >= 160 && c <= 255) ? c : (WIN_ANSI[c] ?? 63));
   }
   return out;
 }
@@ -2881,14 +3986,16 @@ function textWidth(s, size, bold) {
   return (w * size) / 1000;
 }
 
-function pdfDoc({ W = 842, H = 595 } = {}) { // A4 landscape by default, in points
+function pdfDoc({ W = 842, H = 595 } = {}) {
+  // A4 landscape by default, in points
   const pages = [];
   let ops = null;
   const rgb = (hex) => [1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
   const n = (v) => +v.toFixed(2);
 
   return {
-    W, H,
+    W,
+    H,
     page() {
       ops = [];
       pages.push(ops);
@@ -2923,7 +4030,9 @@ function pdfDoc({ W = 842, H = 595 } = {}) { // A4 landscape by default, in poin
       ];
       pages.forEach((p, i) => {
         const stream = p.join('\n');
-        objs.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`);
+        objs.push(
+          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`,
+        );
         objs.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
       });
       let out = '%PDF-1.4\n%\xe2\xe3\xcf\xd3\n';
@@ -2962,7 +4071,13 @@ function buildPdf(g) {
   const tableHeader = () => {
     cols.forEach((c, i) => {
       pdf.rect(colX[i], y - 20, c.w, 20, c.fill, GRID);
-      pdf.text(c.title, colX[i] + c.w / 2, y - 13.5, { size: 9, bold: true, color: '#ffffff', align: 'center', maxW: c.w - 4 });
+      pdf.text(c.title, colX[i] + c.w / 2, y - 13.5, {
+        size: 9,
+        bold: true,
+        color: '#ffffff',
+        align: 'center',
+        maxW: c.w - 4,
+      });
     });
     y -= 20;
   };
@@ -3007,8 +4122,16 @@ function buildPdf(g) {
 }
 
 function pdfFileName(g) {
-  const clean = (s) => String(s || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '');
-  const parts = [clean(g.club), clean(g.team), g.round ? `${t('fileRound')}${g.round}` : g.date, t('fileStats')];
+  const clean = (s) =>
+    String(s || '')
+      .normalize('NFD')
+      .replace(/[^A-Za-z0-9]/g, '');
+  const parts = [
+    clean(g.club),
+    clean(g.team),
+    g.round ? `${t('fileRound')}${g.round}` : g.date,
+    t('fileStats'),
+  ];
   return `${parts.filter(Boolean).join('_')}.pdf`;
 }
 
@@ -3049,14 +4172,22 @@ function buildPlayerPdf(playerId) {
   const HB = 118;
   pdf.rect(0, pdf.H - HB, pdf.W, HB, PDF_GREEN);
   y = pdf.H - 36;
-  pdf.text((tm ? teamFull(tm.club, tm.name) : '').toUpperCase(), M, y, { size: 10, color: '#cfe3d8', maxW: W });
+  pdf.text((tm ? teamFull(tm.club, tm.name) : '').toUpperCase(), M, y, {
+    size: 10,
+    color: '#cfe3d8',
+    maxW: W,
+  });
   y -= 32;
   pdf.text(playerFullName(p).toUpperCase(), M, y, { size: 24, bold: true, color: '#ffffff', maxW: W });
   y -= 22;
   const first = st.games[0]?.g;
   const last = st.games[st.games.length - 1]?.g;
   const range = first ? t('statRange', { a: ddmm(first), b: ddmm(last) }) : '';
-  pdf.text([season && `${t('pdfSeason')} ${season}`, range].filter(Boolean).join(' · '), M, y, { size: 11, color: '#ffffff', maxW: W });
+  pdf.text([season && `${t('pdfSeason')} ${season}`, range].filter(Boolean).join(' · '), M, y, {
+    size: 11,
+    color: '#ffffff',
+    maxW: W,
+  });
 
   y = pdf.H - HB - 30;
   if (p.number) {
@@ -3081,8 +4212,12 @@ function buildPlayerPdf(playerId) {
     const top = y - Math.floor(i / 3) * (th + gap);
     pdf.rect(x, top - th, tw, th, TILE);
     pdf.text(label.toUpperCase(), x + 10, top - 16, { size: 8, bold: true, color: PDF_GREEN, maxW: tw - 20 });
-    if (value == null) { // cards: a yellow and a red card, each with its count
-      [[ps.yellow, '#f5c518'], [ps.red, '#d63a3a']].forEach(([count, fill], k) => {
+    if (value == null) {
+      // cards: a yellow and a red card, each with its count
+      [
+        [ps.yellow, '#f5c518'],
+        [ps.red, '#d63a3a'],
+      ].forEach(([count, fill], k) => {
         const cx = x + 10 + k * 54;
         pdf.rect(cx, top - 46, 13, 18, fill);
         pdf.text(String(count), cx + 20, top - 42, { size: 22, bold: true, color: INK });
@@ -3104,7 +4239,11 @@ function buildPlayerPdf(playerId) {
   for (let k = 0; k <= 4; k++) {
     const ly = base + (CH * k) / 4;
     pdf.line(M + axisW, ly, M + W, ly, '#d5dcd9', 0.5);
-    pdf.text(`${Math.round((top * k) / 4)}'`, M + axisW - 4, ly - 2.5, { size: 7, color: MUTED, align: 'right' });
+    pdf.text(`${Math.round((top * k) / 4)}'`, M + axisW - 4, ly - 2.5, {
+      size: 7,
+      color: MUTED,
+      align: 'right',
+    });
   }
   const n = ps.rows.length;
   const slot = (W - axisW) / Math.max(n, 1);
@@ -3116,7 +4255,8 @@ function buildPlayerPdf(playerId) {
     const h = Math.min(CH, (CH * m) / top);
     if (h > 0) pdf.rect(cx - bw / 2, base, bw, h, PDF_GREEN);
     if (i % every === 0) {
-      if (slot >= 14) pdf.text(r.s ? `${m}'` : '–', cx, base + h + 4, { size: 7, bold: true, color: INK, align: 'center' });
+      if (slot >= 14)
+        pdf.text(r.s ? `${m}'` : '–', cx, base + h + 4, { size: 7, bold: true, color: INK, align: 'center' });
       pdf.text(ddmm(r.g), cx, base - 11, { size: 7, color: MUTED, align: 'center' });
     }
   });
@@ -3138,7 +4278,11 @@ function buildPlayerPdf(playerId) {
     const x0 = M;
     const w1 = pdf.text(ddmm(r.g), x0, y, { size: 10, bold: true, color: INK });
     const w2 = pdf.text(gameShort(r.g, r.d), x0 + w1 + 10, y, { size: 10, color: INK, maxW: 240 });
-    pdf.text(`·  ${gameDetail(r)}`, x0 + w1 + 18 + w2, y, { size: 10, color: r.played ? INK : MUTED, maxW: W - w1 - w2 - 20 });
+    pdf.text(`·  ${gameDetail(r)}`, x0 + w1 + 18 + w2, y, {
+      size: 10,
+      color: r.played ? INK : MUTED,
+      maxW: W - w1 - w2 - 20,
+    });
     y -= 18;
   }
   return pdf.bytes();
@@ -3147,12 +4291,16 @@ function buildPlayerPdf(playerId) {
 function playerPdfName(playerId) {
   const p = db.players.find((x) => x.id === playerId);
   const tm = getTeam(p.teamId);
-  const clean = (s) => String(s || '').normalize('NFD').replace(/[^A-Za-z0-9]/g, '');
+  const clean = (s) =>
+    String(s || '')
+      .normalize('NFD')
+      .replace(/[^A-Za-z0-9]/g, '');
   const season = statsSeason(p.teamId).replace('/', '-');
   return `${[clean(tm?.club), clean(tm?.name), clean(playerFullName(p)), t('fileStats'), season].filter(Boolean).join('_')}.pdf`;
 }
 
-const exportPlayerPdf = (playerId) => shareFile(new File([buildPlayerPdf(playerId)], playerPdfName(playerId), { type: 'application/pdf' }));
+const exportPlayerPdf = (playerId) =>
+  shareFile(new File([buildPlayerPdf(playerId)], playerPdfName(playerId), { type: 'application/pdf' }));
 
 // ---------- Actions ----------
 
@@ -3162,11 +4310,16 @@ const actions = {
     localStorage.setItem(GAMES_TEAM_KEY, id);
     render();
   },
-  soon: ({ v }) => askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
+  soon: ({ v }) =>
+    askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
-  privacy: () => openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
+  privacy: () =>
+    openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
     <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
-  'signin-back': () => { Object.assign(cloud, { step: 'email', error: '' }); render(); },
+  'signin-back': () => {
+    Object.assign(cloud, { step: 'email', error: '' });
+    render();
+  },
   'profile-section': ({ v }) => {
     profileOpen = profileOpen === v ? '' : v; // tap the open one to close it
     render();
@@ -3177,13 +4330,24 @@ const actions = {
     Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
     render();
   },
-  'change-password': () => { Object.assign(cloud, { changingPassword: true, error: '' }); render(); },
-  'cancel-password': () => { Object.assign(cloud, { changingPassword: false, error: '' }); render(); },
+  'change-password': () => {
+    Object.assign(cloud, { changingPassword: true, error: '' });
+    render();
+  },
+  'cancel-password': () => {
+    Object.assign(cloud, { changingPassword: false, error: '' });
+    render();
+  },
   'signin-resend': () => sendCode(cloud.email),
   'sign-out': async () => {
     const n = pendingCount();
-    const message = [t('signOutConfirm'), Object.keys(db.sync.teams).length ? t('signOutCloud') : '',
-      n ? `<b>${plural('signOutLose', n)}</b>` : ''].filter(Boolean).join(' ');
+    const message = [
+      t('signOutConfirm'),
+      Object.keys(db.sync.teams).length ? t('signOutCloud') : '',
+      n ? `<b>${plural('signOutLose', n)}</b>` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
     if (!(await askConfirm({ title: t('signOut'), message, ok: t('signOut'), danger: n > 0 }))) return;
     removeCloudData(); // cloud teams leave this phone; teams on this phone stay
     await sb.auth.signOut({ scope: 'local' }); // local: works offline too
@@ -3198,7 +4362,10 @@ const actions = {
     const teamId = route().id;
     const m = remote.people?.members.find((x) => x.user_id === id);
     const ok = await askConfirm({
-      title: t('removeFromTeam'), message: t('removeMemberConfirm', { email: `<b>${esc(m?.email || '')}</b>` }), ok: t('removeFromTeam'), danger: true,
+      title: t('removeFromTeam'),
+      message: t('removeMemberConfirm', { email: `<b>${esc(m?.email || '')}</b>` }),
+      ok: t('removeFromTeam'),
+      danger: true,
     });
     if (!ok) return;
     try {
@@ -3211,7 +4378,12 @@ const actions = {
   },
   'leave-team': async () => {
     const teamId = route().id;
-    const ok = await askConfirm({ title: t('leaveTeam'), message: t('leaveTeamConfirm'), ok: t('leaveTeam'), danger: true });
+    const ok = await askConfirm({
+      title: t('leaveTeam'),
+      message: t('leaveTeamConfirm'),
+      ok: t('leaveTeam'),
+      danger: true,
+    });
     if (!ok) return;
     try {
       if (pendingCount()) await syncNow(); // a director's changes go up first
@@ -3225,18 +4397,27 @@ const actions = {
   },
 
   // Admin page
-  'admin-reload': () => { remote.admin = null; render(); },
+  'admin-reload': () => {
+    remote.admin = null;
+    render();
+  },
   'admin-remove-account': async ({ id }) => {
     const a = remote.admin?.accounts.find((x) => x.user_id === id);
     const ok = await askConfirm({
-      title: t('removeAccess'), message: t('removeAccessConfirm', { email: `<b>${esc(a?.email || '')}</b>` }), ok: t('removeAccess'), danger: true,
+      title: t('removeAccess'),
+      message: t('removeAccessConfirm', { email: `<b>${esc(a?.email || '')}</b>` }),
+      ok: t('removeAccess'),
+      danger: true,
     });
     if (ok) adminDo(() => adminCall({ action: 'delete_account', user_id: id }), t('accessRemoved'));
   },
   'admin-remove-member': async ({ tid, id }) => {
     const a = remote.admin?.accounts.find((x) => x.user_id === id);
     const ok = await askConfirm({
-      title: t('removeFromTeam'), message: t('removeMemberConfirm', { email: `<b>${esc(a?.email || '')}</b>` }), ok: t('removeFromTeam'), danger: true,
+      title: t('removeFromTeam'),
+      message: t('removeMemberConfirm', { email: `<b>${esc(a?.email || '')}</b>` }),
+      ok: t('removeFromTeam'),
+      danger: true,
     });
     if (ok) adminDo(() => deleteMember(tid, id), t('removed'), true);
   },
@@ -3274,7 +4455,10 @@ const actions = {
       return askConfirm({ title: t('deleteTeam'), message: t('teamHasPlayers'), ok: t('ok'), cancel: false });
     }
     const ok = await askConfirm({
-      title: t('confirmDeleteTeam'), message: esc(teamLabel(getTeam(id))), ok: t('deleteBtn'), danger: true,
+      title: t('confirmDeleteTeam'),
+      message: esc(teamLabel(getTeam(id))),
+      ok: t('deleteBtn'),
+      danger: true,
     });
     if (!ok) return;
     db.teams = db.teams.filter((x) => x.id !== id);
@@ -3302,7 +4486,10 @@ const actions = {
   'delete-player': async ({ id }) => {
     const p = db.players.find((x) => x.id === id);
     const ok = await askConfirm({
-      title: t('removePlayerTitle'), message: t('confirmRemovePlayer', { name: `<b>${esc(p.name)}</b>` }), ok: t('deleteBtn'), danger: true,
+      title: t('removePlayerTitle'),
+      message: t('confirmRemovePlayer', { name: `<b>${esc(p.name)}</b>` }),
+      ok: t('deleteBtn'),
+      danger: true,
     });
     if (!ok) return;
     db.players = db.players.filter((x) => x.id !== id);
@@ -3337,7 +4524,12 @@ const actions = {
     save();
     render();
   },
-  resume: () => { const g = currentGame(); startClock(g); save(); render(); },
+  resume: () => {
+    const g = currentGame();
+    startClock(g);
+    save();
+    render();
+  },
   'end-period': async () => {
     const g = currentGame();
     const last = g.clock.period >= g.periods;
@@ -3393,9 +4585,13 @@ const actions = {
     const cur = formationOf(g);
     openSheet(`
       <h3>${t('formation')}</h3>
-      ${formationsFor(g.field).map((f) => `<button class="opt ${f === cur ? 'current' : ''}" data-action="set-formation" data-v="${f}">
+      ${formationsFor(g.field)
+        .map(
+          (f) => `<button class="opt ${f === cur ? 'current' : ''}" data-action="set-formation" data-v="${f}">
         <span>${f}</span>${f === cur ? '<span>✓</span>' : ''}
-      </button>`).join('')}
+      </button>`,
+        )
+        .join('')}
       <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
   },
   'set-formation': ({ v }) => {
@@ -3453,9 +4649,15 @@ const actions = {
     openSheet(`
       <h3>${t('editGoal', { t: timeOf(g, e) })}</h3>
       <p class="muted small sub-title">${t('whoScored')}</p>
-      ${ids.map((p) => `<button class="opt ${p === e.playerId ? 'current' : ''}" data-action="set-scorer" data-id="${e.id}" data-p="${p}">
+      ${ids
+        .map(
+          (
+            p,
+          ) => `<button class="opt ${p === e.playerId ? 'current' : ''}" data-action="set-scorer" data-id="${e.id}" data-p="${p}">
         <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}</span>${p === e.playerId ? '<span>⚽</span>' : ''}
-      </button>`).join('')}
+      </button>`,
+        )
+        .join('')}
       <button class="btn ghost danger block" data-action="delete-goal" data-id="${e.id}">${t('removeGoal')}</button>
       <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
   },
@@ -3497,9 +4699,19 @@ const actions = {
     openSheet(`
       <h3>${t('gameInfo')}</h3>
       <form class="form" data-form="game-info">
-        ${db.teams.length ? `<label>${t('team')}
-          <select name="teamId">${db.teams.filter((tm) => tm.id === teamId || !readOnlyTeam(tm.id)).map((tm) => `<option value="${tm.id}" ${tm.id === teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`).join('')}</select>
-        </label>` : ''}
+        ${
+          db.teams.length
+            ? `<label>${t('team')}
+          <select name="teamId">${db.teams
+            .filter((tm) => tm.id === teamId || !readOnlyTeam(tm.id))
+            .map(
+              (tm) =>
+                `<option value="${tm.id}" ${tm.id === teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`,
+            )
+            .join('')}</select>
+        </label>`
+            : ''
+        }
         <label>${t('opponent')}<input name="opponent" autocomplete="off" value="${esc(g.opponent)}"></label>
         <label>${t('homeAway')}
           <select name="home"><option value="1">${t('home')}</option><option value="0" ${g.home === false ? 'selected' : ''}>${t('away')}</option></select>
@@ -3524,7 +4736,10 @@ const actions = {
     const g = currentGame();
     if (!g) return;
     const ok = await askConfirm({
-      title: t('deleteGameTitle'), message: t('confirmDeleteGame'), ok: t('deleteBtn'), danger: true,
+      title: t('deleteGameTitle'),
+      message: t('confirmDeleteGame'),
+      ok: t('deleteBtn'),
+      danger: true,
     });
     if (!ok) return;
     db.games = db.games.filter((x) => x !== g);
@@ -3547,7 +4762,12 @@ const actions = {
   },
 
   // backup
-  backup: () => download(`fut-academy-backup-${isoDate(new Date())}.json`, JSON.stringify(db, null, 2), 'application/json'),
+  backup: () =>
+    download(
+      `fut-academy-backup-${isoDate(new Date())}.json`,
+      JSON.stringify(db, null, 2),
+      'application/json',
+    ),
 };
 
 document.addEventListener('click', (e) => {
@@ -3573,7 +4793,8 @@ document.addEventListener('input', (e) => {
   if (fixKey && fix) {
     const g = currentGame();
     const v = e.target.value === '' ? null : Number(e.target.value);
-    if (fixKey === 'end') fix.end = v == null ? Math.min(g.periodMin, fixLimits(g).maxMin) : v - periodOffsetMin(g);
+    if (fixKey === 'end')
+      fix.end = v == null ? Math.min(g.periodMin, fixLimits(g).maxMin) : v - periodOffsetMin(g);
     else fix.started = v;
     for (const b of $$(`#sheet .pick[data-action="fix-${fixKey}"]`)) b.classList.remove('on');
     $('#fix-preview').textContent = fixPreview(g);
@@ -3594,7 +4815,8 @@ document.addEventListener('input', (e) => {
   draft[field] = e.target.value;
   if (field === 'formatId') {
     const f = FORMATS.find((x) => x.id === draft.formatId);
-    if (f && f.id !== 'Custom') Object.assign(draft, { field: f.field, periods: f.periods, periodMin: f.periodMin });
+    if (f && f.id !== 'Custom')
+      Object.assign(draft, { field: f.field, periods: f.periods, periodMin: f.periodMin });
     render();
   } else if (field === 'teamId') {
     draft.sel = {};
@@ -3610,15 +4832,28 @@ document.addEventListener('change', async (e) => {
   // Admin page: account type and team roles (RLS lets only the admin change them).
   if (change === 'admin-kind') {
     return adminDo(async () => {
-      const rows = await q(sb.from('accounts').update({ kind: e.target.value }).eq('user_id', id).select('user_id'));
+      const rows = await q(
+        sb.from('accounts').update({ kind: e.target.value }).eq('user_id', id).select('user_id'),
+      );
       if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
     }, t('kindChanged'));
   }
   if (change === 'admin-role') {
-    return adminDo(async () => {
-      const rows = await q(sb.from('team_members').update({ role: e.target.value }).eq('team_id', tid).eq('user_id', id).select('user_id'));
-      if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
-    }, t('roleChanged'), true);
+    return adminDo(
+      async () => {
+        const rows = await q(
+          sb
+            .from('team_members')
+            .update({ role: e.target.value })
+            .eq('team_id', tid)
+            .eq('user_id', id)
+            .select('user_id'),
+        );
+        if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
+      },
+      t('roleChanged'),
+      true,
+    );
   }
   if (change !== 'restore') return;
   const file = e.target.files[0];
@@ -3627,7 +4862,9 @@ document.addEventListener('change', async (e) => {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.players) || !Array.isArray(data.games)) throw new Error('bad file');
     const ok = await askConfirm({
-      title: t('importBackup'), message: t('confirmRestore', { p: data.players.length, g: data.games.length }), ok: t('restoreBtn'),
+      title: t('importBackup'),
+      message: t('confirmRestore', { p: data.players.length, g: data.games.length }),
+      ok: t('restoreBtn'),
     });
     if (!ok) return;
     // Cloud teams aren't replaced by a backup (that would delete them in the cloud): they and
@@ -3636,7 +4873,8 @@ document.addEventListener('change', async (e) => {
     const restored = normalize(data);
     const cloudIds = new Set(Object.keys(db.sync.teams));
     for (const kind of RECORD_KINDS) {
-      restored[kind] = restored[kind].filter((r) => !cloudIds.has(teamIdOf(kind, r)))
+      restored[kind] = restored[kind]
+        .filter((r) => !cloudIds.has(teamIdOf(kind, r)))
         .concat(db[kind].filter((r) => cloudIds.has(teamIdOf(kind, r))));
     }
     Object.assign(restored, { sync: db.sync, deleted: db.deleted });
@@ -3669,17 +4907,31 @@ document.addEventListener('submit', (e) => {
     return adminDo(async () => {
       await adminCall({ action: 'create_account', email, kind: String(data.get('kind')) });
       notify(t('accessGiven', { email: `<b>${esc(email)}</b>` }), t('accessGivenTitle'));
-    }).finally(() => { btn.disabled = false; });
+    }).finally(() => {
+      btn.disabled = false;
+    });
   }
   if (form === 'admin-add-member') {
     const teamId = e.target.dataset.tid;
-    return adminDo(() => q(sb.from('team_members').insert({
-      team_id: teamId, user_id: String(data.get('user')), role: String(data.get('role')), invited_by: myId(),
-    })), t('memberAdded'), true);
+    return adminDo(
+      () =>
+        q(
+          sb.from('team_members').insert({
+            team_id: teamId,
+            user_id: String(data.get('user')),
+            role: String(data.get('role')),
+            invited_by: myId(),
+          }),
+        ),
+      t('memberAdded'),
+      true,
+    );
   }
   if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
-  if (form === 'signin-password') return signInPassword(String(data.get('email')).trim().toLowerCase(), String(data.get('password')));
-  if (form === 'set-password') return setPassword(String(data.get('password')), String(data.get('password2')));
+  if (form === 'signin-password')
+    return signInPassword(String(data.get('email')).trim().toLowerCase(), String(data.get('password')));
+  if (form === 'set-password')
+    return setPassword(String(data.get('password')), String(data.get('password2')));
   if (form === 'signin-code') return verifyCode(String(data.get('code')).replace(/\D/g, ''));
   if (form === 'upload-teams') {
     closeSheet();
@@ -3692,8 +4944,11 @@ document.addEventListener('submit', (e) => {
     const tm = getTeam(data.get('teamId'));
     const round = parseInt(data.get('round'), 10);
     Object.assign(g, {
-      opponent: String(data.get('opponent')).trim(), home: data.get('home') === '1',
-      round: round >= 1 ? String(round) : '', date: data.get('date') || g.date, time: data.get('time'),
+      opponent: String(data.get('opponent')).trim(),
+      home: data.get('home') === '1',
+      round: round >= 1 ? String(round) : '',
+      date: data.get('date') || g.date,
+      time: data.get('time'),
     });
     if (tm) Object.assign(g, { teamId: tm.id, club: tm.club, team: tm.name });
     save();
@@ -3705,7 +4960,10 @@ document.addEventListener('submit', (e) => {
   const number = String(data.get('number') || '').trim();
   const full = String(data.get('fullName') || '').trim();
   if (form === 'edit-player') {
-    Object.assign(db.players.find((x) => x.id === e.target.dataset.id), { name, number, fullName: full });
+    Object.assign(
+      db.players.find((x) => x.id === e.target.dataset.id),
+      { name, number, fullName: full },
+    );
     save();
     render();
     return;
@@ -3730,7 +4988,19 @@ document.addEventListener('submit', (e) => {
 // or onto another pitch player / empty spot to swap positions.
 // A quick swipe still scrolls the page; a plain tap still opens the player sheet.
 
-const drag = { timer: null, active: false, moved: false, from: null, x0: 0, y0: 0, dx: 0, dy: 0, ghost: null, target: null, suppressClick: false };
+const drag = {
+  timer: null,
+  active: false,
+  moved: false,
+  from: null,
+  x0: 0,
+  y0: 0,
+  dx: 0,
+  dy: 0,
+  ghost: null,
+  target: null,
+  suppressClick: false,
+};
 
 function chipAt(x, y) {
   const el = document.elementFromPoint(x, y)?.closest('.chip');
@@ -3762,7 +5032,10 @@ function dragStart(chip, x, y) {
     const ghost = chip.cloneNode(true);
     ghost.className += ' ghost';
     Object.assign(ghost.style, {
-      width: `${chip.offsetWidth}px`, left: `${r.left}px`, top: `${r.top}px`, transformOrigin: `${drag.dx}px ${drag.dy}px`,
+      width: `${chip.offsetWidth}px`,
+      left: `${r.left}px`,
+      top: `${r.top}px`,
+      transformOrigin: `${drag.dx}px ${drag.dy}px`,
     });
     document.body.appendChild(ghost);
     drag.ghost = ghost;
@@ -3816,11 +5089,17 @@ function dragCancel() {
   Object.assign(drag, { timer: null, active: false, from: null, ghost: null, target: null });
 }
 
-document.addEventListener('touchstart', (e) => {
-  const chip = e.target.closest('.chip');
-  if (chip && e.touches.length === 1) dragStart(chip, e.touches[0].clientX, e.touches[0].clientY);
-}, { passive: true });
-document.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
+document.addEventListener(
+  'touchstart',
+  (e) => {
+    const chip = e.target.closest('.chip');
+    if (chip && e.touches.length === 1) dragStart(chip, e.touches[0].clientX, e.touches[0].clientY);
+  },
+  { passive: true },
+);
+document.addEventListener('touchmove', (e) => dragMove(e.touches[0].clientX, e.touches[0].clientY, e), {
+  passive: false,
+});
 document.addEventListener('touchend', dragEnd);
 document.addEventListener('touchcancel', dragCancel);
 
@@ -3854,13 +5133,16 @@ async function updateWakeLock() {
       await wakeLock.release();
       wakeLock = null;
     }
-  } catch {} finally {
+  } catch {
+  } finally {
     wakePending = false;
   }
 }
 
 document.addEventListener('visibilitychange', updateWakeLock);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenus(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeMenus();
+});
 
 // ---------- Start ----------
 

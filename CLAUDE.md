@@ -24,8 +24,9 @@ structure (`app` → `pages` → `features` → `data` → `domain` → `shared`
 down), the UI, data, testing and git/PR rules. Read `docs/standards/README.md` first.
 
 On `feature/typescript` the app is built with Vite (`npm ci`, `npm run dev` / `build` /
-`preview`): the code is in `src/`, and static files are in `public/`. The Conventions
-below still apply, with those paths.
+`preview`): the code is in `src/`, and static files are in `public/`. Before pushing, run
+`npm run lint && npm run typecheck && npm test && npm run format:check`; CI runs the same. The
+Conventions below still apply, with those paths.
 
 ## Conventions
 
