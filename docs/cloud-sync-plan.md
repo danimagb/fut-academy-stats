@@ -202,7 +202,7 @@ branch is merged into `main` only once everything works end to end.
   trigger on `games` drops events whose id the finished game didn't already have, and keeps
   `data`/`status` if an update tries to move it out of `finished`. It adjusts the row instead
   of raising an error, so an upload batch isn't refused; `updated_at` still moves, so the
-  phone gets the server's version on its next pull. Not applied to the Supabase project yet.
+  phone gets the server's version on its next pull. Applied to the Supabase project.
 - Remaining: test on two real phones after merging `feature/cloud-sync` into `main` (GitHub
   Pages serves `main` only). Possible follow-ups: shared live logging on two phones (events as
   rows), Google/Apple sign-in, a read-only viewer role for parents.
