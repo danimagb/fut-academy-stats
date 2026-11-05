@@ -59,7 +59,7 @@ const I18N = {
     players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
     deleteTeam: 'Delete team', teamHasPlayers: 'Remove the players from this team first.', confirmDeleteTeam: 'Delete this team?',
-    editPlayer: 'Edit player', editGoal: 'Fix goal · {t}', whoScored: 'Who scored?', removeGoal: '🗑 Remove goal', confirmRemoveGoal: 'Remove this goal?', gameInfo: '✎ Game details', homeAway: 'Home / Away', shirtNumber: 'Shirt number', save: 'Save',
+    editPlayer: 'Edit player', addPlayer: '+ Add player', newPlayer: 'New player', playerAdded: '{name} added', done: 'Done', editGoal: 'Fix goal · {t}', whoScored: 'Who scored?', removeGoal: '🗑 Remove goal', confirmRemoveGoal: 'Remove this goal?', gameInfo: '✎ Game details', homeAway: 'Home / Away', shirtNumber: 'Shirt number', save: 'Save',
     confirmRemovePlayer: 'Remove {name} from the roster? Past games keep their stats.',
     editGame: 'Edit game', newGameTitle: 'New game', needTeam: 'Create your team and add its players first.', goTeams: 'Go to Teams',
     opponentPh: 'e.g. Sporting U8', home: 'Home', away: 'Away', round: 'Round (optional)',
@@ -150,7 +150,7 @@ const I18N = {
     readOnlyHint: 'You\'re a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.',
     newGameCoachOnly: 'You\'re a coach on these teams, so only directors create games. To log your own games, create a local team.',
     newTeamCloud: 'Synced team. You can add coaches under People.',
-    people: 'People', loading: 'Loading…', needsInternet: 'Needs internet. Try again when you have signal.', tryAgain: 'Try again',
+    people: 'Staff', loading: 'Loading…', needsInternet: 'Needs internet. Try again when you have signal.', tryAgain: 'Try again',
     roleDirector: 'Director', roleCoach: 'Coach', you: 'you', peopleSignIn: 'Sign in to see who has access to this team.',
     addCoach: 'Add coach', addCoachEmail: 'Add a coach by email',
     addCoachHint: 'Only people the admin has given access. Coaches see the team, its games and reports, but can\'t change anything.',
@@ -195,7 +195,7 @@ const I18N = {
     players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
     deleteTeam: 'Apagar equipa', teamHasPlayers: 'Remove primeiro os jogadores desta equipa.', confirmDeleteTeam: 'Apagar esta equipa?',
-    editPlayer: 'Editar jogador', editGoal: 'Corrigir golo · {t}', whoScored: 'Quem marcou?', removeGoal: '🗑 Apagar golo', confirmRemoveGoal: 'Apagar este golo?', gameInfo: '✎ Dados do jogo', homeAway: 'Casa / Fora', shirtNumber: 'Número da camisola', save: 'Guardar',
+    editPlayer: 'Editar jogador', addPlayer: '+ Adicionar jogador', newPlayer: 'Novo jogador', playerAdded: '{name} adicionado', done: 'Concluído', editGoal: 'Corrigir golo · {t}', whoScored: 'Quem marcou?', removeGoal: '🗑 Apagar golo', confirmRemoveGoal: 'Apagar este golo?', gameInfo: '✎ Dados do jogo', homeAway: 'Casa / Fora', shirtNumber: 'Número da camisola', save: 'Guardar',
     confirmRemovePlayer: 'Remover {name} do plantel? Os jogos anteriores mantêm as estatísticas.',
     editGame: 'Editar jogo', newGameTitle: 'Novo jogo', needTeam: 'Cria primeiro a tua equipa e adiciona os jogadores.', goTeams: 'Ir para Equipas',
     opponentPh: 'ex.: Sporting Sub-8', home: 'Casa', away: 'Fora', round: 'Jornada (opcional)',
@@ -286,7 +286,7 @@ const I18N = {
     readOnlyHint: 'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
     newGameCoachOnly: 'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa local.',
     newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
-    people: 'Pessoas', loading: 'A carregar…', needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.', tryAgain: 'Tentar outra vez',
+    people: 'Staff', loading: 'A carregar…', needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.', tryAgain: 'Tentar outra vez',
     roleDirector: 'Diretor', roleCoach: 'Treinador', you: 'tu', peopleSignIn: 'Entra na tua conta para ver quem tem acesso a esta equipa.',
     addCoach: 'Adicionar treinador', addCoachEmail: 'Adicionar um treinador por email',
     addCoachHint: 'Só pessoas a quem o administrador deu acesso. Os treinadores veem a equipa, os jogos e os relatórios, mas não podem alterar nada.',
@@ -1687,7 +1687,7 @@ const READ_ONLY_OK = new Set([
   'pdf', 'player-pdf', // share the report / a player's stats sheet
   'stats-team', 'stats-season', // stats page filters
   'player', // opens a read-only info sheet for coaches (see actions.player)
-  'people-reload', 'leave-team', // People section (anyone may leave a team)
+  'people', 'people-reload', 'leave-team', // People sheet (anyone may leave a team)
   'new-team', // creates a team of their own
 ]);
 // Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
@@ -1790,8 +1790,7 @@ function peopleHtml(teamId) {
       <button class="btn">${t('addCoach')}</button>
     </form>
     <p class="hint">${t('addCoachHint')}</p>` : ''}
-    ${msg}
-    <button class="btn ghost danger small" data-action="leave-team">${t('leaveTeam')}</button>`;
+    ${msg}`;
 }
 
 function showPeople() {
@@ -2050,7 +2049,7 @@ function viewTeam(id) {
     ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
     : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`);
   main.innerHTML = `
-    ${bar(esc(teamLabel(tm)), '#/teams', '', ro ? readOnlyPill() : '')}
+    ${bar(esc(teamLabel(tm)), '#/teams', teamMenu(id, ro, cloudTeam), ro ? readOnlyPill() : '')}
     ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
     ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
     ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
@@ -2063,16 +2062,7 @@ function viewTeam(id) {
       <p class="hint">${t('uploadTeamHint')}</p>
     </div>` : ''}
     <h2>${t('players')}</h2>
-    ${ro ? '' : `<form class="add-player" data-form="add-player">
-      <div class="row gap">
-        <input class="num" name="number" inputmode="numeric" placeholder="#" maxlength="3">
-        <input class="grow" name="name" placeholder="${t('shirtName')}" required autocomplete="off">
-      </div>
-      <div class="row gap">
-        <input class="grow" name="fullName" placeholder="${t('fullName')}" autocomplete="off">
-        <button class="btn primary">${t('add')}</button>
-      </div>
-    </form>`}
+    ${ro ? '' : `<button class="btn primary block add-player-btn" data-action="add-player">${t('addPlayer')}</button>`}
     ${ps.length ? `<ul class="list">${ps.map((p) => `
       <li class="item">
         <span class="shirt">${esc(p.number) || '–'}</span>
@@ -2080,17 +2070,45 @@ function viewTeam(id) {
         ${ro ? '' : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
         <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`}
       </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`}
-    ${cloudTeam ? `<h2>${t('people')}</h2><section id="people" class="people-section">${peopleHtml(id)}</section>` : ''}
-    ${ro ? '' : `<div class="row gap foot">
-      <button class="btn ghost danger" data-action="delete-team">${t('deleteTeam')}</button>
-    </div>`}`;
-  // Members are loaded online, once per visit of this screen (and after changes).
-  if (cloudTeam && canSync()) {
-    if (db.sync.uploads.includes(id)) {
-      remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
-      showPeople();
-    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') loadPeople(id);
-  }
+`;
+}
+
+// Items of the team screen's ⋯ menu: People and Leave team on a cloud team (coaches too),
+// Delete team for whoever may change the team.
+function teamMenu(id, ro, cloudTeam) {
+  return [
+    cloudTeam ? `<button class="menu-item" role="menuitem" data-action="people">👥 ${t('people')}</button>` : '',
+    cloudTeam && canSync() ? `<button class="menu-item danger" role="menuitem" data-action="leave-team">↩ ${t('leaveTeam')}</button>` : '',
+    ro ? '' : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`,
+  ].join('');
+}
+
+// The People sheet of a cloud team. Members are loaded online each time it's opened.
+function openPeople(id) {
+  openSheet(`
+    <h3>${t('people')}</h3>
+    <section id="people" class="people-section">${peopleHtml(id)}</section>
+    <button class="btn ghost block" data-action="close-sheet">${t('done')}</button>`);
+  if (!canSync()) return;
+  if (db.sync.uploads.includes(id)) {
+    remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
+    showPeople();
+  } else loadPeople(id);
+}
+
+// `added` is the name of the player just added, shown while the sheet waits for the next one.
+function openAddPlayer(added = '') {
+  openSheet(`
+    <h3>${t('newPlayer')}</h3>
+    ${added ? `<p class="hint ok" role="status">✓ ${t('playerAdded', { name: esc(added) })}</p>` : ''}
+    <form class="form" data-form="add-player">
+      <label>${t('shirtNumber')}<input name="number" inputmode="numeric" maxlength="3"></label>
+      <label>${t('shirtName')}<input name="name" required autocomplete="off"></label>
+      <label>${t('fullName')}<input name="fullName" autocomplete="off"></label>
+      <button class="btn primary block">${t('add')}</button>
+      <button type="button" class="btn ghost block" data-action="close-sheet">${t('done')}</button>
+    </form>`);
+  $('#sheet [name="number"]').focus();
 }
 
 // ---------- Views: new / edit game ----------
@@ -3165,7 +3183,7 @@ const actions = {
       if (pendingCount()) await syncNow(); // a director's changes go up first
       await deleteMember(teamId, myId());
     } catch (e) {
-      return setPeopleMsg(accessError(e), false);
+      return notify(accessError(e));
     }
     toast(t('leftTeam'));
     await syncNow(); // the team leaves this phone
@@ -3229,6 +3247,8 @@ const actions = {
     save();
     location.hash = '#/teams';
   },
+  people: () => openPeople(route().id),
+  'add-player': () => openAddPlayer(),
   'edit-player': ({ id }) => {
     const p = db.players.find((x) => x.id === id);
     openSheet(`
@@ -3656,7 +3676,12 @@ document.addEventListener('submit', (e) => {
   save();
   if (form === 'add-player-draft') draft.sel[p.id] = 'bench';
   render();
-  main.querySelector(`[data-form="${form}"] input[name="${form === 'add-player' ? 'number' : 'name'}"]`)?.focus();
+  if (form === 'add-player') {
+    // The sheet stays open, empty, for the next player.
+    openAddPlayer(name);
+    return;
+  }
+  main.querySelector('[data-form="add-player-draft"] input[name="name"]')?.focus();
 });
 
 // ---------- Drag a player onto another to substitute ----------
