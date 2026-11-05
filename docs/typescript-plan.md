@@ -12,7 +12,7 @@ keeps deploying from the branch exactly as it does today.
 
 | # | Step | Status | PR |
 |---|------|--------|----|
-| 0 | Plan and code standards | 🔄 in review | danimagb/fut-academy-stats#32 |
+| 0 | Plan and code standards | ✅ merged | danimagb/fut-academy-stats#32 |
 | 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | 🔄 in review | danimagb/fut-academy-stats#33 |
 | 2 | CI: oxlint, tsc, Vitest, build | ⏳ todo | |
 | 3 | Supabase and config as modules (drop `vendor/`) | ⏳ todo | |
@@ -27,7 +27,7 @@ keeps deploying from the branch exactly as it does today.
 
 **Where things stand (update this with every PR):**
 
-- Code standards are in `docs/standards/` (this PR). Every step follows them.
+- Code standards are in `docs/standards/` (step 0). Every step follows them.
 - Done in step 1: the app is built by Vite.
   - Commands: `npm ci`, then `npm run dev` (local server), `npm run build` (writes `dist/`) and
     `npm run preview` (serves `dist/`).
