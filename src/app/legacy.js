@@ -14,7 +14,10 @@ import { fmtDate } from '@/domain/titles';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
 import { installActionListener, registerActions } from '@/app/actions';
-import { onRender, render, route, setViews } from '@/app/router';
+import { addViews, onRender, render, route, setFallbackView } from '@/app/router';
+import { gamesPage, viewGames } from '@/pages/games/games';
+import { gamesTeam } from '@/data/prefs';
+import { scoreHtml } from '@/features/score/score';
 import { keepScreenOn } from '@/app/wake-lock';
 import { buzz, download } from '@/shared/lib/device';
 import { bar, closeMenus } from '@/shared/ui/bar';
@@ -82,7 +85,6 @@ import { getLang, locale, setLang, t } from '@/shared/i18n/i18n';
 
 const LANG_KEY = 'fut-academy-stats.lang';
 const THEME_KEY = 'fut-academy-stats.theme'; // 'light' | 'dark' | 'auto' (follow the device)
-const GAMES_TEAM_KEY = 'fut-academy-stats.gamesTeam'; // team filter on the games page ('' = all)
 const STATS_TEAM_KEY = 'fut-academy-stats.statsTeam'; // team picked on the stats page
 const STATS_SEASON_KEY = 'fut-academy-stats.statsSeason'; // season picked on the stats page (e.g. '2026/2027')
 
@@ -124,16 +126,6 @@ const main = $('#main');
 
 const formatLine = (g) =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
-
-// Score in the same order as matchTitle (home side first). With `colour`, our goals are
-// wrapped in .us and theirs in .them (no colour on a draw).
-function scoreHtml(g, d, sep = '–', colour = false) {
-  const goals = (who) => {
-    const n = who === 'us' ? d.us : d.them;
-    return colour && d.us !== d.them ? `<span class="${who}">${n}</span>` : `${n}`;
-  };
-  return g.home === false ? `${goals('them')}${sep}${goals('us')}` : `${goals('us')}${sep}${goals('them')}`;
-}
 
 const undoBtn = (eventId) => `<button data-action="undo-toast" data-id="${eventId}">${t('undo')}</button>`;
 
@@ -271,23 +263,22 @@ function describe(g, e) {
 
 let draft = null;
 
-setViews(
-  {
-    games: viewGames,
-    teams: viewTeams,
-    players: viewTeams,
-    team: viewTeam,
-    new: viewEdit,
-    edit: viewEdit,
-    game: viewGame,
-    report: viewReport,
-    profile: viewProfile,
-    admin: viewAdmin,
-    stats: viewStats,
-    player: viewPlayer,
-  },
-  viewGames,
-);
+addViews({
+  teams: viewTeams,
+  players: viewTeams,
+  team: viewTeam,
+  new: viewEdit,
+  edit: viewEdit,
+  game: viewGame,
+  report: viewReport,
+  profile: viewProfile,
+  admin: viewAdmin,
+  stats: viewStats,
+  player: viewPlayer,
+});
+// Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
+addViews(gamesPage.views);
+setFallbackView(viewGames);
 onRender({
   before: () => {
     renderPending = false;
@@ -344,42 +335,6 @@ function notFound() {
 }
 
 // ---------- Views: games list ----------
-
-// Team shown on the games page, or '' for all (only when there's more than one team).
-function gamesTeam() {
-  const id = localStorage.getItem(GAMES_TEAM_KEY) || '';
-  return db.teams.length > 1 && getTeam(id) ? id : '';
-}
-
-function viewGames() {
-  const team = gamesTeam();
-  const games = db.games
-    .filter((g) => !team || g.teamId === team)
-    .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
-  main.innerHTML = `
-    ${bar('⚽ Fut Academy Stats')}
-    <div class="row gap">
-      <a class="btn primary grow" href="#/new">${t('newGame')}</a>
-      <a class="btn" href="#/teams">${t('teamsBtn', { n: db.teams.length })}</a>
-    </div>
-    ${
-      db.teams.length > 1
-        ? `<div class="pick-row filter" role="tablist">
-      ${[['', t('allTeams')], ...db.teams.map((tm) => [tm.id, esc(teamLabel(tm))])]
-        .map(
-          ([id, label]) =>
-            `<button class="pick ${id === team ? 'on' : ''}" role="tab" aria-selected="${id === team}" data-action="games-team" data-id="${id}">${label}</button>`,
-        )
-        .join('')}
-    </div>`
-        : ''
-    }
-    ${
-      games.length
-        ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
-        : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`
-    }`;
-}
 
 // ---------- Cloud account (Supabase sign-in) ----------
 // Sign-in is email + password; a code by email is used the first time and for a forgotten
@@ -1155,27 +1110,6 @@ function viewProfile() {
       </div>`,
     )}
     </div>`;
-}
-
-function gameCard(g) {
-  const d = derive(g);
-  const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
-  // Result of a finished game: win / draw / loss, shown as a coloured stripe and a pill.
-  const res = g.status === 'finished' ? (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw') : '';
-  // Our goals green, theirs red, both neutral on a draw.
-  const score = scoreHtml(g, d, '–', true);
-  // Only what helps pick a game out of the list (the title already names the team): date and round.
-  const meta = [esc(fmtDate(g)), g.round ? t('roundN', { n: esc(g.round) }) : ''].filter(Boolean).join(' · ');
-  return `<li><a class="card game ${res}" href="${href}">
-    <div class="grow">
-      <strong>${esc(matchTitle(g))}</strong>
-      <div class="muted small">${meta}</div>
-    </div>
-    <div class="right">
-      ${g.status !== 'scheduled' ? `<div class="score">${score}</div>` : ''}
-      ${res ? `<span class="badge result ${res}">${t(`res_${res}`)}</span>` : `<span class="badge ${g.status}">${t(`st_${g.status}`)}</span>`}
-    </div>
-  </a></li>`;
 }
 
 // ---------- Views: teams and their players ----------
@@ -2545,10 +2479,6 @@ const exportPlayerPdf = (playerId) =>
 
 const actions = {
   'close-sheet': () => closeSheet(),
-  'games-team': ({ id }) => {
-    localStorage.setItem(GAMES_TEAM_KEY, id);
-    render();
-  },
   soon: ({ v }) =>
     askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
@@ -3010,6 +2940,7 @@ const actions = {
 };
 
 registerActions(actions);
+registerActions(gamesPage.actions);
 installActionListener({
   ignore: () => drag.suppressClick, // the click that ends a drag
   allow: (name) => {
