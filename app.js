@@ -785,9 +785,7 @@ function derive(g) {
         on.delete(e.playerId);
         on.add(e.inId);
         close(s, e.t);
-        s.subOff = true;
         stats[e.inId].open = e.t;
-        stats[e.inId].subOn = true;
         if (gk === e.playerId) gk = e.inId;
         if (slots.includes(e.playerId)) slots[slots.indexOf(e.playerId)] = e.inId;
         else if (slots.includes(null)) slots[slots.indexOf(null)] = e.inId;
@@ -2311,12 +2309,10 @@ const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-hidden=
 </svg>`;
 
 // Round player token: shirt circle with minutes played in a pill on its bottom edge, the name
-// below, and small badges on the circle (sub arrow top-left, cards top-right, goals bottom-right).
+// below, and small badges on the circle (cards top-right, goals bottom-right).
 // They are chips too, so tap and drag work the same. where: 'on' (pitch), 'bench' or 'off' (sent off).
 function token(g, d, id, where, attrs = '') {
   const s = d.stats[id];
-  const sub = s.subOff ? '<span class="tb tb-sub tb-out" aria-hidden="true">↓</span>'
-    : s.subOn ? '<span class="tb tb-sub tb-in" aria-hidden="true">↑</span>' : '';
   const cards = s.red ? '<span class="tb tb-card tb-red" aria-hidden="true"></span>'
     : s.yellow ? `<span class="tb tb-card tb-yellow" aria-hidden="true">${s.yellow > 1 ? s.yellow : ''}</span>` : '';
   const goals = s.goals ? `<span class="tb tb-goal" aria-hidden="true">⚽${s.goals > 1 ? `<b>${s.goals}</b>` : ''}</span>` : '';
@@ -2324,7 +2320,7 @@ function token(g, d, id, where, attrs = '') {
   return `<button class="chip round ${where} ${where === 'on' ? 'tok' : ''} ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" ${attrs} ${where === 'off' ? 'disabled' : ''}>
     <span class="face">
       <span class="shirt">${esc(g.names[id].number) || '–'}</span>
-      ${sub}${cards}${goals}
+      ${cards}${goals}
       <span class="mins" data-pt="${id}">${fmtMins(s.played)}</span>
     </span>
     <span class="pname">${esc(g.names[id].name)}</span>${label ? `<span class="sr-only">${label}</span>` : ''}

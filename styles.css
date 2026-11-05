@@ -383,9 +383,6 @@ label.inline input { width: 90px; min-height: 40px; }
   position: absolute; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
   font-size: .62rem; font-weight: 800; line-height: 1; box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
 }
-.chip.round .tb-sub { top: -4px; left: -6px; color: #fff; }
-.chip.round .tb-out { background: #b42323; }
-.chip.round .tb-in { background: #16a34a; }
 .chip.round .tb-card { top: -4px; right: -6px; width: 12px; height: 16px; border-radius: 2px; color: #2b1a00; font-size: .58rem; }
 .chip.round .tb-yellow { background: #facc15; }
 .chip.round .tb-red { background: #ef4444; }
