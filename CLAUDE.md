@@ -12,6 +12,17 @@ before changing storage, sync, sign-in or the database. Database changes go in a
 `supabase/migrations/` with tests in `supabase/tests/rls.test.sql`
 (`bash supabase/tests/local/run.sh` must pass).
 
+## TypeScript migration
+
+The app is moving to TypeScript modules with a Vite build and CI checks (oxlint, Vitest,
+Playwright). This happens on the `feature/typescript` branch, through PRs into it.
+**`docs/typescript-plan.md`** lists every step, and its "Progress" section records where things
+stand. Read it before working on that branch, and update it in every PR for that work.
+
+Code on that branch follows **`docs/standards/`**: TypeScript style, the frontend folder
+structure (`app` → `pages` → `features` → `data` → `domain` → `shared`, with imports only going
+down), the UI, data, testing and git/PR rules. Read `docs/standards/README.md` first.
+
 ## Conventions
 
 - `app.js` holds all logic (storage, views, clock, events, report/PDF), `styles.css` all
