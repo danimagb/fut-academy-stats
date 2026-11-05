@@ -23,6 +23,10 @@ Code on that branch follows **`docs/standards/`**: TypeScript style, the fronten
 structure (`app` → `pages` → `features` → `data` → `domain` → `shared`, with imports only going
 down), the UI, data, testing and git/PR rules. Read `docs/standards/README.md` first.
 
+On `feature/typescript` the app is built with Vite (`npm ci`, `npm run dev` / `build` /
+`preview`): the code is in `src/`, and static files are in `public/`. The Conventions
+below still apply, with those paths.
+
 ## Conventions
 
 - `app.js` holds all logic (storage, views, clock, events, report/PDF), `styles.css` all
