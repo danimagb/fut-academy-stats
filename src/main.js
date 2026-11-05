@@ -1,4 +1,4 @@
-'use strict';
+import { esc } from '@/shared/lib/html';
 
 // ---------- Config ----------
 
@@ -490,8 +490,6 @@ async function requestPersistence() {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 const main = $('#main');
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
 
 function fmtClock(ms) {

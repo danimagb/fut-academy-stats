@@ -13,8 +13,8 @@ keeps deploying from the branch exactly as it does today.
 | # | Step | Status | PR |
 |---|------|--------|----|
 | 0 | Plan and code standards | ✅ merged | danimagb/fut-academy-stats#32 |
-| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | 🔄 in review | danimagb/fut-academy-stats#33 |
-| 2 | CI: oxlint, tsc, Vitest, build | ⏳ todo | |
+| 1 | Tooling skeleton (Vite, TypeScript, `package.json`) | ✅ merged | danimagb/fut-academy-stats#33 |
+| 2 | CI: oxlint, tsc, Vitest, build | 🔄 in review | (this PR) |
 | 3 | Supabase and config as modules (drop `vendor/`) | ⏳ todo | |
 | 4 | Service worker via vite-plugin-pwa (drop `sw.js`) | ⏳ todo | |
 | 5 | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo | |
@@ -50,6 +50,30 @@ keeps deploying from the branch exactly as it does today.
   - TypeScript 7 (the native compiler) checks only `.ts` files for now (`checkJs: false`). The
     formatter is set up, but the code is only reformatted in step 2, so `npm run format:check`
     fails until then.
+- Done in step 2: CI (`.github/workflows/ci.yml`) runs four jobs on every PR and on every
+  push to `main` and `feature/**`:
+  - **Lint and format:** `npm run lint` (oxlint) and `npm run format:check`
+  - **Types:** `npm run typecheck`
+  - **Unit tests:** `npm test`
+  - **Build:** `npm run build`, keeping `dist/` as an artifact for 7 days
+- The whole codebase was reformatted once with Prettier, in its own commit (it only changes
+  layout). Run `npm run format` before committing, or let your editor format on save.
+- `.oxlintrc.json`:
+  - the `correctness` category as errors and `suspicious` as warnings
+  - `eqeqeq` (`== null` allowed), `no-unused-vars` (`_` prefix to ignore), `no-var`,
+    `prefer-const`, `import/no-cycle`, `import/no-default-export`, `vitest/no-focused-tests`
+  - the layer and slice import rules from `docs/standards/code-organisation.md`, already set
+    up for `src/shared`, `domain`, `data`, `features` and `pages`, and tested
+  - `unicorn/no-array-sort` and `no-array-reverse` are off: the code sorts arrays it has
+    just made, so `toSorted()` would add nothing
+- The current code has no lint errors, but 21 warnings remain (`no-shadow`, mostly the local
+  match-time `t` hiding the `t()` translation function, and `consistent-function-scoping`).
+  They go away as the code moves into modules (steps 5–6). Warnings don't fail CI; errors do.
+- The first real module is `src/shared/lib/html.ts` (`esc`, with tests in `html.test.ts`).
+  `src/main.js` imports it. Modules are always strict, so `'use strict'` was removed.
+- **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
+  Branches → branch protection or a ruleset → require status checks: "Lint and format",
+  "Types", "Unit tests", "Build").
 
 ## Why
 

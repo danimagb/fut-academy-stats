@@ -21,7 +21,7 @@ tool can't check, and the reasons behind the rules.
 | Tool | Enforces | Config |
 |---|---|---|
 | Formatter (Prettier; see below) | Layout: indentation, quotes, semicolons, line width | `.prettierrc.json`, `.editorconfig` |
-| oxlint | Bugs and risky patterns, unused code, `==`, TypeScript and Vitest rules | `.oxlintrc.json` |
+| oxlint | Bugs and risky patterns, unused code, `==`, import cycles and the layer rules, TypeScript and Vitest rules | `.oxlintrc.json` |
 | `tsc --noEmit` | Types (`strict` from step 8) | `tsconfig.json` |
 | Vitest / Playwright | Behaviour | `vite.config.ts`, `playwright.config.ts` |
 

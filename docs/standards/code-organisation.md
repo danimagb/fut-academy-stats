@@ -95,15 +95,22 @@ shared    → shared only
   startup.
 
 ## How this is checked
-- **oxlint** (configured in step 2):
-  - `import/no-cycle`;
-  - `no-restricted-imports`, set per layer with `overrides`, so `domain/**` can't import
-    `data`, `features`, `pages` or `app`, and so on;
-  - `import/no-default-export`.
-- **Slices importing each other:** an oxlint `no-restricted-imports` pattern blocks
-  `features/*` → `features/*` and `pages/*` → `pages/*`. If oxlint can't express a rule,
-  step 2 adds [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) as a CI
-  check instead.
+- **oxlint** (`.oxlintrc.json`):
+  - `import/no-cycle`
+  - `import/no-default-export` (config files such as `vite.config.ts` are exempt)
+  - `no-restricted-imports`, set per layer with `overrides`:
+    - a module can't import from a higher layer (for example `domain/**` can't import
+      `@/data/**`, `@/features/**`, `@/pages/**` or `@/app/**`)
+    - a feature can't import another feature (`@/features/**`), and a page can't import
+      another page
+- **How imports are written:**
+  - **Between folders, use `@/`** (for example `import { esc } from '@/shared/lib/html'`).
+  - **Inside a folder or slice, use `./`.**
+  - `../` isn't allowed in `shared`, `domain`, `data`, `features` or `pages`, because a
+    relative path could get around the layer rules.
+  - So keep a slice one level deep: `features/substitution/*.ts`, with no subfolders.
+- These rules are tested: an import from a higher layer, a feature importing another
+  feature, and a `../` import out of a slice each fail the lint.
 - Reviewers check whatever the tools can't, using the checklist in `git-and-prs.md`.
 
 ## Where things go
