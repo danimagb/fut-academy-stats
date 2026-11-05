@@ -25,7 +25,8 @@ down), the UI, data, testing and git/PR rules. Read `docs/standards/README.md` f
 
 On `feature/typescript` the app is built with Vite (`npm ci`, `npm run dev` / `build` /
 `preview`): the code is in `src/`, and static files are in `public/`. Before pushing, run
-`npm run lint && npm run typecheck && npm test && npm run format:check`; CI runs the same. The
+`npm run lint && npm run typecheck && npm test && npm run format:check`, and `npm run e2e` for
+anything that changes a screen; CI runs the same. The
 Conventions below still apply, with those paths. On this branch, the Supabase URL and
 publishable key are in `src/shared/config.ts`, and supabase-js comes from npm (`vendor/` is
 gone). The service worker is `src/sw.ts`, built by vite-plugin-pwa: **don't bump `CACHE`**

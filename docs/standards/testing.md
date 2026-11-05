@@ -48,7 +48,8 @@ key flows.
   `vite preview` (the built app). Run a theme- or language-sensitive flow once in each
   theme or language.
 - Use the clock control (`page.clock`) to move match time forward instead of waiting.
-- The end-to-end tests never call the real Supabase project.
+- The end-to-end tests never call the real Supabase project: stub it with
+  `page.route('https://*.supabase.co/**', …)` (see `e2e/signin.spec.ts`).
 - On failure, CI keeps the screenshots and the trace.
 
 ## Running
@@ -56,7 +57,8 @@ key flows.
 ```
 npm test              # unit tests once
 npx vitest            # watch mode while working
-npm run e2e           # end to end (builds + previews first)
+npm run e2e           # end to end (builds, then runs against vite preview)
+npx playwright test e2e/game.spec.ts   # one file (after npm run build)
 ```
 
 Before pushing, run `npm run lint && npm run typecheck && npm test`. CI runs the same
