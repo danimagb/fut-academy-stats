@@ -104,5 +104,5 @@
       }
     }
   ],
-  "ignorePatterns": ["dist/**", "public/vendor/**", "supabase/**"]
+  "ignorePatterns": ["dist/**", "supabase/**"]
 }

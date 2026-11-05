@@ -1,13 +1,11 @@
 // Offline support: serve from cache, refresh the cache in the background.
 // Bump CACHE when shipping changes so old files get cleaned up.
-const CACHE = 'fut-academy-stats-v53';
+const CACHE = 'fut-academy-stats-v54';
 const ASSETS = [
   './',
   './index.html',
   './assets/app.js', // built by Vite (fixed names until the service worker is generated, step 4)
   './assets/index.css',
-  './config.js',
-  './vendor/supabase-js-2.118.0.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',
