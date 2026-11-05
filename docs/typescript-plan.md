@@ -78,6 +78,8 @@ keeps deploying from the branch exactly as it does today.
   - `src/shared/config.ts` exports `CLOUD`, holding the public URL and the publishable key
     (the same values as before). `config.js`, `vendor/` and `window.FAS_CONFIG` /
     `window.supabase` are gone, and so are Vite's two "can't be bundled" warnings.
+  - The build writes `dist/licenses.md` with the licences of the bundled packages (MIT for
+    supabase-js). Before, `vendor/supabase-js-LICENSE` did this job.
   - `public/sw.js` no longer lists those two files; `CACHE` is v54.
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",

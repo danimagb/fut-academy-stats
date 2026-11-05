@@ -9,6 +9,8 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
+    // Ships the licences of bundled packages (supabase-js is MIT) as licenses.md next to the app.
+    license: { fileName: 'licenses.md' },
     rolldownOptions: {
       output: {
         // Fixed names (no content hash) until step 4, because public/sw.js lists them in ASSETS.
