@@ -23,7 +23,7 @@ keeps deploying from the branch exactly as it does today.
 | 5.4 | Supabase client, sync and sign-in logic                            | ✅ merged    | danimagb/fut-academy-stats#41 |
 | 5.5 | Database checks on what is stored (new migration)                  | ✅ merged    | danimagb/fut-academy-stats#42 |
 | 7   | End-to-end tests (Playwright) in CI, moved before step 6           | ✅ merged    | danimagb/fut-academy-stats#43 |
-| 6.1 | App shell: router, tab bar, action listeners, shared UI            | 🔄 in review | (this PR)                     |
+| 6.1 | App shell: router, tab bar, action listeners, shared UI            | 🔄 in review | danimagb/fut-academy-stats#44 |
 | 6.2 | Team and account screens                                           | ⏳ todo      |                               |
 | 6.3 | Game screens                                                       | ⏳ todo      |                               |
 | 6.4 | Report, stats, PDF; styles split; legacy removed                   | ⏳ todo      |                               |
