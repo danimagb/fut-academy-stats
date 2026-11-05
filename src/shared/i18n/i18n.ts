@@ -811,6 +811,11 @@ export function t(key: string, vars: Readonly<Record<string, string | number>> =
   return s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
 }
 
+/** `key` for one (with "1" appended, e.g. teamsN1) or `key` for any other `n`, with `{n}` filled. */
+export function plural(key: string, n: number): string {
+  return t(n === 1 ? `${key}1` : key, { n });
+}
+
 /** Locale for dates and numbers in the current language. */
 export function locale(): string {
   return current === 'pt' ? 'pt-PT' : 'en-GB';

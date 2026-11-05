@@ -2,19 +2,15 @@
 // screen for the current hash. The app runs extra work around each render with `onRender`
 // (closing the sheet before, the tab bar and wake lock after).
 
-export type Route = { view: string; id: string | undefined };
+import { route, type Route } from '@/shared/lib/route';
+
+export { route, type Route };
 type View = (id: string | undefined) => void;
 
 let views: Record<string, View> = {};
 let fallback: View = () => {};
 let before: () => void = () => {};
 let after: (route: Route) => void = () => {};
-
-/** The current screen and id, from the hash ("#/game/abc" → { view: 'game', id: 'abc' }). */
-export function route(): Route {
-  const [, view = 'games', id] = location.hash.split('/');
-  return { view, id };
-}
 
 /** The screens by view name, and the one shown for an unknown view. */
 export function setViews(next: Record<string, View>, fallbackView: View): void {

@@ -1,5 +1,5 @@
 // How teams, games and periods are named.
-import { t } from '@/shared/i18n/i18n';
+import { locale, t } from '@/shared/i18n/i18n';
 import type { Game, Team } from './types';
 
 /** "Club - Age group", or whichever of the two is set. */
@@ -36,4 +36,17 @@ export function seasonOf(date: unknown): string {
   const [y, m] = String(date).split('-').map(Number);
   if (!y) return '';
   return (m ?? 0) >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+}
+
+/** "Sat 7 Nov, 10:00" in the app's language; the raw date when it can't be read. */
+export function fmtDate(g: Pick<Game, 'date' | 'time'>): string {
+  const d = new Date(`${g.date}T${g.time || '00:00'}`);
+  if (Number.isNaN(d.getTime())) return g.date || '';
+  return d.toLocaleString(locale(), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
