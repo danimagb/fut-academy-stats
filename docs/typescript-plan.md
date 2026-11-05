@@ -22,8 +22,8 @@ keeps deploying from the branch exactly as it does today.
 | 5.3 | Storage, change tracking, validating data that comes in            | ✅ merged    | danimagb/fut-academy-stats#40 |
 | 5.4 | Supabase client, sync and sign-in logic                            | ✅ merged    | danimagb/fut-academy-stats#41 |
 | 5.5 | Database checks on what is stored (new migration)                  | ✅ merged    | danimagb/fut-academy-stats#42 |
-| 7   | End-to-end tests (Playwright) in CI, moved before step 6           | 🔄 in review | danimagb/fut-academy-stats#43 |
-| 6.1 | App shell: router, tab bar, action listeners, shared UI            | ⏳ todo      |                               |
+| 7   | End-to-end tests (Playwright) in CI, moved before step 6           | ✅ merged    | danimagb/fut-academy-stats#43 |
+| 6.1 | App shell: router, tab bar, action listeners, shared UI            | 🔄 in review | (this PR)                     |
 | 6.2 | Team and account screens                                           | ⏳ todo      |                               |
 | 6.3 | Game screens                                                       | ⏳ todo      |                               |
 | 6.4 | Report, stats, PDF; styles split; legacy removed                   | ⏳ todo      |                               |
@@ -266,6 +266,24 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     buttons have no accessible name, so they're found by `data-action`.
   - Step 6 is now split into 6.1–6.4 (see the table). Existing `data-action` names stay as
     they are during the move.
+- Done in step 6.1: the app shell is out of the screens' code.
+  - `src/main.js` is now **`src/app/legacy.js`**, with the screens that haven't moved yet.
+    The page now loads **`src/app/main.ts`**, which registers the service worker and calls
+    `start()`.
+  - **`app/router.ts`**: `route()`, `render()`, `setViews(views, fallback)` and
+    `onRender({ before, after })`. Legacy registers its screens, plus the before/after work
+    (closing the sheet; the tab bar and wake lock).
+  - **`app/actions.ts`**: `registerActions(map)` (an action registered twice is an error) and
+    `installActionListener({ ignore, allow })`, the single document click listener. Legacy
+    passes the drag click filter and the read-only rule.
+  - **`app/wake-lock.ts`**: `keepScreenOn(want)`.
+  - **`shared/ui/`**: `toast`, `openSheet`/`closeSheet`, `askConfirm`/`notify`, and
+    `bar`/`closeMenus`. **`shared/lib/device.ts`**: `buzz`, `download`.
+  - The input, change and submit listeners stay in legacy. They depend on screen state
+    (`draft`, `fix`) and move with their screens in 6.2–6.3.
+  - New end-to-end test `e2e/drag.spec.ts`: hold a bench player and drop it on a pitch player
+    to substitute, and the drop doesn't also open the sheet. It uses a taller viewport
+    (1200), because the mouse can't drag to a spot below the screen.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").

@@ -23,7 +23,8 @@ Code on that branch follows **`docs/standards/`**: TypeScript style, the fronten
 structure (`app` → `pages` → `features` → `data` → `domain` → `shared`, with imports only going
 down), the UI, data, testing and git/PR rules. Read `docs/standards/README.md` first.
 
-On `feature/typescript` the app is built with Vite (`npm ci`, `npm run dev` / `build` /
+On `feature/typescript` the app starts in `src/app/main.ts`; screens not moved yet live in
+`src/app/legacy.js`. The app is built with Vite (`npm ci`, `npm run dev` / `build` /
 `preview`): the code is in `src/`, and static files are in `public/`. Before pushing, run
 `npm run lint && npm run typecheck && npm test && npm run format:check`, and `npm run e2e` for
 anything that changes a screen; CI runs the same. The

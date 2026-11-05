@@ -22,9 +22,12 @@ scripting (XSS) hole on every phone that syncs it.
 - **Don't use inline handlers** (`onclick="…"`). A button declares what it does:
   `<button data-action="game.goal" data-id="${esc(p.id)}">`. One listener in `app/actions.ts`
   reads it and calls the matching handler.
-- Name actions `'<slice>.<verb>'`, after the feature or page that owns them
-  (`substitution.make`, `log-event.goal`, `game.endPeriod`). Shared actions have no prefix
-  (`close-sheet`).
+- Name **new** actions `'<slice>.<verb>'`, after the feature or page that owns them
+  (`substitution.make`, `log-event.goal`). Shared actions have no prefix (`close-sheet`). The
+  existing names (`kickoff`, `end-period`, `do-sub`, …) stay as they are, so moving a screen
+  doesn't also change its HTML.
+- Register handlers with `registerActions({...})` from `app/actions.ts`, in the file of the
+  page or feature that owns them. A name registered twice throws an error.
 - Handlers get `(el: HTMLElement, ev: Event)` and read their arguments from `el.dataset`.
   They change `state`, call `save()` and then `render()`. They don't change the DOM
   directly, except for the drag-and-drop on the game screen and small live updates such as
