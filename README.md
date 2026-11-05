@@ -61,7 +61,7 @@ the phone and can be shared with other coaches.
 - **Synced or local.** Every team is either *Synced* or *Local*. Director
   accounts can upload a team (or create new teams as synced); coach accounts keep their own
   teams on the phone.
-- **Roles in a synced team.** *Directors* can do everything and add or remove coaches (⋯ menu → Staff
+- **Roles in a synced team.** *Directors* can do everything and add or remove coaches (Staff section
   on the team screen, by email, only people who already have access). *Coaches* are
   read-only: they see the team, games and reports and can share the PDF, but can't change
   anything.

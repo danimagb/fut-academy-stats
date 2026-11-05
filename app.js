@@ -54,7 +54,7 @@ const I18N = {
     res_win: 'Win', res_draw: 'Draw', res_loss: 'Loss', roundN: 'Round {n}',
     st_scheduled: 'Scheduled', st_live: 'Live', st_break: 'Break', st_finished: 'Finished',
     teams: 'Teams', newTeam: '+ New team', noTeams: 'No teams yet. Create your team, then add its players.',
-    playersCount: '{n} players', unnamedTeam: 'My team',
+    playersCount: '{n} players', playersCount1: '1 player', staffCount: '{n} people', staffCount1: '1 person', unnamedTeam: 'My team',
     club: 'Club', clubPh: 'e.g. Padroense F.C.', team: 'Team', ageGroup: 'Age group', teamPh: 'e.g. U7 B',
     players: 'Players', shirtName: 'Shirt name (game screen)', fullName: 'Full name (report)', add: 'Add', edit: 'Edit',
     noPlayers: 'No players yet. Add the squad above.',
@@ -152,7 +152,7 @@ const I18N = {
     newTeamCloud: 'Synced team. You can add coaches under People.',
     people: 'Staff', loading: 'Loading…', needsInternet: 'Needs internet. Try again when you have signal.', tryAgain: 'Try again',
     roleDirector: 'Director', roleCoach: 'Coach', you: 'you', peopleSignIn: 'Sign in to see who has access to this team.',
-    addCoach: 'Add coach', addCoachEmail: 'Add a coach by email',
+    addCoach: 'Add coach',
     addCoachHint: 'Only people the admin has given access. Coaches see the team, its games and reports, but can\'t change anything.',
     coachAdded: '{email} was added as a coach.', coachAlready: '{email} is already in this team.',
     coachNoAccount: 'This person doesn\'t have access yet. Ask the admin.',
@@ -190,7 +190,7 @@ const I18N = {
     res_win: 'Vitória', res_draw: 'Empate', res_loss: 'Derrota', roundN: 'Jornada {n}',
     st_scheduled: 'Agendado', st_live: 'A decorrer', st_break: 'Intervalo', st_finished: 'Terminado',
     teams: 'Equipas', newTeam: '+ Nova equipa', noTeams: 'Ainda não há equipas. Cria a tua equipa e adiciona os jogadores.',
-    playersCount: '{n} jogadores', unnamedTeam: 'A minha equipa',
+    playersCount: '{n} jogadores', playersCount1: '1 jogador', staffCount: '{n} pessoas', staffCount1: '1 pessoa', unnamedTeam: 'A minha equipa',
     club: 'Clube', clubPh: 'ex.: Padroense F.C.', team: 'Equipa', ageGroup: 'Escalão', teamPh: 'ex.: Sub-7B',
     players: 'Jogadores', shirtName: 'Nome na camisola (ecrã de jogo)', fullName: 'Nome completo (relatório)', add: 'Adicionar', edit: 'Editar',
     noPlayers: 'Ainda não há jogadores. Adiciona o plantel acima.',
@@ -288,7 +288,7 @@ const I18N = {
     newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
     people: 'Staff', loading: 'A carregar…', needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.', tryAgain: 'Tentar outra vez',
     roleDirector: 'Diretor', roleCoach: 'Treinador', you: 'tu', peopleSignIn: 'Entra na tua conta para ver quem tem acesso a esta equipa.',
-    addCoach: 'Adicionar treinador', addCoachEmail: 'Adicionar um treinador por email',
+    addCoach: 'Adicionar treinador',
     addCoachHint: 'Só pessoas a quem o administrador deu acesso. Os treinadores veem a equipa, os jogos e os relatórios, mas não podem alterar nada.',
     coachAdded: '{email} foi adicionado como treinador.', coachAlready: '{email} já está nesta equipa.',
     coachNoAccount: 'Esta pessoa ainda não tem acesso. Fala com o administrador.',
@@ -1691,7 +1691,7 @@ const READ_ONLY_OK = new Set([
   'pdf', 'player-pdf', // share the report / a player's stats sheet
   'stats-team', 'stats-season', // stats page filters
   'player', // opens a read-only info sheet for coaches (see actions.player)
-  'people', 'people-reload', 'leave-team', // People sheet (anyone may leave a team)
+  'team-section', 'people-reload', 'leave-team', // team screen sections (anyone may leave a team)
   'new-team', // creates a team of their own
 ]);
 // Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
@@ -1789,17 +1789,22 @@ function peopleHtml(teamId) {
         ${director && m.role === 'coach' && m.user_id !== me
           ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>` : ''}
       </li>`).join('')}</ul>
-    ${director ? `<form class="form add-coach" data-form="add-coach">
-      <label>${t('addCoachEmail')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
-      <button class="btn">${t('addCoach')}</button>
-    </form>
-    <p class="hint">${t('addCoachHint')}</p>` : ''}
-    ${msg}`;
+    ${msg}
+    <button class="btn ghost danger small" data-action="leave-team">${t('leaveTeam')}</button>`;
 }
 
 function showPeople() {
   const el = document.getElementById('people');
-  if (el && remote.people && route().view === 'team' && route().id === remote.people.teamId) el.innerHTML = peopleHtml(remote.people.teamId);
+  if (!el || !remote.people || route().view !== 'team' || route().id !== remote.people.teamId) return;
+  el.innerHTML = peopleHtml(remote.people.teamId);
+  const sum = document.getElementById('staff-sum');
+  if (sum) sum.textContent = staffSummary(remote.people.teamId);
+}
+
+// One-line summary in the Staff header: how many people, once they're loaded.
+function staffSummary(teamId) {
+  const st = remote.people?.teamId === teamId ? remote.people : null;
+  return st?.status === 'ok' ? plural('staffCount', st.members.length) : '';
 }
 
 function setPeopleMsg(text, ok) {
@@ -2051,7 +2056,7 @@ function viewTeam(id) {
     ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
     : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`);
   main.innerHTML = `
-    ${bar(esc(teamLabel(tm)), '#/teams', teamMenu(id, ro, cloudTeam), ro ? readOnlyPill() : '')}
+    ${bar(esc(teamLabel(tm)), '#/teams', teamMenu(id, ro), ro ? readOnlyPill() : '')}
     ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
     ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
     ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
@@ -2063,39 +2068,59 @@ function viewTeam(id) {
       <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
       <p class="hint">${t('uploadTeamHint')}</p>
     </div>` : ''}
-    <h2>${t('players')}</h2>
-    ${ro ? '' : `<button class="btn primary block add-player-btn" data-action="add-player">${t('addPlayer')}</button>`}
-    ${ps.length ? `<ul class="list">${ps.map((p) => `
+    <div class="accordion team-sections">
+    ${teamSection('players', t('players'), plural('playersCount', ps.length), ro ? '' : 'add-player', ps.length ? `<ul class="list">${ps.map((p) => `
       <li class="item">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow">${esc(p.name)}${p.fullName ? `<div class="muted small">${esc(p.fullName)}</div>` : ''}</span>
         ${ro ? '' : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
         <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`}
-      </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`}
-`;
+      </li>`).join('')}</ul>` : `<p class="empty">${t('noPlayers')}</p>`)}
+    ${cloudTeam ? teamSection('staff', t('people'), staffSummary(id),
+      roleOf(id) === 'director' && canSync() ? 'add-coach' : '',
+      `<div id="people" class="people-section">${peopleHtml(id)}</div>`) : ''}
+    </div>`;
+  // Members are loaded online, once per visit of this screen (and after changes).
+  if (cloudTeam && canSync()) {
+    if (db.sync.uploads.includes(id)) {
+      remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
+      showPeople();
+    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') loadPeople(id);
+  }
 }
 
-// Items of the team screen's ⋯ menu: People and Leave team on a cloud team (coaches too),
-// Delete team for whoever may change the team.
-function teamMenu(id, ro, cloudTeam) {
-  return [
-    cloudTeam ? `<button class="menu-item" role="menuitem" data-action="people">👥 ${t('people')}</button>` : '',
-    cloudTeam && canSync() ? `<button class="menu-item danger" role="menuitem" data-action="leave-team">↩ ${t('leaveTeam')}</button>` : '',
-    ro ? '' : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`,
-  ].join('');
+// Players and Staff on the team screen are collapsible sections, both closed by default
+// (each remembered while the app is open). `add` is the action of the section's ＋ button.
+const teamOpen = { players: false, staff: false };
+
+function teamSection(id, title, summary, add, body) {
+  const open = teamOpen[id];
+  return `
+    <section class="acc ${open ? 'open' : ''}">
+      <div class="acc-top">
+        <button class="acc-head" data-action="team-section" data-v="${id}" aria-expanded="${open}" aria-controls="acc-${id}">
+          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum" id="${id}-sum">${esc(summary)}</span></span>
+        </button>
+        ${add ? `<button class="btn small acc-add" data-action="${add}">＋ ${t('add')}</button>` : ''}
+      </div>
+      <div class="acc-body" id="acc-${id}" ${open ? '' : 'hidden'}>${body}</div>
+    </section>`;
 }
 
-// The People sheet of a cloud team. Members are loaded online each time it's opened.
-function openPeople(id) {
+// The ⋯ menu of the team screen: for now only Delete team (for whoever may change the team).
+const teamMenu = (id, ro) => (ro ? '' : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`);
+
+function openAddCoach() {
   openSheet(`
-    <h3>${t('people')}</h3>
-    <section id="people" class="people-section">${peopleHtml(id)}</section>
-    <button class="btn ghost block" data-action="close-sheet">${t('done')}</button>`);
-  if (!canSync()) return;
-  if (db.sync.uploads.includes(id)) {
-    remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
-    showPeople();
-  } else loadPeople(id);
+    <h3>${t('addCoach')}</h3>
+    <form class="form" data-form="add-coach">
+      <label>${t('email')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
+      <p class="hint">${t('addCoachHint')}</p>
+      <button class="btn primary block">${t('addCoach')}</button>
+      <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
+    </form>`);
+  $('#sheet [name="email"]').focus();
 }
 
 // `added` is the name of the player just added, shown while the sheet waits for the next one.
@@ -3249,8 +3274,12 @@ const actions = {
     save();
     location.hash = '#/teams';
   },
-  people: () => openPeople(route().id),
+  'team-section': ({ v }) => {
+    teamOpen[v] = !teamOpen[v];
+    render();
+  },
   'add-player': () => openAddPlayer(),
+  'add-coach': () => openAddCoach(),
   'edit-player': ({ id }) => {
     const p = db.players.find((x) => x.id === id);
     openSheet(`
@@ -3622,6 +3651,8 @@ document.addEventListener('submit', (e) => {
   if (form === 'add-coach') {
     // Directors only (the form isn't shown to coaches; the database checks it too).
     if (roleOf(route().id) !== 'director') return refuseReadOnly();
+    teamOpen.staff = true; // the result shows in the Staff section
+    render();
     return addCoach(route().id, String(data.get('email')).trim().toLowerCase());
   }
   if (form === 'admin-create') {
@@ -3677,6 +3708,7 @@ document.addEventListener('submit', (e) => {
   db.players.push(p);
   save();
   if (form === 'add-player-draft') draft.sel[p.id] = 'bench';
+  if (form === 'add-player') teamOpen.players = true;
   render();
   if (form === 'add-player') {
     // The sheet stays open, empty, for the next player.
