@@ -1,6 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 import { CLOUD } from '@/shared/config';
 import { $, $$ } from '@/shared/lib/dom';
+import { uid } from '@/shared/lib/id';
+import {
+  RECORD_KINDS,
+  db,
+  dropInvalid,
+  emptySync,
+  initStore,
+  isCloudTeam,
+  loadRejected,
+  normalize,
+  recordKey,
+  saveQuiet,
+  saveStore,
+  setDb,
+  syncGameTeams,
+  teamIdOf,
+} from '@/data/store';
+import { persistedState, requestPersistence } from '@/data/persist';
+import { checkIncoming } from '@/domain/validate';
 import { fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
 import { FORMATS, formationsFor } from '@/domain/formats';
@@ -32,7 +51,6 @@ import { getLang, locale, setLang, t } from '@/shared/i18n/i18n';
 
 // ---------- Config ----------
 
-const STORE_KEY = 'fut-academy-stats.v1';
 const LANG_KEY = 'fut-academy-stats.lang';
 const THEME_KEY = 'fut-academy-stats.theme'; // 'light' | 'dark' | 'auto' (follow the device)
 const GAMES_TEAM_KEY = 'fut-academy-stats.gamesTeam'; // team filter on the games page ('' = all)
@@ -69,161 +87,18 @@ darkMq.addEventListener?.('change', () => {
 
 // ---------- Storage ----------
 
-// Random ids that are unique across phones (needed once data is shared). Older records keep
-// their shorter ids; both are plain strings.
-const uid = () =>
-  crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
-
-// Synced record types (per-phone settings like db.formations and db.lastTeamId are not records).
-const RECORD_KINDS = ['teams', 'players', 'games'];
-
-let db = load();
-
-function load() {
-  try {
-    const data = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (data && Array.isArray(data.players) && Array.isArray(data.games)) return normalize(data);
-  } catch {}
-  return normalize({ players: [], games: [] });
-}
-
-// Players belong to a team. Data from before teams existed gets one team holding everyone.
-function normalize(data) {
-  if (!Array.isArray(data.teams)) data.teams = [];
-  data.sync = normalizeSync(data.sync);
-  // Players of a cloud team are left alone (moving them would move them in the cloud too).
-  const orphans = data.players.filter(
-    (p) => !data.teams.some((tm) => tm.id === p.teamId) && !data.sync.teams[p.teamId],
-  );
-  if (orphans.length) {
-    if (!data.teams.length) data.teams.push({ id: uid(), club: '', name: '' });
-    for (const p of orphans) p.teamId = data.teams[0].id;
-  }
-  syncGameTeams(data);
-  if (!Array.isArray(data.deleted)) data.deleted = [];
-  // Records from before change tracking: mark them as changed so a first sync uploads them.
-  for (const kind of RECORD_KINDS) {
-    for (const r of data[kind]) {
-      if (r.updatedAt == null) Object.assign(r, { updatedAt: 0, dirty: true });
-    }
-  }
-  return data;
-}
-
-// Cloud sync bookkeeping, kept out of the records so it doesn't count as a change:
-// who synced this phone, the server time of the last pull, the cloud teams with this user's
-// role in each (a team is a cloud team iff it is here; its players and games are too), and
-// teams being uploaded (not confirmed by the server yet). See "Cloud sync" below.
-function emptySync() {
-  return { userId: null, lastPulledAt: null, lastSyncAt: null, teams: {}, uploads: [] };
-}
-function normalizeSync(s) {
-  const sync = { ...emptySync(), ...(s && typeof s === 'object' ? s : {}) };
-  if (!sync.teams || typeof sync.teams !== 'object' || Array.isArray(sync.teams)) sync.teams = {};
-  if (!Array.isArray(sync.uploads)) sync.uploads = [];
-  return sync;
-}
-
-// Games keep a copy of their team's club and name (used in titles, the report and the PDF).
-// Keep that copy in line with the team, so renaming a team updates its games too. Games
-// whose team was deleted keep the names they had.
-function syncGameTeams(data, teamId = null) {
-  for (const g of data.games) {
-    if (teamId && g.teamId !== teamId) continue;
-    const tm = data.teams.find((x) => x.id === g.teamId);
-    if (tm) Object.assign(g, { club: tm.club, team: tm.name });
-  }
-}
-
-// ---------- Change tracking (groundwork for cloud sync) ----------
-// Every save compares each team, player and game with how it was at the last save. A record
-// that changed gets `updatedAt` (ms) and `dirty: true` ("not uploaded yet"); a record that
-// disappeared leaves a tombstone in `db.deleted`, so a later sync can delete it elsewhere.
-// The rest of the app just edits `db` and calls save(), as before.
-
-const recordKey = ({ updatedAt, dirty, ...rest }) => JSON.stringify(rest);
-const teamIdOf = (kind, r) => (kind === 'teams' ? r.id : r.teamId);
-const isCloudTeam = (teamId) => !!(teamId && db.sync.teams[teamId]);
-// Team of a record as it was at the last save (from its snapshot JSON).
-function savedTeamId(kind, id, key) {
-  if (kind === 'teams') return id;
-  try {
-    return JSON.parse(key).teamId ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function snapshotOf(data) {
-  return Object.fromEntries(
-    RECORD_KINDS.map((kind) => [kind, new Map(data[kind].map((r) => [r.id, recordKey(r)]))]),
-  );
-}
-
-let saved = snapshotOf(db);
-
-function trackChanges(now = Date.now()) {
-  const next = snapshotOf(db);
-  for (const kind of RECORD_KINDS) {
-    const before = saved[kind];
-    const after = next[kind];
-    const gone = [];
-    for (const r of db[kind]) {
-      const prev = before.get(r.id);
-      if (prev === after.get(r.id)) continue;
-      Object.assign(r, { updatedAt: now, dirty: true });
-      // Moved from a cloud team to a team on this phone (a game's team was changed): delete it
-      // from the cloud team. `moved` tombstones stay while the record is still local.
-      // (teamIdOf, not r.teamId: a team record is its own team, so editing one never "moves" it.)
-      const oldTeam = prev ? savedTeamId(kind, r.id, prev) : null;
-      const newTeam = teamIdOf(kind, r);
-      if (oldTeam && oldTeam !== newTeam && isCloudTeam(oldTeam) && !isCloudTeam(newTeam)) {
-        gone.push({ kind, id: r.id, teamId: oldTeam, deletedAt: now, moved: true });
-      }
-    }
-    // Tombstones remember the record's team, so sync knows whether (and where) to send them.
-    for (const [id, key] of before) {
-      if (!after.has(id)) gone.push({ kind, id, teamId: savedTeamId(kind, id, key), deletedAt: now });
-    }
-    // A record that is back (e.g. restored from a backup) is no longer deleted.
-    const recs = new Map(db[kind].map((r) => [r.id, r]));
-    db.deleted = db.deleted.filter(
-      (d) => d.kind !== kind || !recs.has(d.id) || (d.moved && !isCloudTeam(teamIdOf(kind, recs.get(d.id)))),
-    );
-    db.deleted.push(...gone);
-  }
-  saved = next;
-}
+initStore();
 
 function save() {
-  trackChanges();
-  localStorage.setItem(STORE_KEY, JSON.stringify(db));
-  requestPersistence();
+  saveStore();
+  askPersistence();
   if (hasCloudChanges()) scheduleSync();
 }
 
-// Write the store without counting anything as a change: for data that came from (or was
-// cleaned up for) the cloud, and for clearing `dirty` after an upload.
-function saveQuiet() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(db));
-  saved = snapshotOf(db);
-}
-
-// Ask the browser not to clear our storage when space runs low or the site isn't used for a
-// while (Safari can otherwise remove website data after ~7 days without a visit). Asked once
-// there is data to protect. `persisted` is null where the browser doesn't support it.
-let persisted = null;
-let persistAsked = false;
-async function requestPersistence() {
-  const st = navigator.storage;
-  if (persistAsked || !st?.persist || !(db.teams.length || db.games.length)) return;
-  persistAsked = true;
-  try {
-    persisted = (await st.persisted()) || (await st.persist());
-  } catch {
-    persisted = false;
-  }
-  if (route().view === 'profile') render();
+// Ask the browser to keep our data (see data/persist.ts); Profile shows the answer.
+async function askPersistence() {
+  if ((await requestPersistence(!!(db.teams.length || db.games.length))) && route().view === 'profile')
+    render();
 }
 
 // ---------- Helpers ----------
@@ -1203,6 +1078,7 @@ async function pull(epoch, userId) {
   for (const id of full) forceFull.delete(id);
 
   let latest = db.sync.lastPulledAt;
+  let rejectedRows = 0;
   for (const kind of RECORD_KINDS) {
     const index = new Map(db[kind].map((r, i) => [r.id, i]));
     const seen = new Set();
@@ -1224,6 +1100,13 @@ async function pull(epoch, userId) {
       }
       if (local?.dirty && teams[teamIdOf(kind, local)] === 'director') continue; // will be uploaded
       const rec = { ...fromRow[kind](row), updatedAt: Date.parse(row.updated_at), dirty: false };
+      // Never trust what comes from the cloud: a damaged or implausible record is left out.
+      const check = checkIncoming(kind, rec);
+      if (!check.ok) {
+        console.warn(`Sync: ${kind} ${row.id} left out:`, check.problems);
+        rejectedRows++;
+        continue;
+      }
       if (local && sameRecord(local, rec)) {
         Object.assign(local, { dirty: false, updatedAt: rec.updatedAt });
         continue;
@@ -1249,6 +1132,7 @@ async function pull(epoch, userId) {
   db.sync.lastPulledAt = latest;
   saveQuiet();
   if (changed) renderSoon();
+  if (rejectedRows) toast(plural('skippedN', rejectedRows));
 }
 
 // Upload teams from this phone: they become cloud teams with this user as director.
@@ -1788,7 +1672,7 @@ function viewProfile() {
       t('backupSummary'),
       `
       <p class="hint">${t('backupHint')}</p>
-      ${persisted === null ? '' : `<p class="hint ${persisted ? 'ok' : 'warn'}">${persisted ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
+      ${persistedState() === null ? '' : `<p class="hint ${persistedState() ? 'ok' : 'warn'}">${persistedState() ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
       <div class="row gap">
         <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
         <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
@@ -3758,6 +3642,9 @@ document.addEventListener('change', async (e) => {
     // Cloud teams aren't replaced by a backup (that would delete them in the cloud): they and
     // the sync state stay as they are; the backup replaces the teams on this phone.
     delete data.sync; // another phone's (or person's) sync state
+    // Damaged or implausible records in the file are left out (and counted).
+    const skipped = dropInvalid(data, checkIncoming, Date.now());
+    if (skipped.length) console.warn('Backup: records left out', skipped);
     const restored = normalize(data);
     const cloudIds = new Set(Object.keys(db.sync.teams));
     for (const kind of RECORD_KINDS) {
@@ -3766,10 +3653,10 @@ document.addEventListener('change', async (e) => {
         .concat(db[kind].filter((r) => cloudIds.has(teamIdOf(kind, r))));
     }
     Object.assign(restored, { sync: db.sync, deleted: db.deleted });
-    db = restored;
+    setDb(restored);
     save();
     render();
-    toast(t('restored'));
+    toast(skipped.length ? `${t('restored')} · ${plural('skippedN', skipped.length)}` : t('restored'));
   } catch {
     notify(t('badBackup'));
   }
@@ -4039,5 +3926,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 
 render();
-requestPersistence();
+askPersistence();
+if (loadRejected.length) toast(plural('skippedN', loadRejected.length));
 tick(); // apply any auto-stop that was due while the app was closed
