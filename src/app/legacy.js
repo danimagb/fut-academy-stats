@@ -1,3 +1,22 @@
+import { $, $$ } from '@/shared/lib/dom';
+import {
+  remote,
+  q,
+  accessError,
+  roleLabel,
+  kindLabel,
+  myId,
+  OFFLINE,
+  loadPeople,
+  peopleHtml,
+  showPeople,
+  staffSummary,
+  setPeopleMsg,
+  addCoach,
+  deleteMember,
+} from '@/features/team-people/team-people';
+import { readOnlyGame, readOnlyTeam, writableTeams } from '@/data/access';
+import { readOnlyPill, refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { derive, getGame, getTeam, teamPlayers } from '@/data/queries';
 import {
@@ -26,7 +45,6 @@ import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
 import { storeAccount } from '@/data/auth';
 import {
-  SyncError,
   configureSync,
   isOffline,
   localTeams,
@@ -35,7 +53,6 @@ import {
   roleOf,
   syncState,
 } from '@/data/sync';
-import { $, $$ } from '@/shared/lib/dom';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -676,11 +693,6 @@ setInterval(() => {
 // change data (the database refuses those writes anyway). Teams on this phone are never
 // read-only.
 
-const readOnlyTeam = (teamId) => roleOf(teamId) === 'coach';
-const readOnlyGame = (g) => !!g && readOnlyTeam(g.teamId);
-// Teams this user may create games in / move games to.
-const writableTeams = () => db.teams.filter((tm) => !readOnlyTeam(tm.id));
-
 // Is the screen being shown (and its sheets) about a read-only team or game?
 function viewReadOnly() {
   const { view, id } = route();
@@ -732,9 +744,6 @@ const READ_ONLY_FORMS = new Set([
   'upload-teams',
 ]);
 
-const refuseReadOnly = () => toast(t('readOnlyToast'));
-const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
-
 // Tap on a player in a read-only game: who it is and how they're doing, no actions.
 function openPlayerInfo(g, id) {
   const d = derive(g);
@@ -750,134 +759,6 @@ function openPlayerInfo(g, id) {
     ${bits ? `<p>${bits}</p>` : ''}
     <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
-}
-
-// ---------- Team access: people of a team, admin page (online only) ----------
-// These screens read and change team_members / accounts directly (RLS decides what is allowed)
-// and the `admin` Edge Function for creating and removing accounts. Nothing is cached on the
-// phone: offline they show "Needs internet".
-
-const remote = { people: null, admin: null }; // reset when the route changes
-
-// Run a supabase-js query; throw its error (with HTTP status) instead of returning it.
-async function q(query) {
-  const { data, error, status } = await query;
-  if (error) throw new SyncError(error, status);
-  return data;
-}
-
-function accessError(e) {
-  if (isOffline(e)) return t('needsInternet');
-  if (e.code === '23514' || /at least one director/i.test(e.message)) return t('lastDirector');
-  if (e.code === '42501') return t('notAllowed');
-  return t('actionFailed', { msg: esc(e.message) });
-}
-
-const roleLabel = (role) => t(role === 'director' ? 'roleDirector' : 'roleCoach');
-const kindLabel = (kind) => t(kind === 'director' ? 'acctDirector' : 'acctCoach');
-const myId = () => cloud.session?.user?.id;
-
-const OFFLINE = Object.assign(new Error('offline'), { status: 0 });
-
-// Members of a team with their emails (teammates' accounts are visible through RLS).
-async function fetchMembers(teamIds) {
-  if (!navigator.onLine) throw OFFLINE; // don't wait for the request to time out
-  const rows = await q(sb.from('team_members').select('team_id, user_id, role').in('team_id', teamIds));
-  const ids = [...new Set(rows.map((r) => r.user_id))];
-  const accts = ids.length ? await q(sb.from('accounts').select('user_id, email').in('user_id', ids)) : [];
-  const email = new Map(accts.map((a) => [a.user_id, a.email]));
-  return rows
-    .map((r) => ({ ...r, email: email.get(r.user_id) || '?' }))
-    .sort(
-      (a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email),
-    );
-}
-
-async function loadPeople(teamId) {
-  const prev = remote.people;
-  const st = { teamId, status: 'loading', members: [], msg: prev?.teamId === teamId ? prev.msg : null };
-  remote.people = st;
-  showPeople();
-  try {
-    st.members = await fetchMembers([teamId]);
-    st.status = 'ok';
-  } catch (e) {
-    st.status = isOffline(e) ? 'offline' : 'error';
-    console.warn('People: load failed', e);
-  }
-  if (remote.people === st) showPeople();
-}
-
-// People section of a cloud team's screen (filled in place, so it never disturbs typing).
-function peopleHtml(teamId) {
-  const st = remote.people?.teamId === teamId ? remote.people : null;
-  if (!canSync()) return `<p class="hint">${t('peopleSignIn')}</p>`;
-  if (!st || st.status === 'loading') return `<p class="hint">${t('loading')}</p>`;
-  if (st.status === 'uploading') return `<p class="hint">${t('uploading')}</p>`;
-  if (st.status !== 'ok') {
-    return `<p class="hint warn">${t('needsInternet')}</p>
-      <button class="btn small ghost" data-action="people-reload">${t('tryAgain')}</button>`;
-  }
-  const me = myId();
-  const director = roleOf(teamId) === 'director';
-  const msg = st.msg ? `<p class="hint ${st.msg.ok ? 'ok' : 'warn'}" role="status">${st.msg.text}</p>` : '';
-  return `
-    <ul class="list people">${st.members
-      .map(
-        (m) => `
-      <li class="item">
-        <span class="grow"><span class="email">${esc(m.email)}</span>${m.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}</span>
-        <span class="badge ${m.role === 'director' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
-        ${
-          director && m.role === 'coach' && m.user_id !== me
-            ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>`
-            : ''
-        }
-      </li>`,
-      )
-      .join('')}</ul>
-    ${msg}
-    <button class="btn ghost danger small" data-action="leave-team">${t('leaveTeam')}</button>`;
-}
-
-function showPeople() {
-  const el = document.getElementById('people');
-  if (!el || !remote.people || route().view !== 'team' || route().id !== remote.people.teamId) return;
-  el.innerHTML = peopleHtml(remote.people.teamId);
-  const sum = document.getElementById('staff-sum');
-  if (sum) sum.textContent = staffSummary(remote.people.teamId);
-}
-
-// One-line summary in the Staff header: how many people, once they're loaded.
-function staffSummary(teamId) {
-  const st = remote.people?.teamId === teamId ? remote.people : null;
-  return st?.status === 'ok' ? plural('staffCount', st.members.length) : '';
-}
-
-function setPeopleMsg(text, ok) {
-  if (remote.people) remote.people.msg = { text, ok };
-  showPeople();
-}
-
-async function addCoach(teamId, email) {
-  try {
-    const r = await q(sb.rpc('add_team_coach', { _team_id: teamId, _email: email }));
-    const e = `<b>${esc(email)}</b>`;
-    if (r === 'added') setPeopleMsg(t('coachAdded', { email: e }), true);
-    else if (r === 'already_member') setPeopleMsg(t('coachAlready', { email: e }), true);
-    else setPeopleMsg(t('coachNoAccount'), false);
-  } catch (e) {
-    return setPeopleMsg(accessError(e), false);
-  }
-  loadPeople(teamId);
-}
-
-// Delete a membership; RLS skips rows it doesn't allow silently, so check something was deleted.
-async function deleteMember(teamId, userId) {
-  const rows = await q(
-    sb.from('team_members').delete().eq('team_id', teamId).eq('user_id', userId).select('user_id'),
-  );
-  if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
 }
 
 // ---------- Admin page ----------
