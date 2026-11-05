@@ -31,7 +31,13 @@
     "import/no-default-export": "error",
     "vitest/no-focused-tests": "error",
     "unicorn/no-array-sort": "off",
-    "unicorn/no-array-reverse": "off"
+    "unicorn/no-array-reverse": "off",
+    "no-underscore-dangle": [
+      "warn",
+      {
+        "allow": ["__WB_MANIFEST"]
+      }
+    ]
   },
   "overrides": [
     {

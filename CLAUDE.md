@@ -28,7 +28,8 @@ On `feature/typescript` the app is built with Vite (`npm ci`, `npm run dev` / `b
 `npm run lint && npm run typecheck && npm test && npm run format:check`; CI runs the same. The
 Conventions below still apply, with those paths. On this branch, the Supabase URL and
 publishable key are in `src/shared/config.ts`, and supabase-js comes from npm (`vendor/` is
-gone).
+gone). The service worker is `src/sw.ts`, built by vite-plugin-pwa: **don't bump `CACHE`**
+(there isn't one). Each build updates installed apps on its own.
 
 ## Conventions
 
