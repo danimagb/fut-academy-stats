@@ -1,3 +1,11 @@
+import { installActionListener, registerActions } from '@/app/actions';
+import { onRender, render, route, setViews } from '@/app/router';
+import { keepScreenOn } from '@/app/wake-lock';
+import { buzz, download } from '@/shared/lib/device';
+import { bar, closeMenus } from '@/shared/ui/bar';
+import { askConfirm, notify } from '@/shared/ui/dialog';
+import { closeSheet, openSheet } from '@/shared/ui/sheet';
+import { toast } from '@/shared/ui/toast';
 import { getSupabase } from '@/data/supabase';
 import { fetchAccount, storeAccount, storedAccount } from '@/data/auth';
 import {
@@ -145,30 +153,7 @@ function scoreHtml(g, d, sep = '–', colour = false) {
   return g.home === false ? `${goals('them')}${sep}${goals('us')}` : `${goals('us')}${sep}${goals('them')}`;
 }
 
-// Optional button HTML (e.g. Undo) is shown next to the message.
-// `msg` is plain text; pass { html } instead for already-escaped markup.
-function toast(msg, button = '') {
-  const el = $('#toast');
-  el.innerHTML = `<span>${msg.html ?? esc(msg)}</span>${button}`;
-  el.hidden = false;
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => (el.hidden = true), button ? 6000 : 2200);
-}
-
 const undoBtn = (eventId) => `<button data-action="undo-toast" data-id="${eventId}">${t('undo')}</button>`;
-
-const buzz = () => navigator.vibrate?.(35);
-
-function download(filename, data, type) {
-  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 // ---------- Clock ----------
 // Match time (e.t, marks, clock) counts only time actually played, so minutes
@@ -306,16 +291,8 @@ function describe(g, e) {
 
 let draft = null;
 
-function route() {
-  const [, view = 'games', id] = location.hash.split('/');
-  return { view, id };
-}
-
-function render() {
-  renderPending = false;
-  closeSheet();
-  const { view, id } = route();
-  const views = {
+setViews(
+  {
     games: viewGames,
     teams: viewTeams,
     players: viewTeams,
@@ -328,11 +305,19 @@ function render() {
     admin: viewAdmin,
     stats: viewStats,
     player: viewPlayer,
-  };
-  (views[view] || viewGames)(id);
-  renderTabbar(view);
-  updateWakeLock();
-}
+  },
+  viewGames,
+);
+onRender({
+  before: () => {
+    renderPending = false;
+    closeSheet();
+  },
+  after: ({ view }) => {
+    renderTabbar(view);
+    updateWakeLock();
+  },
+});
 
 // ---------- Bottom tab bar ----------
 
@@ -373,71 +358,6 @@ window.addEventListener('hashchange', () => {
   render();
   window.scrollTo(0, 0);
 });
-
-// `menu` is optional HTML for the items of a ⋯ menu shown on the right of the bar; `extra` is
-// shown right after the title (e.g. the "Read-only" pill).
-function bar(title, back, menu = '', extra = '') {
-  return `<header class="bar">${back ? `<a class="back" href="${back}" aria-label="${t('back')}">‹</a>` : ''}<h1>${title}</h1>${extra}${
-    menu
-      ? `
-    <div class="menu">
-      <button class="menu-btn" data-action="menu-toggle" aria-label="${t('menu')}" aria-haspopup="true" aria-expanded="false">⋯</button>
-      <div class="menu-list" role="menu" hidden>${menu}</div>
-    </div>`
-      : ''
-  }</header>`;
-}
-
-function closeMenus() {
-  for (const m of document.querySelectorAll('.menu-list:not([hidden])')) {
-    m.hidden = true;
-    m.previousElementSibling?.setAttribute('aria-expanded', 'false');
-  }
-}
-
-// A styled replacement for confirm(): resolves true only when the user taps the confirm button.
-function askConfirm({ title, message, ok, danger = false, cancel = true }) {
-  return new Promise((resolve) => {
-    const el = document.createElement('div');
-    el.className = 'dialog';
-    el.innerHTML = `
-      <div class="dialog-backdrop" data-v="0"></div>
-      <div class="dialog-box" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title">
-        ${title ? `<h3 id="dialog-title">${title}</h3>` : ''}
-        ${message ? `<p ${title ? 'class="muted"' : 'id="dialog-title"'}>${message}</p>` : ''}
-        <div class="row gap">
-          ${cancel ? `<button class="btn ghost grow" data-v="0">${t('cancel')}</button>` : ''}
-          <button class="btn grow ${danger ? 'danger-fill' : 'primary'}" data-v="1">${ok}</button>
-        </div>
-      </div>`;
-    const done = (v) => {
-      el.remove();
-      document.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('hashchange', onHash);
-      resolve(v);
-    };
-    const onKey = (e) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        done(false);
-      }
-    };
-    const onHash = () => done(false);
-    el.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-v]');
-      if (!b) return;
-      e.stopPropagation();
-      done(b.dataset.v === '1');
-    });
-    document.addEventListener('keydown', onKey, true);
-    window.addEventListener('hashchange', onHash);
-    document.body.appendChild(el);
-    el.querySelector('.dialog-box .btn').focus({ preventScroll: true });
-  });
-}
-
-// A styled replacement for alert(): one message and an OK button. `message` is HTML.
-const notify = (message, title = '') => askConfirm({ title, message, ok: t('ok'), cancel: false });
 
 function notFound() {
   main.innerHTML = `${bar(t('notFound'), '#/games')}<p class="empty">${t('gameGone')}</p>`;
@@ -1877,15 +1797,6 @@ setInterval(tick, 1000);
 
 // ---------- Sheets (player actions) ----------
 
-function openSheet(html) {
-  $('#sheet-body').innerHTML = html;
-  $('#sheet').hidden = false;
-}
-
-function closeSheet() {
-  $('#sheet').hidden = true;
-}
-
 function currentGame() {
   const { view, id } = route();
   return view === 'game' || view === 'report' ? getGame(id) : null;
@@ -3168,20 +3079,14 @@ const actions = {
     ),
 };
 
-document.addEventListener('click', (e) => {
-  if (drag.suppressClick) {
-    e.preventDefault();
-    return;
-  }
-  // Any tap closes an open ⋯ menu (except the toggle itself, which handles it).
-  if (!e.target.closest('[data-action="menu-toggle"]')) closeMenus();
-  const el = e.target.closest('[data-action]');
-  if (!el || el.disabled) return;
-  const fn = actions[el.dataset.action];
-  if (!fn) return;
-  e.preventDefault();
-  if (!READ_ONLY_OK.has(el.dataset.action) && viewReadOnly()) return refuseReadOnly();
-  fn(el.dataset, el);
+registerActions(actions);
+installActionListener({
+  ignore: () => drag.suppressClick, // the click that ends a drag
+  allow: (name) => {
+    if (READ_ONLY_OK.has(name) || !viewReadOnly()) return true;
+    refuseReadOnly();
+    return false;
+  },
 });
 
 document.addEventListener('input', (e) => {
@@ -3518,26 +3423,10 @@ document.addEventListener('contextmenu', (e) => {
 
 // ---------- Keep the screen on during a live game ----------
 
-let wakeLock = null;
-let wakePending = false;
-
-async function updateWakeLock() {
+function updateWakeLock() {
   const { view, id } = route();
   const g = view === 'game' && getGame(id);
-  const want = !!g && g.status === 'live' && document.visibilityState === 'visible';
-  try {
-    if (want && !wakeLock && !wakePending && 'wakeLock' in navigator) {
-      wakePending = true;
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => (wakeLock = null));
-    } else if (!want && wakeLock) {
-      await wakeLock.release();
-      wakeLock = null;
-    }
-  } catch {
-  } finally {
-    wakePending = false;
-  }
+  keepScreenOn(!!g && g.status === 'live');
 }
 
 document.addEventListener('visibilitychange', updateWakeLock);
@@ -3547,11 +3436,10 @@ document.addEventListener('keydown', (e) => {
 
 // ---------- Start ----------
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+/** Draws the first screen (called once by app/main.ts). */
+export function start() {
+  render();
+  askPersistence();
+  if (loadRejected.length) toast(plural('skippedN', loadRejected.length));
+  tick(); // apply any auto-stop that was due while the app was closed
 }
-
-render();
-askPersistence();
-if (loadRejected.length) toast(plural('skippedN', loadRejected.length));
-tick(); // apply any auto-stop that was due while the app was closed
