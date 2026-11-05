@@ -17,7 +17,8 @@ keeps deploying from the branch exactly as it does today.
 | 2 | CI: oxlint, tsc, Vitest, build | ⏳ todo | |
 | 3 | Supabase and config as modules (drop `vendor/`) | ⏳ todo | |
 | 4 | Service worker via vite-plugin-pwa (drop `sw.js`) | ⏳ todo | |
-| 5 | Split logic into typed modules + unit tests | ⏳ todo | |
+| 5 | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo | |
+| 5b | Database checks on what is stored (new migration) | ⏳ todo | |
 | 6 | Router, UI and screens as modules + event delegation | ⏳ todo | |
 | 7 | End-to-end smoke tests (Playwright) in CI | ⏳ todo | |
 | 8 | Strict TypeScript | ⏳ todo | |
@@ -54,7 +55,16 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   manual `CACHE` bump go away.
 - **Supabase comes from npm**, pinned to the same version (`@supabase/supabase-js@2.118.0`),
   instead of the copy in `vendor/`.
-- `keep-alive.yml` and `supabase/` don't change. Nothing in this plan touches the database.
+- `keep-alive.yml` doesn't change. The database changes only in step 5b, which adds checks on
+  what can be stored; the tables and access rules stay the same.
+- **Never trust data that comes in.** Row Level Security only controls *who* can write: only
+  a team's directors can write its players and games. It doesn't control *what* they write.
+  `games.data` is a `jsonb` document with no checks, so a director could skip the app, call
+  the Supabase API directly and store anything in their own team. We don't move the game
+  logic to the server: the server can't know the real match time, and minutes, score and
+  clock are never stored, because each phone works them out from the events. The risk is
+  broken or oversized data reaching other phones, so we check data at both ends: the app
+  checks what it loads (step 5) and the database rejects what is obviously wrong (step 5b).
 
 ## Steps (one PR each into `feature/typescript`; the app works after each)
 
@@ -120,6 +130,13 @@ Follow the layers in `docs/standards/code-organisation.md`.
 - `src/shared/`: `lib/` (`esc`, `pad`, DOM and date helpers), `i18n/` (typed so that `pt` must
   have every key in `en`), `config.ts`.
 - Code that isn't moved yet stays in `src/app/legacy.ts` and imports from the new modules.
+- `src/domain/validate.ts`:
+  - type guards: `isTeam`, `isPlayer`, `isGame`
+  - sanity checks: event times ≥ 0 and within the game's length plus the auto-stop limit, known
+    event types and statuses, `playerId`s that exist in the team, text lengths within limits
+  - used on everything that comes in: cloud pulls (`data/sync.ts`), backup import, and loading
+    `localStorage`
+  - a bad record is skipped and the user is warned; it must never crash the app
 - Turn on the layer import rules for these folders.
 - Vitest tests, next to each module, plus the data builders in `src/test/factories.ts`:
   - **clock:** periods, extra time, times on a period boundary, and the "forgot to press" rebuild
@@ -128,6 +145,23 @@ Follow the layers in `docs/standards/code-organisation.md`.
   - **change tracking in `save()`:** `dirty`, `updatedAt`, tombstones
   - **match title and score order:** home and away
   - **translations:** `pt` has every key in `en`
+  - **validation:** deliberately broken records (wrong types, negative or very large times,
+    unknown event types, unknown players, huge text) are rejected
+
+### 5b. Database checks on what is stored
+- New migration `supabase/migrations/<timestamp>_data_constraints.sql` with `CHECK`
+  constraints on `games`:
+  - `jsonb_typeof(data) = 'object'` and `jsonb_typeof(data->'events') = 'array'`
+  - `pg_column_size(data)` under a limit (about 256 KB)
+  - `status` in `('scheduled', 'live', 'break', 'finished')` or null (the values `app.js`
+    uses today)
+  - `data->>'id' = id` and `data->>'teamId' = team_id`
+- Length limits on the text fields of `players`, `teams` and `accounts`.
+- Before adding the constraints, check the real data and what `app.js` writes, so nothing valid
+  is rejected. Add the constraints as `NOT VALID` first if old rows might fail.
+- Tests in `supabase/tests/rls.test.sql`; `bash supabase/tests/local/run.sh` must pass.
+- Detailed checks on individual events stay in the app, so the game logic isn't duplicated in
+  SQL.
 
 ### 6. `app/`, `pages/` and `features/`, plus event delegation
 This is big, so it may be split into PRs 6a, 6b, … (for example one for the game screen).

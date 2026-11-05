@@ -30,6 +30,19 @@ rules.
   wall-clock time it was recorded. The clock that is displayed is calculated (see
   `domain/clock.ts`). Don't add a stored field that duplicates something calculated.
 
+## Never trust data that comes in
+- Row Level Security decides **who** can write: only a team's directors can write its players
+  and games. Nothing decides **what** they write, except our own checks. A director can call
+  the Supabase API directly, without the app.
+- Everything the app loads goes through `domain/validate.ts` (type guards and sanity checks)
+  before the rest of the code uses it. That covers cloud pulls, backup imports and
+  `localStorage`. A bad record is skipped with a warning and never crashes the app.
+- The database adds `CHECK` constraints for the basics (shape, size, allowed values). When you
+  add a field or a status, update the validation, the constraints and their tests together.
+- Values that are worked out (minutes, score, clock) are never stored, so they can't be sent
+  wrong. Every phone works them out from the events.
+- Text from the data is always escaped in HTML (see `ui.md`).
+
 ## Supabase and sync
 - `src/shared/config.ts` holds only the public URL and the **publishable** key. **Never commit a
   secret or `service_role` key, passwords, or personal data** (including in test fixtures:
