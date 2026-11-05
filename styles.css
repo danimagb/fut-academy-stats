@@ -10,6 +10,8 @@
   --warn: #ffb547;
   --danger: #ff6b6b;
   --gk: #ffd54a;
+  --mins-bg: #14532d;
+  --mins-ink: #ffffff;
   --bench-line: #4a5a52;
   --sub-in: #2fbf6f;
   --tabbar-bg: rgba(20, 21, 25, .96);
@@ -36,6 +38,8 @@
   --warn: #e08a00;
   --danger: #c62828;
   --gk: #f2c200;
+  --mins-bg: #166534;
+  --mins-ink: #ffffff;
   --bench-line: #8fa59a;
   --sub-in: #0f8a45;
   --tabbar-bg: rgba(255, 255, 255, .97);
@@ -362,17 +366,43 @@ label.inline input { width: 90px; min-height: 40px; }
 }
 .chip.round.on .shirt, .chip.round.bench .shirt { background: #23733f; color: #fff; border-color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
 .chip.round.gk .shirt { background: var(--gk); color: #2b2200; }
-.chip.round .pname { max-width: 100%; font-size: .78rem; line-height: 1.25; padding: 1px 6px; border-radius: 6px; }
-.chip.round .meta { font-size: .72rem; white-space: nowrap; }
+.chip.round .pname {
+  max-width: 100%; font-size: .78rem; font-weight: 600; line-height: 1.25; padding: 0 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Shirt circle with the minutes pill on its bottom edge and badges on its corners */
+.chip.round .face { position: relative; display: block; padding-bottom: 9px; }
+.chip.round .mins {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  min-width: 30px; padding: 1px 6px; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; line-height: 1.3; white-space: nowrap; font-variant-numeric: tabular-nums;
+  background: var(--mins-bg); color: var(--mins-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+.chip.round.off .mins { background: var(--danger); color: #fff; }
+.chip.round .tb {
+  position: absolute; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  font-size: .62rem; font-weight: 800; line-height: 1; box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.chip.round .tb-sub { top: -4px; left: -6px; color: #fff; }
+.chip.round .tb-out { background: #b42323; }
+.chip.round .tb-in { background: #16a34a; }
+.chip.round .tb-card { top: -4px; right: -6px; width: 12px; height: 16px; border-radius: 2px; color: #2b1a00; font-size: .58rem; }
+.chip.round .tb-yellow { background: #facc15; }
+.chip.round .tb-red { background: #ef4444; }
+.chip.round .tb-goal { bottom: 10px; right: -8px; background: #fff; font-size: .7rem; }
+.chip.round .tb-goal b {
+  position: absolute; top: -5px; right: -5px; min-width: 13px; height: 13px; padding: 0 2px; border-radius: 999px;
+  font-size: .58rem; line-height: 13px; background: #111; color: #fff;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .chip.round.off .shirt { border-color: var(--danger); }
 .round-row { display: flex; flex-wrap: wrap; gap: 10px 4px; }
 
 .chip.tok, .chip.slot-empty { position: absolute; transform: translate(-50%, -50%); }
 .chip.tok:active { transform: translate(-50%, -50%) scale(.94); }
-.chip.tok .pname { background: rgba(0, 0, 0, .55); color: #fff; }
-.chip.tok .meta { color: #e6f3ec; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }
+.chip.tok .pname { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 6px rgba(0, 0, 0, .5); }
 .chip.slot-empty { cursor: default; }
-.chip.slot-empty .shirt { background: transparent; border: 2px dashed rgba(255, 255, 255, .45); }
+.chip.slot-empty .shirt { margin-bottom: 9px; background: transparent; border: 2px dashed rgba(255, 255, 255, .45); }
 
 /* Dragging round tokens: highlight the shirt, not the whole token */
 .chip.round.ghost { position: fixed; transform: scale(1.08); box-shadow: none; }
@@ -382,8 +412,6 @@ label.inline input { width: 90px; min-height: 40px; }
 .chip.round.drop { background: transparent; color: var(--text); transform: scale(1.12); }
 .chip.tok.drop, .chip.slot-empty.drop { transform: translate(-50%, -50%) scale(1.12); }
 .chip.round.drop .shirt { background: #fff; color: #062014; outline: 3px solid var(--accent); }
-.chip.round.drop .meta { color: var(--muted); }
-.chip.tok.drop .meta { color: #e6f3ec; }
 
 /* Scoreboard: status pill, small clock, big score with team names */
 .scoreboard { gap: 4px; padding: 14px 12px 12px; }
