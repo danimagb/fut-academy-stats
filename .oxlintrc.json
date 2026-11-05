@@ -37,7 +37,8 @@
       {
         "allow": ["__WB_MANIFEST"]
       }
-    ]
+    ],
+    "no-undef": "error"
   },
   "overrides": [
     {
@@ -63,15 +64,7 @@
         "no-restricted-imports": [
           "error",
           {
-            "patterns": [
-              "../**",
-              "@/app/**",
-              "@/pages/**",
-              "@/features/**",
-              "@/data/**",
-              "@/shared/ui/**",
-              "@/shared/i18n/*"
-            ]
+            "patterns": ["../**", "@/app/**", "@/pages/**", "@/features/**", "@/data/**", "@/shared/ui/**"]
           }
         ]
       }
