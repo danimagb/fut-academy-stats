@@ -36,7 +36,7 @@ app       → pages, features, data, domain, shared
 pages     → features, data, domain, shared
 features  → data, domain, shared
 data      → domain, shared
-domain    → shared/lib only (and other domain modules)
+domain    → shared/lib, shared/i18n (and other domain modules)
 shared    → shared only
 ```
 
@@ -44,6 +44,14 @@ shared    → shared only
   everything that has to come out the same on the game screen, in the report, in the PDF
   and in stats. Because it is pure, it's easy to test, and it can be reused unchanged when
   we move to Vue.
+- **What "pure" means for `domain/`:**
+  - It never touches the DOM, storage or the network, and never calls `Date.now()`. The time
+    comes in as a `now` parameter.
+  - It may use `t()` from `shared/i18n` for labels (`periodLabel`, `describe(event)`), because
+    those are part of the game's rules about what to show. Tests set the language with
+    `setLang()`.
+  - A function may change the game it's given when it is an operation on that game
+    (`endPeriodAt(g, endT, now)`). It never changes global state.
 - **Never import upwards.** If lower code needs to tell higher code something (for
   example, sync has new data and the screen must re-render), it takes a callback or emits
   an event: `onChange(render)` is wired up in `app/main.ts`.

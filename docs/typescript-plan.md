@@ -10,20 +10,23 @@ keeps deploying from the branch exactly as it does today.
 
 ## Progress
 
-| #   | Step                                                                        | Status       | PR                            |
-| --- | --------------------------------------------------------------------------- | ------------ | ----------------------------- |
-| 0   | Plan and code standards                                                     | ✅ merged    | danimagb/fut-academy-stats#32 |
-| 1   | Tooling skeleton (Vite, TypeScript, `package.json`)                         | ✅ merged    | danimagb/fut-academy-stats#33 |
-| 2   | CI: oxlint, tsc, Vitest, build                                              | ✅ merged    | danimagb/fut-academy-stats#35 |
-| 3   | Supabase and config as modules (drop `vendor/`)                             | ✅ merged    | danimagb/fut-academy-stats#36 |
-| 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                           | 🔄 in review | danimagb/fut-academy-stats#37 |
-| 5   | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo      |                               |
-| 5b  | Database checks on what is stored (new migration)                           | ⏳ todo      |                               |
-| 6   | Router, UI and screens as modules + event delegation                        | ⏳ todo      |                               |
-| 7   | End-to-end smoke tests (Playwright) in CI                                   | ⏳ todo      |                               |
-| 8   | Strict TypeScript                                                           | ⏳ todo      |                               |
-| 9   | Deploy workflow to GitHub Pages + docs                                      | ⏳ todo      |                               |
-| 10  | Merge `feature/typescript` into `main`                                      | ⏳ todo      |                               |
+| #   | Step                                                               | Status       | PR                            |
+| --- | ------------------------------------------------------------------ | ------------ | ----------------------------- |
+| 0   | Plan and code standards                                            | ✅ merged    | danimagb/fut-academy-stats#32 |
+| 1   | Tooling skeleton (Vite, TypeScript, `package.json`)                | ✅ merged    | danimagb/fut-academy-stats#33 |
+| 2   | CI: oxlint, tsc, Vitest, build                                     | ✅ merged    | danimagb/fut-academy-stats#35 |
+| 3   | Supabase and config as modules (drop `vendor/`)                    | ✅ merged    | danimagb/fut-academy-stats#36 |
+| 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                  | ✅ merged    | danimagb/fut-academy-stats#37 |
+| 5.1 | Shared basics and types: I18N, format helpers, data types, formats | 🔄 in review | (this PR)                     |
+| 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ⏳ todo      |                               |
+| 5.3 | Storage, change tracking, validating data that comes in            | ⏳ todo      |                               |
+| 5.4 | Supabase client, sync and sign-in logic                            | ⏳ todo      |                               |
+| 5.5 | Database checks on what is stored (new migration)                  | ⏳ todo      |                               |
+| 6   | Router, UI and screens as modules + event delegation               | ⏳ todo      |                               |
+| 7   | End-to-end smoke tests (Playwright) in CI                          | ⏳ todo      |                               |
+| 8   | Strict TypeScript                                                  | ⏳ todo      |                               |
+| 9   | Deploy workflow to GitHub Pages + docs                             | ⏳ todo      |                               |
+| 10  | Merge `feature/typescript` into `main`                             | ⏳ todo      |                               |
 
 **Where things stand (update this with every PR):**
 
@@ -101,6 +104,30 @@ keeps deploying from the branch exactly as it does today.
   - `public/manifest.webmanifest` is used as it is (`manifest: false`).
   - The worker is type-checked separately (`tsconfig.sw.json`, with the `WebWorker` lib), so
     `npm run typecheck` now runs two `tsc` passes.
+- Done in step 5.1: the first modules moved out of `src/main.js`, which is now 4,328 lines (from 5,155).
+  - **`shared/i18n/i18n.ts`** holds `I18N`, `t()`, `locale()`, `getLang()` and `setLang()`.
+    - `pt` is typed `Record<MessageKey, string>`, so a missing or extra Portuguese key fails
+      `npm run typecheck`. I checked this by deleting one key.
+    - `main.js` still reads and saves the language (`fut-academy-stats.lang`) and sets
+      `<html lang>`. The module only holds the current value.
+  - **`shared/lib/format.ts`** (`pad`, `fmtClock`, `fmtMins`, `mmss`, `isoDate`, `pct`) and
+    **`shared/lib/dom.ts`** (`$`, `$$`).
+  - **`domain/types.ts`**: the stored shapes (`Team`, `Player`, `Game`, `GameEvent` as a union
+    on `type`, `Mark`, `Clock`, `Lineup`, `Tombstone`, `SyncState`, `Db`), worked out from what
+    the code reads and writes. **`domain/formats.ts`**: `FORMATS`, `FORMATIONS`,
+    `formationsFor`.
+  - **`src/test/factories.ts`**: `makeTeam`, `makePlayer`, `makeGame`, `ev`, `at('mm:ss')`.
+  - Tests:
+    - translations: the same keys in both languages, no string empty in only one, the same
+      `{placeholders}`, and `t()` filling them
+    - the format helpers
+    - formations adding up to the team size
+  - oxlint now has `no-undef` as an error. It caught a `lang` reference that the move had left
+    behind (the language buttons on Profile).
+  - The standards now let `domain/` use `t()` from `shared/i18n` for labels, and say what a
+    domain "operation" may change (`code-organisation.md`).
+  - The language from the browser, the EN/PT switch (saved, and kept after a reload) and both
+    themes were checked in Playwright.
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").
@@ -130,7 +157,7 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   manual `CACHE` bump go away.
 - **Supabase comes from npm**, pinned to the same version (`@supabase/supabase-js@2.118.0`),
   instead of the copy in `vendor/`.
-- `keep-alive.yml` doesn't change. The database changes only in step 5b, which adds checks on
+- `keep-alive.yml` doesn't change. The database changes only in step 5.5, which adds checks on
   what can be stored; the tables and access rules stay the same.
 - **Never trust data that comes in.** Row Level Security only controls _who_ can write: only
   a team's directors can write its players and games. It doesn't control _what_ they write.
@@ -139,7 +166,7 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
   logic to the server: the server can't know the real match time, and minutes, score and
   clock are never stored, because each phone works them out from the events. The risk is
   broken or oversized data reaching other phones, so we check data at both ends: the app
-  checks what it loads (step 5) and the database rejects what is obviously wrong (step 5b).
+  checks what it loads (step 5) and the database rejects what is obviously wrong (step 5.5).
 
 ## Steps (one PR each into `feature/typescript`; the app works after each)
 
@@ -198,38 +225,84 @@ on them. The app stays installable and keeps working offline, still hosted on Gi
 
 ### 5. Split the logic into `domain/`, `data/` and `shared/`, with unit tests
 
-Follow the layers in `docs/standards/code-organisation.md`.
+Follow the layers in `docs/standards/code-organisation.md`. Step 5 is split into five PRs so
+each one can be reviewed; the app works after each. Every PR follows the same method:
 
-- `src/domain/`:
-  - `types.ts`: `Team`, `Player`, `Game`, `GameEvent`, `Lineup`, `Db`, `Tombstone`, `Role`,
-    `Lang`
-  - `clock.ts`, `game-state.ts`, `pitch.ts`, `stats.ts`, `report.ts` (the report table model),
-    `formats.ts`, `titles.ts`
-- `src/data/`: `store.ts` (`state`, `save()`, change tracking, migrations), `supabase.ts`,
-  `sync.ts`, `persist.ts`. Shared values that change (`db`, `draft`, `renderPending`) go into
-  one exported `state` object, because code can't assign to a variable it imported.
-- `src/shared/`: `lib/` (`esc`, `pad`, DOM and date helpers), `i18n/` (typed so that `pt` must
-  have every key in `en`), `config.ts`.
-- Code that isn't moved yet stays in `src/app/legacy.ts` and imports from the new modules.
-- `src/domain/validate.ts`:
+1. **First commit, the move.** Cut a section out of `src/main.js` into its module, with the
+   code unchanged apart from `export`, and import it back.
+2. **Then types and tests.**
+   - Add types from `domain/types.ts`.
+   - Where a function reads globals (`db`, `Date.now()`, the DOM), pass the value in as a
+     parameter, and leave a thin wrapper in `main.js`.
+   - Add Vitest tests next to the module, using the builders in `src/test/factories.ts`.
+3. Run lint, `typecheck`, the tests and the build, then the Playwright flow (full game, PDF,
+   stats, offline reload, EN/PT, both themes).
+
+Code that hasn't moved yet stays in `src/main.js`, which imports the new modules.
+
+#### 5.1 Shared basics and types
+
+- `shared/i18n/i18n.ts`:
+  - `I18N`, `t()`, `locale()`, `getLang()`/`setLang()`
+  - typed so `pt` must have exactly the keys of `en`
+- `shared/lib/format.ts`: `pad`, `fmtClock`, `fmtMins`, `mmss`, `isoDate`, `pct`.
+- `shared/lib/dom.ts`: `$`, `$$`.
+- `domain/types.ts`: the stored data shapes.
+- `domain/formats.ts`: `FORMATS`, `FORMATIONS`, `formationsFor`.
+- `src/test/factories.ts`.
+
+#### 5.2 Game logic
+
+- `domain/clock.ts`:
+  - match time and the clock shown
+  - period labels
+  - end of period
+  - reminders and auto-stop, as a decision `save()`/`render()` act on
+  - the "forgot to press" fix
+- `domain/pitch.ts`: slots, `fitLineup`, `startLineup`, `formationOf`.
+- `domain/game-state.ts`: `derive`, `describe`, `timeOf`.
+- `domain/titles.ts`: titles and score order.
+- `domain/stats.ts`: season stats and the report table model.
+- Tests:
+  - the 2nd half starts at 20:00, and extra time shows as `20:00 (+02:00)`
+  - times on a period boundary, and events logged during the break
+  - auto-stop, and the "forgot to press" re-timing
+  - minutes played, subs, goalkeeper changes, a red card
+  - the score for home and away
+  - formation slot moves
+  - the August–July season and player totals
+
+#### 5.3 Storage, change tracking and validation
+
+- `data/store.ts`: `state` (`db`, `draft`, `renderPending`), `load`, `normalize`,
+  `trackChanges`, `save`, `saveQuiet`, `syncGameTeams`. Shared values that change go into one
+  exported `state` object, because code can't assign to a variable it imported.
+- `data/persist.ts`: the persistent-storage request.
+- `domain/validate.ts`:
   - type guards: `isTeam`, `isPlayer`, `isGame`
-  - sanity checks: event times ≥ 0 and within the game's length plus the auto-stop limit, known
-    event types and statuses, `playerId`s that exist in the team, text lengths within limits
-  - used on everything that comes in: cloud pulls (`data/sync.ts`), backup import, and loading
-    `localStorage`
-  - a bad record is skipped and the user is warned; it must never crash the app
-- Turn on the layer import rules for these folders.
-- Vitest tests, next to each module, plus the data builders in `src/test/factories.ts`:
-  - **clock:** periods, extra time, times on a period boundary, and the "forgot to press" rebuild
-  - **game state from events:** minutes played, subs, goalkeeper changes, score
-  - **lineup:** formation slot moves
-  - **change tracking in `save()`:** `dirty`, `updatedAt`, tombstones
-  - **match title and score order:** home and away
-  - **translations:** `pt` has every key in `en`
-  - **validation:** deliberately broken records (wrong types, negative or very large times,
-    unknown event types, unknown players, huge text) are rejected
+  - sanity checks: event times ≥ 0 and within the game's length plus the auto-stop limit;
+    known event types and statuses; `playerId`s in the squad; text lengths within limits
+  - used on everything that comes in: loading `localStorage`, backup import and cloud pulls
+  - a bad record is skipped (kept aside, not lost) and the user is warned; it must never crash
+    the app
+  - first run it over data the app itself creates, so valid data is never rejected
+- Tests:
+  - change tracking: `dirty`, `updatedAt`, tombstones, and the raw save not counting as a change
+  - `normalize` migrating old shapes
+  - deliberately broken records being rejected
 
-### 5b. Database checks on what is stored
+#### 5.4 Supabase client, sync and sign-in logic
+
+- `data/supabase.ts`, `data/sync.ts` and `data/auth.ts`. The parts that aren't UI move; the
+  screens stay for step 6.
+- Sync tells the screen about changes through an `onChange` callback, never by importing
+  upwards.
+- Tests with a mocked Supabase client:
+  - push sends dirty records and tombstones
+  - pull merges with last write wins and rejects invalid rows
+  - a sync that was in flight drops its results when the cloud data is removed
+
+#### 5.5 Database checks on what is stored
 
 - New migration `supabase/migrations/<timestamp>_data_constraints.sql` with `CHECK`
   constraints on `games`:
