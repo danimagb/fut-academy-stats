@@ -2729,12 +2729,21 @@ function viewPlayer(id) {
   const bars = ps.rows.map((r) => {
     const m = r.played ? Math.floor(r.s.played / 60000) : 0;
     const cls = !r.s ? 'out' : !r.played ? 'dnp' : '';
+    const h = Math.min(100, (100 * m) / top);
     return `<div class="bar-col ${cls}" title="${esc(gameShort(r.g, r.d))}">
-      <span class="v">${r.s ? `${m}'` : '–'}</span>
-      <div class="bar-track"><div class="bar-fill" style="height:${Math.min(100, (100 * m) / top)}%"></div></div>
+      <div class="bar-area"><div class="bar-fill" style="height:${h}%"></div><span class="v" style="bottom:calc(${h}% + 2px)">${r.s ? `${m}'` : '–'}</span></div>
       <span class="x">${ddmm(r.g)}</span>
     </div>`;
   }).join('');
+  // Y axis like the PDF: 0', a quarter, half, three quarters and the top, with a gridline at each.
+  const ticks = [0, 1, 2, 3, 4];
+  const chart = `<div class="minutes-chart">
+    <div class="y-axis" aria-hidden="true">${ticks.map((k) => `<span style="bottom:${k * 25}%">${Math.round((top * k) / 4)}'</span>`).join('')}</div>
+    <div class="chart-scroll"><div class="chart-inner">
+      <div class="grid" aria-hidden="true">${ticks.map((k) => `<i style="bottom:${k * 25}%"></i>`).join('')}</div>
+      ${bars}
+    </div></div>
+  </div>`;
 
   const gamesHtml = ps.rows.slice().reverse().map((r) => `<li><a class="card game ${resultOf(r.d)}" href="#/report/${r.g.id}">
     <div class="grow">
@@ -2762,7 +2771,7 @@ function viewPlayer(id) {
         ${tile(t('statCards'), `<span class="yc">${ps.yellow}</span> <span class="rc">${ps.red}</span>`)}
       </div>
       <h2>${t('statMinPerGame')}</h2>
-      <div class="minutes-chart">${bars}</div>
+      ${chart}
       <button class="btn primary block" data-action="player-pdf" data-id="${p.id}">${t('pdf')}</button>
       <h2>${t('statGamesList')}</h2>
       <ul class="list">${gamesHtml}</ul>`
