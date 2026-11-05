@@ -17,7 +17,7 @@ keeps deploying from the branch exactly as it does today.
 | 2   | CI: oxlint, tsc, Vitest, build                                     | ✅ merged    | danimagb/fut-academy-stats#35 |
 | 3   | Supabase and config as modules (drop `vendor/`)                    | ✅ merged    | danimagb/fut-academy-stats#36 |
 | 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                  | ✅ merged    | danimagb/fut-academy-stats#37 |
-| 5.1 | Shared basics and types: I18N, format helpers, data types, formats | 🔄 in review | (this PR)                     |
+| 5.1 | Shared basics and types: I18N, format helpers, data types, formats | 🔄 in review | danimagb/fut-academy-stats#38 |
 | 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ⏳ todo      |                               |
 | 5.3 | Storage, change tracking, validating data that comes in            | ⏳ todo      |                               |
 | 5.4 | Supabase client, sync and sign-in logic                            | ⏳ todo      |                               |
