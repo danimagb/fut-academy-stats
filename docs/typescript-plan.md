@@ -15,7 +15,7 @@ keeps deploying from the branch exactly as it does today.
 | 0   | Plan and code standards                                                     | ✅ merged    | danimagb/fut-academy-stats#32 |
 | 1   | Tooling skeleton (Vite, TypeScript, `package.json`)                         | ✅ merged    | danimagb/fut-academy-stats#33 |
 | 2   | CI: oxlint, tsc, Vitest, build                                              | ✅ merged    | danimagb/fut-academy-stats#35 |
-| 3   | Supabase and config as modules (drop `vendor/`)                             | 🔄 in review |                               |
+| 3   | Supabase and config as modules (drop `vendor/`)                             | 🔄 in review | danimagb/fut-academy-stats#36 |
 | 4   | Service worker via vite-plugin-pwa (drop `sw.js`)                           | ⏳ todo      |                               |
 | 5   | Split logic into typed modules + unit tests + validating data that comes in | ⏳ todo      |                               |
 | 5b  | Database checks on what is stored (new migration)                           | ⏳ todo      |                               |
