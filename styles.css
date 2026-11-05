@@ -18,6 +18,7 @@
   --loss: #ff6b6b;
   --draw: #9a9fa8;
   --cloud: #6cb4ff;
+  --stat-head: #1d5c3f;
   --radius: 14px;
   color-scheme: dark;
 }
@@ -43,6 +44,7 @@
   --loss: #c62828;
   --draw: #6b727c;
   --cloud: #1559b0;
+  --stat-head: #17603d;
   color-scheme: light;
 }
 
@@ -510,3 +512,40 @@ select.mini { width: auto; min-height: 36px; padding: 0 8px; font-size: .9rem; f
 .acc-body .auth-tabs { margin-top: 12px; }
 .acct-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acct-actions { margin-top: 4px; }
+
+/* Stats: team table, player sheet (tiles, minutes chart) */
+.stats-summary { margin-top: 12px; }
+.stats-summary .record { font-weight: 800; font-variant-numeric: tabular-nums; }
+.record .w { color: var(--win); }
+.record .d { color: var(--draw); }
+.record .l { color: var(--loss); }
+.stat-table { gap: 6px; }
+.stat-row {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 46px 46px 40px 44px; gap: 6px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 8px 10px; font-variant-numeric: tabular-nums; text-align: center;
+}
+.stat-row .name { text-align: left; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-row small { color: var(--muted); }
+.stat-row.head { background: transparent; border-color: transparent; padding-top: 0; padding-bottom: 0; font-size: .75rem; color: var(--muted); text-transform: uppercase; }
+.stat-row.head span:nth-child(2) { text-align: left; }
+.player-head { background: var(--stat-head); color: #fff; border-radius: var(--radius); padding: 14px 16px; }
+.player-head h2 { margin: 2px 0 4px; font-size: 1.5rem; text-transform: uppercase; letter-spacing: .01em; }
+.player-head .muted { color: rgba(255, 255, 255, .75); text-transform: uppercase; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; min-width: 0; }
+.tile > span { display: block; font-size: .7rem; font-weight: 700; color: var(--accent); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile b { display: block; font-size: 1.5rem; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tile small { color: var(--muted); font-size: .8rem; }
+.tile .yc, .tile .rc { display: inline-block; min-width: 1.4em; padding: 0 4px; border-radius: 4px; text-align: center; color: #1b1300; background: #f5c518; }
+.tile .rc { color: #fff; background: #d63a3a; }
+.minutes-chart {
+  display: flex; gap: 4px; overflow-x: auto; padding: 10px 8px 6px; height: 170px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.bar-col { flex: 1 0 26px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 26px; }
+.bar-col .v { font-size: .7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bar-col .x { font-size: .65rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar-track { flex: 1; width: 60%; max-width: 26px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--line); }
+.bar-fill { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; }
+.bar-col.out .v, .bar-col.dnp .v { color: var(--muted); }

@@ -21,7 +21,13 @@ It's plain HTML/CSS/JS with no build step and no server of its own. Data is save
    - A red card takes the player off; they can't come back and the team plays one short. If the GK is sent off, tap another player and choose 🧤 To goal.
    - The screen stays on while the game is live, where the browser supports it.
 4. **Report**: a preview of the PDF stats sheet (club, team, season, game, round; per player: starter/sub, stints entered–left on the game clock, minutes, goals, cards). **Share PDF** sends the file to WhatsApp and similar apps, or downloads it where sharing isn't available.
-5. **Profile** (bottom tab) holds your account and the app settings:
+5. **Stats** (bottom tab): per-player numbers for a season, from the team's finished games. Pick
+   the team and the season (August to July). The table shows, for each player, games played out
+   of the team's games, minutes, goals and cards. Tap a player to open their sheet: called up %,
+   games, starts, minutes, goals, cards, a bar chart of minutes in each game and the list of games
+   (tap one for its report). **Share PDF** sends the sheet as a one-page PDF, ready to send to the
+   family.
+6. **Profile** (bottom tab) holds your account and the app settings:
    - **Account** (optional): sign in to sync teams to the cloud. See [Cloud sync](#cloud-sync-optional).
    - **Language**: English | Português (Portuguese is the default on phones set to Portuguese). The PDF follows the app language.
    - **Theme**: ☀️ Light | 🌙 Dark | Auto. Light has stronger contrast and is easier to read outdoors in sunlight; Auto follows the phone's setting (the default).
