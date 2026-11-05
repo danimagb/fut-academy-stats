@@ -21,7 +21,7 @@ keeps deploying from the branch exactly as it does today.
 | 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ✅ merged    | danimagb/fut-academy-stats#39 |
 | 5.3 | Storage, change tracking, validating data that comes in            | ✅ merged    | danimagb/fut-academy-stats#40 |
 | 5.4 | Supabase client, sync and sign-in logic                            | ✅ merged    | danimagb/fut-academy-stats#41 |
-| 5.5 | Database checks on what is stored (new migration)                  | 🔄 in review | (this PR)                     |
+| 5.5 | Database checks on what is stored (new migration)                  | 🔄 in review | danimagb/fut-academy-stats#42 |
 | 6   | Router, UI and screens as modules + event delegation               | ⏳ todo      |                               |
 | 7   | End-to-end smoke tests (Playwright) in CI                          | ⏳ todo      |                               |
 | 8   | Strict TypeScript                                                  | ⏳ todo      |                               |
