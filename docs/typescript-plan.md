@@ -20,8 +20,8 @@ keeps deploying from the branch exactly as it does today.
 | 5.1 | Shared basics and types: I18N, format helpers, data types, formats | ✅ merged    | danimagb/fut-academy-stats#38 |
 | 5.2 | Game logic: clock, pitch, game state, titles, stats + tests        | ✅ merged    | danimagb/fut-academy-stats#39 |
 | 5.3 | Storage, change tracking, validating data that comes in            | ✅ merged    | danimagb/fut-academy-stats#40 |
-| 5.4 | Supabase client, sync and sign-in logic                            | 🔄 in review | danimagb/fut-academy-stats#41 |
-| 5.5 | Database checks on what is stored (new migration)                  | ⏳ todo      |                               |
+| 5.4 | Supabase client, sync and sign-in logic                            | ✅ merged    | danimagb/fut-academy-stats#41 |
+| 5.5 | Database checks on what is stored (new migration)                  | 🔄 in review | danimagb/fut-academy-stats#42 |
 | 6   | Router, UI and screens as modules + event delegation               | ⏳ todo      |                               |
 | 7   | End-to-end smoke tests (Playwright) in CI                          | ⏳ todo      |                               |
 | 8   | Strict TypeScript                                                  | ⏳ todo      |                               |
@@ -212,6 +212,29 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     - **sessions:** another person signing in clears the previous person's cloud teams;
       signing out during a sync drops what it downloaded; the first sync is reported (so the
       app can offer to upload the phone's teams)
+- Done in step 5.5: the database checks what can be stored, in
+  `supabase/migrations/20261106000000_data_checks.sql`.
+  - `CHECK` constraints on:
+    - teams, players and games: id length (up to 100) and text length (up to 500)
+    - accounts: email length (up to 320)
+    - games: the status; `data` is an object of at most 256 KB; the `id`/`teamId` inside
+      `data` match the row; its lists are lists, with at most 5,000 events; the status in
+      `data` matches the column
+  - The checks are loose, and only check types where a field is there, because the
+    detailed checks live in the app (`domain/validate.ts`).
+  - The migration can be run again. Each constraint is added `NOT VALID` and then validated.
+    If old rows break one, the constraint stays enforced for new writes and a notice says
+    which. The file ends with queries to find such rows.
+  - 13 new pgTAP tests (186 in total), all passing with `bash supabase/tests/local/run.sh`:
+    - every check is validated on the existing test rows
+    - a **real game written by the app** (from a Playwright run) is accepted
+    - each kind of bad write is refused with `23514`
+    - Without the migration, the refusal tests fail, so they really test it.
+  - To run the database tests in a cloud session, first run
+    `apt-get install -y postgresql-16-pgtap`.
+  - **Owner:** apply the migration to the Supabase project (SQL editor, or
+    `supabase db push`). It doesn't depend on the app changes, and today's app on `main`
+    writes data that passes. If it prints a notice, run the queries at the end of the file.
 - **Owner:** make the four checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build").

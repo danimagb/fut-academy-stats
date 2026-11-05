@@ -51,8 +51,18 @@ rules.
 - The limits are generous on purpose. Before tightening one, check it against data the app
   itself writes, and against **old** data. Records from before teams existed have no `teamId`,
   and older games have no `maxExtra`.
-- The database adds `CHECK` constraints for the basics (shape, size, allowed values). When you
-  add a field or a status, update the validation, the constraints and their tests together.
+- The database adds `CHECK` constraints for the basics, in
+  `supabase/migrations/20261106000000_data_checks.sql`:
+  - ids up to 100 characters, and text up to 500 (emails up to 320)
+  - a game's `status` is one of the four known values, and matches the one in `data`
+  - `data` is an object of at most 256 KB, and the `id`/`teamId` inside it are the row's own
+  - its lists are lists, with at most 5,000 events
+
+  These limits match `domain/validate.ts`. The database only checks types where a field is
+  there; making sure fields are present is the app's job. When you add a field or a status,
+  update the validation, the constraints and their tests (`supabase/tests/rls.test.sql`)
+  together.
+
 - Values that are worked out (minutes, score, clock) are never stored, so they can't be sent
   wrong. Every phone works them out from the events.
 - Text from the data is always escaped in HTML (see `ui.md`).

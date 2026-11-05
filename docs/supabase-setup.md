@@ -87,6 +87,9 @@ In **Authentication → URL Configuration**:
 1. Open **SQL Editor → New query**.
 2. Paste the whole content of `supabase/migrations/20261102000000_cloud_sync_schema.sql`
    from this repo and click **Run**. It should finish with "Success. No rows returned".
+   Then do the same with each later file in `supabase/migrations/`, in name order (for example
+   `20261106000000_data_checks.sql`, the checks on what can be stored). Each file can be run
+   again safely.
 3. Check in **Table Editor** that `accounts`, `teams`, `team_members`, `players`, `games` and `ping`
    exist and each shows RLS as enabled.
 
