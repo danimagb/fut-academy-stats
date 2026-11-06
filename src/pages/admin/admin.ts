@@ -259,7 +259,7 @@ function teamCard(st: AdminState, tm: AdminTeam, people: { user_id: string; emai
 }
 
 export function viewAdmin(): void {
-  const head = bar(t('admin'), '#/profile');
+  const head = bar(t('admin'));
   const account = cloud.account;
   if (!sb || !account || 'none' in account || !account.isAdmin) {
     main.innerHTML = `${head}<p class="empty">${t('adminOnly')}</p>`;
