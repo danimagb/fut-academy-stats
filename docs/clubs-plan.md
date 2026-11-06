@@ -113,9 +113,10 @@ Today there is one cloud team (the maintainer's, club "Padroense FC"). The migra
    name as given, and sets `club_id` on those teams: today that is just **Padroense FC**.
 2. Makes `teams.club_id` not null, drops `accounts.kind`, the last-director trigger and
    `add_team_coach`.
-3. Existing team memberships stay as they are (the maintainer stays director of the team),
-   and everyone who is a member of a Padroense FC team becomes a `member` of the club. The
-   admin then makes themselves (or someone else) coordinator of Padroense FC on the Admin page.
+3. Existing team memberships stay as they are, and everyone who is a member of a Padroense FC
+   team becomes a `member` of the club, except **admins, who become its `coordinator`**. Today
+   that makes the maintainer's account (admin + director of the team) **admin and coordinator
+   of Padroense FC**, ready for testing. No email is written in the migration.
 
 No transition period is needed: phones running the old app are updated by the service worker
 on the next build, and the only old-app action that would now fail (creating a cloud team
@@ -201,3 +202,4 @@ The central guard in the click/submit handlers learns the new action lists the s
 6. Access is by admin invite only, into a club. Coordinators assign the club's people to
    teams, picking them from a list with a search filter.
 7. The existing team goes into a club **Padroense FC** created by the migration.
+8. The maintainer's account becomes admin + coordinator of Padroense FC (by the migration).
