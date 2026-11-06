@@ -16,5 +16,9 @@ test("stats add up finished games, and a player's sheet opens", async ({ page })
   await main.getByText('P1', { exact: true }).first().click();
   await expect(page).toHaveURL(/#\/player\//);
   await expect(main).toContainText('P1');
+
+  const download = page.waitForEvent('download');
+  await page.locator('[data-action="player-pdf"]').click();
+  expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
   expect(errors).toEqual([]);
 });

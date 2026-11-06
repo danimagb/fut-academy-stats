@@ -1,9 +1,9 @@
-// Startup. The screens still live in app/legacy.js (step 6 moves them into pages/ and
-// features/); importing it sets them up, and start() draws the first screen.
-import { start } from './legacy';
+// Startup: connect screens, actions, listeners, sync and timers, then draw the first screen.
+import { boot, start } from './boot';
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
+boot();
 start();

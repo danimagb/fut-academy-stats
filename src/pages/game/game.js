@@ -1,6 +1,7 @@
 // @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
 // The live game screen: clock, score, pitch and bench, timeline; the player sheet and the
 // Fix times sheet. Moved from app/legacy.js.
+import { currentGame } from '@/data/queries';
 import { readOnlyTeam } from '@/data/access';
 import { addEvent, applyFix, endPeriodAt, startClock } from '@/data/live';
 import { getTeam } from '@/data/queries';
@@ -233,11 +234,6 @@ export function tick() {
 }
 
 // ---------- Sheets (player actions) ----------
-
-export function currentGame() {
-  const { view, id } = route();
-  return view === 'game' || view === 'report' ? getGame(id) : null;
-}
 
 // One tap on a player: quick actions on top, substitution list right below,
 // so every action is at most two taps away.

@@ -71,7 +71,7 @@ shared    → shared only
   ```
   features/substitution/
     substitution.ts         HTML + handlers (registers 'substitution.*' actions)
-    substitution.css        its styles, imported by substitution.ts
+    substitution.css        its styles (listed in app/styles.css, in cascade order)
     bench-order.ts          logic used only here (pure)
     bench-order.test.ts     its tests, next to the file
   ```

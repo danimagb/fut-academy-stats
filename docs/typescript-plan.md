@@ -26,8 +26,8 @@ keeps deploying from the branch exactly as it does today.
 | 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
 | 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged    | danimagb/fut-academy-stats#45 |
 | 6.2b | Team and account screens                                                               | ✅ merged    | danimagb/fut-academy-stats#46 |
-| 6.3  | Game screens                                                                           | 🔄 in review | (this PR)                     |
-| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ⏳ todo      |                               |
+| 6.3  | Game screens                                                                           | ✅ merged    | (this PR)                     |
+| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | 🔄 in review | (this PR)                     |
 | 8    | Strict TypeScript                                                                      | ⏳ todo      |                               |
 | 9    | Deploy workflow to GitHub Pages + docs                                                 | ⏳ todo      |                               |
 | 10   | Merge `feature/typescript` into `main`                                                 | ⏳ todo      |                               |
@@ -359,6 +359,25 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - New end-to-end test `game-actions.spec.ts`: yellow and red cards, a formation change,
     removing a goal from the timeline, editing the opponent, and deleting the game. That makes
     15 end-to-end tests.
+- Done in step 6.4: **`app/legacy.js` is gone.**
+  - **Report, stats and PDF:**
+    - `data/report-sheet.js` holds the stats-sheet model.
+    - `data/season.js` holds the season and team choice and the season numbers.
+    - `features/share-pdf` builds and shares the PDFs.
+    - `pages/report` and `pages/stats` (with the player sheet).
+    - `currentGame` moved to `data/queries.ts`.
+  - **Drag-and-drop:** `pages/game/drag.js`, part of the game page slice.
+  - **What was left of the wiring is now in `app/`:**
+    - `app/boot.js`: `boot()` connects the screens, actions, listeners, sync and timers. It
+      runs once, from `app/main.ts`; importing it does nothing.
+    - `app/tabbar.js`, `app/read-only.js` (the actions and forms allowed for coaches) and
+      `app/redraw.js` (`renderSoon`).
+  - **Styles:** `styles.css` is split into 25 files under `shared/styles/` and next to their
+    pages and features. `app/styles.css` imports them in the original order. The built CSS
+    is **byte-identical** to before the split.
+  - End-to-end: a player's sheet downloads as a PDF, which makes 15 tests.
+  - The `.js` files moved as they were still have `@ts-nocheck`. Step 8 converts them to
+    strict TypeScript.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").

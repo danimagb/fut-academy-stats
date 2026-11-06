@@ -1,0 +1,8 @@
+/* Profile / settings page */
+.settings .item {
+  flex-wrap: wrap;
+  min-height: 64px;
+}
+.settings .seg.big button {
+  padding: 0 12px;
+}

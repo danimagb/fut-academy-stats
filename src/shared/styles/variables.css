@@ -1,0 +1,71 @@
+:root {
+  --bg: #0e0f12;
+  --panel: #1a1c20;
+  --panel-2: #25282d;
+  --line: #31343a;
+  --text: #f2f3f5;
+  --muted: #9a9fa8;
+  --accent: #3ddc84;
+  --accent-ink: #062014;
+  --warn: #ffb547;
+  --danger: #ff6b6b;
+  --gk: #ffd54a;
+  --mins-bg: #14532d;
+  --mins-ink: #ffffff;
+  --bench-line: #4a5a52;
+  --sub-in: #2fbf6f;
+  --tabbar-bg: rgba(20, 21, 25, 0.96);
+  --alert-bg: rgba(255, 181, 71, 0.12);
+  --win: #3ddc84;
+  --loss: #ff6b6b;
+  --draw: #9a9fa8;
+  --cloud: #6cb4ff;
+  --stat-head: #1d5c3f;
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+/* Light theme: high contrast for outdoor / bright sunlight use */
+:root[data-theme='light'] {
+  --bg: #eef0f3;
+  --panel: #ffffff;
+  --panel-2: #e3e7ec;
+  --line: #b9c0c9;
+  --text: #0a0c0f;
+  --muted: #4a515b;
+  --accent: #0f8a45;
+  --accent-ink: #ffffff;
+  --warn: #e08a00;
+  --danger: #c62828;
+  --gk: #f2c200;
+  --mins-bg: #166534;
+  --mins-ink: #ffffff;
+  --bench-line: #8fa59a;
+  --sub-in: #0f8a45;
+  --tabbar-bg: rgba(255, 255, 255, 0.97);
+  --alert-bg: rgba(224, 138, 0, 0.14);
+  --win: #0f8a45;
+  --loss: #c62828;
+  --draw: #6b727c;
+  --cloud: #1559b0;
+  --stat-head: #17603d;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    16px/1.4 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}

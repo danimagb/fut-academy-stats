@@ -1,0 +1,27 @@
+/* All styles, in cascade order (later files win on equal specificity). Each file lives next to
+   the page or feature it styles; shared ones are in shared/styles/. Keep this order. */
+@import '../shared/styles/variables.css';
+@import '../shared/styles/base.css';
+@import '../shared/styles/buttons.css';
+@import '../shared/styles/forms.css';
+@import '../shared/styles/lists.css';
+@import '../pages/game-edit/game-edit.css';
+@import '../pages/game/game.css';
+@import '../shared/styles/sheet.css';
+@import '../pages/report/report.css';
+@import '../pages/game/touch.css';
+@import '../pages/game/clock.css';
+@import '../shared/styles/menu.css';
+@import '../shared/styles/dialog.css';
+@import '../features/live-game/live-game.css';
+@import '../pages/game/pitch.css';
+@import '../pages/game/scoreboard.css';
+@import './tabbar.css';
+@import '../pages/games/filter.css';
+@import '../pages/profile/settings.css';
+@import '../pages/games/games.css';
+@import '../features/sync-status/sync-status.css';
+@import '../features/team-people/team-people.css';
+@import '../pages/profile/profile.css';
+@import '../pages/team/team.css';
+@import '../pages/stats/stats.css';

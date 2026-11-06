@@ -43,8 +43,11 @@ scripting (XSS) hole on every phone that syncs it.
   computed at runtime (pitch slot positions, chart bar heights).
 - Class names are short and lowercase with hyphens (`.sheet-body`, `.tabbar`). Give each
   page's or feature's styles a class prefix (`.game-…`, `.report-…`) and keep them in a `.css`
-  file inside that page or feature, imported by its `.ts` file. Variables, themes and base styles live in
-  `shared/styles/`.
+  file inside that page or feature. Variables, themes and base styles live in `shared/styles/`.
+- **`src/app/styles.css` imports every CSS file, in cascade order.** A later file wins over an
+  earlier one with the same specificity, so a new file goes in the list where its rules
+  belong. The files aren't imported from each module's `.ts`, because then the order would
+  depend on the order of the imports in the code.
 - **Phone first:** design for about 360–430 px wide, and test at 390×844 (and 360 wide).
   Allow for safe areas (`env(safe-area-inset-*)`). Inputs use at least 16 px text, so the
   iPhone doesn't zoom in when one is tapped.
