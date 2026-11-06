@@ -1,5 +1,4 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// Uploading teams from this phone to the cloud (directors). Moved from app/legacy.js.
+// Uploading teams from this phone to the cloud (directors).
 import { $ } from '@/shared/lib/dom';
 import { getTeam, teamPlayers } from '@/data/queries';
 import { syncNow } from '@/data/session';
@@ -13,23 +12,25 @@ import { t } from '@/shared/i18n/i18n';
 import { rerender } from '@/shared/lib/rerender';
 
 // Upload teams from this phone: they become cloud teams with this user as director.
-export function uploadTeams(ids) {
+export function uploadTeams(ids: readonly string[]): void {
   syncState.error = ''; // a previous upload's error (it stays until the next upload)
   for (const id of ids) {
     if (!getTeam(id) || isCloudTeam(id)) continue;
     db.sync.teams[id] = 'director';
     if (!db.sync.uploads.includes(id)) db.sync.uploads.push(id);
-    for (const kind of RECORD_KINDS) for (const r of db[kind]) if (teamIdOf(kind, r) === id) r.dirty = true;
+    for (const kind of RECORD_KINDS)
+      for (const r of db[kind] as { id: string; teamId?: string; dirty?: boolean }[])
+        if (teamIdOf(kind, r) === id) r.dirty = true;
   }
   saveQuiet();
   toast(t('uploading'));
   rerender();
-  syncNow();
+  void syncNow();
 }
 
 // After the first sign-in on this phone (director accounts): which local teams to upload?
-export function offerUpload() {
-  if (!$('#sheet').hidden || document.querySelector('.dialog')) return;
+export function offerUpload(): void {
+  if (!$('#sheet')?.hidden || document.querySelector('.dialog')) return;
   openSheet(`
     <h3>${t('uploadTitle')}</h3>
     <p class="hint">${t('uploadHint')}</p>

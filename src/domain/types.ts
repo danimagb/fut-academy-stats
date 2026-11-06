@@ -103,7 +103,8 @@ export type Game = Tracked & {
   maxExtra?: number;
   squad: string[];
   starters: string[];
-  gkId: string;
+  /** The goalkeeper; null before kick-off while the goal slot is empty. */
+  gkId: string | null;
   names: Record<string, SquadName>;
   formation: string;
   lineup: Lineup;

@@ -29,8 +29,9 @@ is done as PRs straight into `main`.
 | 6.3     | Game screens                                                                           | ✅ merged | danimagb/fut-academy-stats#47 |
 | 6.4     | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
 | 8.1     | Strict on; `data/` season, report sheet, session typed                                 | ✅ merged | danimagb/fut-academy-stats#52 |
-| 8.2     | Sync engine typed                                                                      | 🔄 review | (this PR)                     |
-| 8.3–8.5 | Features; pages; app; drop `allowJs`                                                   | ⏳ todo   |                               |
+| 8.2     | Sync engine typed                                                                      | ✅ merged | danimagb/fut-academy-stats#53 |
+| 8.3     | Features typed                                                                         | 🔄 review | (this PR)                     |
+| 8.4–8.6 | Pages (two PRs); app; drop `allowJs`                                                   | ⏳ todo   |                               |
 | 9       | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
 | 10      | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
 
@@ -437,6 +438,19 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     practice: `canSync()` checks for the client first.
   - The sync tests pass the fake client `as unknown as SupabaseClient`, because it only has
     the parts sync uses.
+- Done in step 8.3: every file in `features/` is `.ts` and passes `strict`:
+  - `sync-status`, `upload-teams`, `team-people` (`Member`, `PeopleState`, a typed `q<T>()`),
+    `live-game`, `sign-in`, and `share-pdf` (the PDF writer has a `PdfDoc` type).
+  - Found: `Game.gkId` can be `null` before kick-off, while the goal slot is empty
+    (`planMove` and `fitLineup` already return null there). The type now says
+    `string | null`; the data doesn't change.
+  - Calls that need the Supabase client now go through a small `client()` / `auth()` helper.
+    It throws when there is no client; that can't happen, because these screens only show
+    when there is one.
+  - Behaviour doesn't change: a game report and a player sheet built on this branch and on
+    `main` are byte-identical PDFs (same SHA-256).
+  - Next: 8.4 pages (report, stats, profile, admin, team); 8.5 pages (game-edit, game, drag);
+    8.6 `app/`, then remove `allowJs`.
 
 ## Why
 
