@@ -1,15 +1,35 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// The report's stats sheet (shared by the PDF and its preview on the report screen). Moved from
-// app/legacy.js.
+// The report's stats sheet (shared by the PDF and its preview on the report screen).
 import { derive, teamPlayers } from '@/data/queries';
 import { db } from '@/data/store';
 import { mmss } from '@/shared/lib/format';
 import { fmtAt } from '@/domain/clock';
 import { gameTeam, matchTitle, seasonOf } from '@/domain/titles';
 import { locale, t } from '@/shared/i18n/i18n';
+import type { PlayerState } from '@/domain/game-state';
+import type { Game } from '@/domain/types';
+
+/** A table column: header, width in PDF points, header colour, left-aligned or centred. */
+export type SheetCol = { title: string; w: number; fill: string; left?: boolean };
+/** A row is one cell per column; a cell is its lines. */
+export type SheetRow = string[][];
+export type Sheet = {
+  title: string;
+  /** [label, value, column it lines up with] */
+  meta: [string, string, number][];
+  cols: SheetCol[];
+  rows: SheetRow[];
+  total: SheetRow;
+};
+
+type SheetPlayer = {
+  p: { name: string; number: string };
+  full: string;
+  s: PlayerState | null;
+  starter?: boolean;
+};
 
 // Stints as game-clock labels: entered (start of the later period on a boundary) – left.
-export const stintLabels = (g, s, sep) =>
+export const stintLabels = (g: Game, s: Pick<PlayerState, 'intervals'>, sep: string): string[] =>
   s.intervals.map(([a, b]) => `${fmtAt(g, a, true)}${sep}${fmtAt(g, b)}`);
 
 export const SHEET_NAVY = '#1f3a5a';
@@ -18,13 +38,13 @@ export const SHEET_NAVY = '#1f3a5a';
 // Column widths are in PDF points; cells are arrays of lines.
 // Full name for the report: the player's current one (so fixing a name also fixes
 // past games), else the one saved with the game, else the shirt name.
-export function fullName(g, id) {
+export function fullName(g: Game, id: string): string {
   return db.players.find((p) => p.id === id)?.fullName || g.names[id].fullName || g.names[id].name;
 }
 
-export function statsSheet(g) {
+export function statsSheet(g: Game): Sheet {
   const d = derive(g);
-  const cols = [
+  const cols: SheetCol[] = [
     { title: t('pdfNo'), w: 32, fill: SHEET_NAVY },
     { title: t('pdfPlayer'), w: 170, fill: SHEET_NAVY, left: true },
     { title: t('pdfShirt'), w: 42, fill: SHEET_NAVY },
@@ -39,36 +59,38 @@ export function statsSheet(g) {
 
   // Players who played, then unused subs, then team players not called up;
   // alphabetical within each group, like the club's sheet.
-  const squad = g.squad.map((id) => ({
+  const squad: SheetPlayer[] = g.squad.map((id) => ({
     p: g.names[id],
     full: fullName(g, id),
     s: d.stats[id],
     starter: g.starters.includes(id),
   }));
-  const notCalled = (g.teamId ? teamPlayers(g.teamId) : [])
+  const notCalled: SheetPlayer[] = (g.teamId ? teamPlayers(g.teamId) : [])
     .filter((p) => !g.squad.includes(p.id))
     .map((p) => ({ p, full: p.fullName || p.name, s: null }));
-  const group = (r) => (!r.s ? 2 : r.s.intervals.length ? 0 : 1);
+  const group = (r: SheetPlayer): number => (!r.s ? 2 : r.s.intervals.length ? 0 : 1);
   const players = [...squad, ...notCalled].sort(
     (a, b) => group(a) - group(b) || a.full.localeCompare(b.full, locale()),
   );
   const dash = '—';
-  const rows = players.map((r, i) => {
-    const played = group(r) === 0;
+  const rows = players.map((r, i): SheetRow => {
+    const s = r.s;
+    const played = s !== null && group(r) === 0;
     return [
       [String(i + 1)],
       [r.full],
       [r.p.number || ''],
-      [r.s && r.starter ? 'X' : ''],
-      [r.s && !r.starter ? 'X' : ''],
-      played ? stintLabels(g, r.s, ' – ') : [r.s ? t('didNotPlay') : t('notCalled')],
-      [played ? mmss(r.s.played) : dash],
-      [played ? String(r.s.goals) : dash],
-      [played ? String(r.s.yellow) : dash],
-      [played ? String(r.s.red) : dash],
+      [s && r.starter ? 'X' : ''],
+      [s && !r.starter ? 'X' : ''],
+      played ? stintLabels(g, s, ' – ') : [s ? t('didNotPlay') : t('notCalled')],
+      [played ? mmss(s.played) : dash],
+      [played ? String(s.goals) : dash],
+      [played ? String(s.yellow) : dash],
+      [played ? String(s.red) : dash],
     ];
   });
-  const sum = (k) => String(squad.reduce((n, r) => n + r.s[k], 0));
+  const sum = (k: 'goals' | 'yellow' | 'red'): string =>
+    String(squad.reduce((n, r) => n + (r.s?.[k] ?? 0), 0));
   const [yy, mo, dd] = String(g.date).split('-');
 
   return {
@@ -76,11 +98,13 @@ export function statsSheet(g) {
       .filter(Boolean)
       .join(' — '),
     // [label, value, column it lines up with]
-    meta: [
-      [t('pdfGame'), matchTitle(g), 0],
-      dd && [t('pdfDate'), `${dd}/${mo}/${yy}`, 6],
-      g.round && [t('pdfRound'), g.round, 8],
-    ].filter(Boolean),
+    meta: (
+      [
+        [t('pdfGame'), matchTitle(g), 0],
+        dd ? [t('pdfDate'), `${dd}/${mo}/${yy}`, 6] : null,
+        g.round ? [t('pdfRound'), g.round, 8] : null,
+      ] as const
+    ).filter((m): m is [string, string, number] => m !== null),
     cols,
     rows,
     total: [
@@ -97,5 +121,3 @@ export function statsSheet(g) {
     ],
   };
 }
-
-// The PDF page as HTML, scaled up a little for the phone screen.

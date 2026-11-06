@@ -7,7 +7,7 @@
     "types": ["vite/client"],
     "allowJs": true,
     "checkJs": false,
-    "strict": false,
+    "strict": true,
     "noEmit": true,
     "isolatedModules": true,
     "skipLibCheck": true,
