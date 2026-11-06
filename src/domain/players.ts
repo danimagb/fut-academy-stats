@@ -20,3 +20,8 @@ export function pname(g: Pick<Game, 'names'>, id: string): string {
   if (!p) return '?';
   return p.number ? `#${p.number} ${p.name}` : p.name;
 }
+
+/** A squad member's names as the game keeps them; placeholders for an id the game doesn't know. */
+export function squadName(g: Pick<Game, 'names'>, id: string): SquadName {
+  return g.names[id] ?? { name: '?', number: '', fullName: '' };
+}

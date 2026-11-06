@@ -21,7 +21,7 @@ import { readOnlyGame } from '@/data/access';
 import { readOnlyPill } from '@/features/team-access/read-only';
 import { derive, getGame } from '@/data/queries';
 import { route } from '@/shared/lib/route';
-import { canRecord } from '@/domain/game-state';
+import { canRecord, statsOf } from '@/domain/game-state';
 import { scoreHtml } from '@/features/score/score';
 import { bar } from '@/shared/ui/bar';
 import { openSheet } from '@/shared/ui/sheet';
@@ -31,7 +31,7 @@ import { esc } from '@/shared/lib/html';
 import { formationsFor } from '@/domain/formats';
 import { fmtInPeriod, periodLabel, periodStart, timeOf } from '@/domain/clock';
 import { slotCoords } from '@/domain/pitch';
-import { byNumber, pname, sortIds } from '@/domain/players';
+import { byNumber, pname, sortIds, squadName } from '@/domain/players';
 import { gameTeam, matchTitle, periodName } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
@@ -74,7 +74,7 @@ export const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-
 // below, and small badges on the circle (cards top-right, goals bottom-right).
 // They are chips too, so tap and drag work the same. where: 'on' (pitch), 'bench' or 'off' (sent off).
 export function token(g: Game, d: GameState, id: string, where: 'on' | 'bench' | 'off', attrs = ''): string {
-  const s = d.stats[id];
+  const s = statsOf(d, id);
   const cards = s.red
     ? '<span class="tb tb-card tb-red" aria-hidden="true"></span>'
     : s.yellow
@@ -88,11 +88,11 @@ export function token(g: Game, d: GameState, id: string, where: 'on' | 'bench' |
     .join(' ');
   return `<button class="chip round ${where} ${where === 'on' ? 'tok' : ''} ${id === d.gk ? 'gk' : ''}" data-action="player" data-id="${id}" ${attrs} ${where === 'off' ? 'disabled' : ''}>
     <span class="face">
-      <span class="shirt">${esc(g.names[id].number) || '–'}</span>
+      <span class="shirt">${esc(squadName(g, id).number) || '–'}</span>
       ${cards}${goals}
       <span class="mins" data-pt="${id}">${fmtMins(s.played)}</span>
     </span>
-    <span class="pname">${esc(g.names[id].name)}</span>${label ? `<span class="sr-only">${label}</span>` : ''}
+    <span class="pname">${esc(squadName(g, id).name)}</span>${label ? `<span class="sr-only">${label}</span>` : ''}
   </button>`;
 }
 
@@ -131,7 +131,9 @@ export function viewGame(id: string | undefined): void {
   const d = derive(g);
   const benchIds = g.squad
     .filter((p) => !d.on.has(p) && !d.sentOff.has(p))
-    .sort((a, b) => d.stats[a].played - d.stats[b].played || byNumber(g.names[a], g.names[b]));
+    .sort(
+      (a, b) => statsOf(d, a).played - statsOf(d, b).played || byNumber(squadName(g, a), squadName(g, b)),
+    );
   const offIds = sortIds(
     g,
     [...d.sentOff].filter((p) => !d.on.has(p)),
@@ -233,7 +235,7 @@ export function tick(): void {
   if (period) period.textContent = periodLabel(g);
   for (const p of g.squad) {
     const el = main.querySelector(`[data-pt="${p}"]`);
-    if (el) el.textContent = fmtMins(d.stats[p].played);
+    if (el) el.textContent = fmtMins(statsOf(d, p).played);
   }
   $('.scoreboard')?.classList.toggle('overtime', matchTime(g) - periodStart(g) >= g.periodMin * 60000);
 }
@@ -254,14 +256,14 @@ export function openPlayerSheet(g: Game, id: string): void {
   const candidates = on
     ? g.squad
         .filter((p) => !d.on.has(p) && !d.sentOff.has(p))
-        .sort((a, b) => d.stats[a].played - d.stats[b].played)
-    : [...d.on].sort((a, b) => d.stats[b].played - d.stats[a].played);
+        .sort((a, b) => statsOf(d, a).played - statsOf(d, b).played)
+    : [...d.on].sort((a, b) => statsOf(d, b).played - statsOf(d, a).played);
   const list = candidates
     .map((p) => {
       const [out, inn] = on ? [id, p] : [p, id];
       return `<button class="opt" data-action="do-sub" data-out="${out}" data-in="${inn}">
-      <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}${p === d.gk ? gkTag() : ''}</span>
-      <span class="muted">${fmtMins(d.stats[p].played)}</span>
+      <span><span class="shirt sm">${esc(squadName(g, p).number) || '–'}</span> ${esc(squadName(g, p).name)}${p === d.gk ? gkTag() : ''}</span>
+      <span class="muted">${fmtMins(statsOf(d, p).played)}</span>
     </button>`;
     })
     .join('');
@@ -269,7 +271,7 @@ export function openPlayerSheet(g: Game, id: string): void {
   openSheet(`
     <div class="sheet-head">
       <h3>${esc(pname(g, id))}${id === d.gk ? gkTag() : ''}</h3>
-      <span class="muted small">${on ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(d.stats[id].played) })}</span>
+      <span class="muted small">${on ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(statsOf(d, id).played) })}</span>
     </div>
     <div class="quick-row">
       ${quick('goal', '⚽', t('goalBtn'), on && g.status === 'live')}
@@ -413,7 +415,7 @@ export const gameActions = {
     const eid = addEvent(g, { type: 'goal', playerId: id });
     if (!eid) return;
     rerender();
-    toast(t('evGoal', { p: g.names[id].name }), undoBtn(eid));
+    toast(t('evGoal', { p: squadName(g, id).name }), undoBtn(eid));
   },
   yellow: ({ id }: DOMStringMap) => {
     const g = currentGame();
@@ -421,7 +423,7 @@ export const gameActions = {
     const eid = addEvent(g, { type: 'yellow', playerId: id });
     if (!eid) return;
     rerender();
-    toast(t('evYellow', { p: g.names[id].name }), undoBtn(eid));
+    toast(t('evYellow', { p: squadName(g, id).name }), undoBtn(eid));
   },
   red: ({ id }: DOMStringMap) => {
     const g = currentGame();
@@ -430,7 +432,7 @@ export const gameActions = {
     const eid = addEvent(g, { type: 'red', playerId: id });
     if (!eid) return;
     rerender();
-    toast(wasGk ? t('gkSentOff') : t('evRed', { p: g.names[id].name }), undoBtn(eid));
+    toast(wasGk ? t('gkSentOff') : t('evRed', { p: squadName(g, id).name }), undoBtn(eid));
   },
   'make-gk': ({ id }: DOMStringMap) => {
     closeSheet();
@@ -512,7 +514,7 @@ export const gameActions = {
     const e = g.events.find((x) => x.id === id);
     if (!e || e.type !== 'goal') return;
     const d = derive(g);
-    const onAt = g.squad.filter((p) => d.stats[p].intervals.some(([a, b]) => a <= e.t && e.t <= b));
+    const onAt = g.squad.filter((p) => statsOf(d, p).intervals.some(([a, b]) => a <= e.t && e.t <= b));
     const ids = sortIds(g, onAt.length ? onAt : g.squad);
     openSheet(`
       <h3>${t('editGoal', { t: timeOf(g, e) })}</h3>
@@ -522,7 +524,7 @@ export const gameActions = {
           (
             p,
           ) => `<button class="opt ${p === e.playerId ? 'current' : ''}" data-action="set-scorer" data-id="${e.id}" data-p="${p}">
-        <span><span class="shirt sm">${esc(g.names[p].number) || '–'}</span> ${esc(g.names[p].name)}</span>${p === e.playerId ? '<span>⚽</span>' : ''}
+        <span><span class="shirt sm">${esc(squadName(g, p).number) || '–'}</span> ${esc(squadName(g, p).name)}</span>${p === e.playerId ? '<span>⚽</span>' : ''}
       </button>`,
         )
         .join('')}
@@ -538,7 +540,7 @@ export const gameActions = {
     save();
     buzz();
     rerender();
-    toast(t('evGoal', { p: g.names[p].name }));
+    toast(t('evGoal', { p: squadName(g, p).name }));
   },
   'delete-goal': async ({ id }: DOMStringMap) => {
     const g = currentGame();
@@ -620,7 +622,7 @@ export const gamePage = { views: { game: viewGame }, actions: gameActions };
 // Also shown for a finished game, where nothing new can be recorded.
 export function openPlayerInfo(g: Game, id: string): void {
   const d = derive(g);
-  const s = d.stats[id];
+  const s = statsOf(d, id);
   const bits = [s.goals && `⚽ ${s.goals}`, s.yellow && `🟨 ${s.yellow}`, s.red && `🟥 ${s.red}`]
     .filter(Boolean)
     .join(' · ');

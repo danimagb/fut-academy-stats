@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { at, ev, makeGame, makePlayer } from '@/test/factories';
 import { startClock } from './clock';
-import { canRecord, deriveState, planMove } from './game-state';
+import { canRecord, deriveState, planMove, statsOf } from './game-state';
 import type { Game } from './types';
 
 const MIN = 60_000;
@@ -156,5 +156,23 @@ describe('canRecord', () => {
     expect(canRecord(live())).toBe(true);
     expect(canRecord(live({ status: 'break' }))).toBe(true);
     expect(canRecord(live({ status: 'finished' }))).toBe(false);
+  });
+});
+
+describe('statsOf', () => {
+  it("returns a squad member's stats, and zeros for an id outside the squad", () => {
+    const g = live();
+    g.events.push(ev({ type: 'goal', playerId: 'p2', t: 60_000 }));
+    const d = deriveState(g, 120_000);
+    expect(statsOf(d, 'p2').goals).toBe(1);
+    expect(statsOf(d, 'nobody')).toEqual({
+      intervals: [],
+      open: null,
+      goals: 0,
+      yellow: 0,
+      red: 0,
+      redAt: null,
+      played: 0,
+    });
   });
 });
