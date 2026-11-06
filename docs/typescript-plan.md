@@ -30,8 +30,9 @@ is done as PRs straight into `main`.
 | 6.4     | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
 | 8.1     | Strict on; `data/` season, report sheet, session typed                                 | ✅ merged | danimagb/fut-academy-stats#52 |
 | 8.2     | Sync engine typed                                                                      | ✅ merged | danimagb/fut-academy-stats#53 |
-| 8.3     | Features typed                                                                         | 🔄 review | (this PR)                     |
-| 8.4–8.6 | Pages (two PRs); app; drop `allowJs`                                                   | ⏳ todo   |                               |
+| 8.3     | Features typed                                                                         | ✅ merged | danimagb/fut-academy-stats#56 |
+| 8.4     | Pages: report, stats, profile, admin, team                                             | 🔄 review | (this PR)                     |
+| 8.5–8.6 | Game pages; app; drop `allowJs`                                                        | ⏳ todo   |                               |
 | 9       | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
 | 10      | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
 
@@ -451,6 +452,16 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     `main` are byte-identical PDFs (same SHA-256).
   - Next: 8.4 pages (report, stats, profile, admin, team); 8.5 pages (game-edit, game, drag);
     8.6 `app/`, then remove `allowJs`.
+- Done in step 8.4: `pages/report`, `stats`, `profile`, `admin` and `team` are `.ts` and pass
+  `strict`.
+  - Pages can't import from `app/`, so action handlers type their argument as `DOMStringMap`
+    (as `pages/games` already did) rather than using `ActionHandler`.
+  - The admin page has its own `AdminState` types; `remote.admin` stays `unknown` in
+    `features/team-people`, because a feature can't know a page's types.
+  - Found: handlers that look up a record or the route's id (edit or delete a player,
+    delete, upload or leave a team, the PDF buttons) would throw if it were missing. They
+    now stop quietly instead. No screen can send them a missing id, so nothing visible
+    changes.
 
 ## Why
 

@@ -1,5 +1,4 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// The Teams list and a team's screen (club, age group, players, staff). Moved from app/legacy.js.
+// The Teams list and a team's screen (club, age group, players, staff).
 import { save } from '@/data/save';
 import { syncNow } from '@/data/session';
 import { pendingCount } from '@/data/sync';
@@ -27,10 +26,11 @@ import { byNumber } from '@/domain/players';
 import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import type { Team } from '@/domain/types';
 
 // ---------- Views: teams and their players ----------
 
-export function viewTeams() {
+export function viewTeams(): void {
   main.innerHTML = `
     ${bar(t('teams'), '#/games')}
     <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
@@ -54,15 +54,16 @@ export function viewTeams() {
     }`;
 }
 
-export let newCloudTeam = null; // id of a team just created as a cloud team (shows a note once)
+export let newCloudTeam: string | null = null; // id of a team just created as a cloud team (shows a note once)
 
-export function viewTeam(id) {
-  const tm = getTeam(id);
+export function viewTeam(teamId: string | undefined): void {
+  const tm = getTeam(teamId);
   if (!tm) return viewTeams();
+  const id = tm.id;
   const ps = teamPlayers(id).sort(byNumber);
   const ro = readOnlyTeam(id);
   const cloudTeam = isCloudTeam(id);
-  const field = (key, label, ph) =>
+  const field = (key: 'club' | 'name', label: string, ph: string): string =>
     ro
       ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
       : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
@@ -124,15 +125,15 @@ export function viewTeam(id) {
     if (db.sync.uploads.includes(id)) {
       remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
       showPeople();
-    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') loadPeople(id);
+    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') void loadPeople(id);
   }
 }
 
 // Players and Staff on the team screen are collapsible sections, both closed by default
 // (each remembered while the app is open). `add` is the action of the section's ＋ button.
-export const teamOpen = { players: false, staff: false };
+export const teamOpen: Record<string, boolean> = { players: false, staff: false };
 
-export function teamSection(id, title, summary, add, body) {
+export function teamSection(id: string, title: string, summary: string, add: string, body: string): string {
   const open = teamOpen[id];
   return `
     <section class="acc ${open ? 'open' : ''}">
@@ -148,12 +149,12 @@ export function teamSection(id, title, summary, add, body) {
 }
 
 // The ⋯ menu of the team screen: for now only Delete team (for whoever may change the team).
-export const teamMenu = (id, ro) =>
+export const teamMenu = (_id: string, ro: boolean): string =>
   ro
     ? ''
     : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`;
 
-export function openAddCoach() {
+export function openAddCoach(): void {
   openSheet(`
     <h3>${t('addCoach')}</h3>
     <form class="form" data-form="add-coach">
@@ -162,11 +163,11 @@ export function openAddCoach() {
       <button class="btn primary block">${t('addCoach')}</button>
       <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
     </form>`);
-  $('#sheet [name="email"]').focus();
+  $('#sheet [name="email"]')?.focus();
 }
 
 // `added` is the name of the player just added, shown while the sheet waits for the next one.
-export function openAddPlayer(added = '') {
+export function openAddPlayer(added = ''): void {
   openSheet(`
     <h3>${t('newPlayer')}</h3>
     ${added ? `<p class="hint ok" role="status">✓ ${t('playerAdded', { name: esc(added) })}</p>` : ''}
@@ -177,14 +178,21 @@ export function openAddPlayer(added = '') {
       <button class="btn primary block">${t('add')}</button>
       <button type="button" class="btn ghost block" data-action="close-sheet">${t('done')}</button>
     </form>`);
-  $('#sheet [name="number"]').focus();
+  $('#sheet [name="number"]')?.focus();
 }
 
 export const teamActions = {
-  'upload-team': () => uploadTeams([route().id]),
-  'people-reload': () => loadPeople(route().id),
-  'remove-coach': async ({ id }) => {
+  'upload-team': () => {
+    const id = route().id;
+    if (id) uploadTeams([id]);
+  },
+  'people-reload': () => {
+    const id = route().id;
+    if (id) void loadPeople(id);
+  },
+  'remove-coach': async ({ id }: DOMStringMap) => {
     const teamId = route().id;
+    if (!teamId || !id) return;
     const m = remote.people?.members.find((x) => x.user_id === id);
     const ok = await askConfirm({
       title: t('removeFromTeam'),
@@ -199,10 +207,12 @@ export const teamActions = {
     } catch (e) {
       return setPeopleMsg(accessError(e), false);
     }
-    loadPeople(teamId);
+    void loadPeople(teamId);
   },
   'leave-team': async () => {
     const teamId = route().id;
+    const me = myId();
+    if (!teamId || !me) return;
     const ok = await askConfirm({
       title: t('leaveTeam'),
       message: t('leaveTeamConfirm'),
@@ -212,7 +222,7 @@ export const teamActions = {
     if (!ok) return;
     try {
       if (pendingCount()) await syncNow(); // a director's changes go up first
-      await deleteMember(teamId, myId());
+      await deleteMember(teamId, me);
     } catch (e) {
       return notify(accessError(e));
     }
@@ -221,7 +231,7 @@ export const teamActions = {
     if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
   },
   'new-team': () => {
-    const tm = { id: uid(), club: db.teams[0]?.club || '', name: '' };
+    const tm: Team = { id: uid(), club: db.teams[0]?.club || '', name: '' };
     db.teams.push(tm);
     save();
     if (canUpload()) {
@@ -231,13 +241,15 @@ export const teamActions = {
     location.hash = `#/team/${tm.id}`;
   },
   'delete-team': async () => {
-    const id = route().id;
+    const tm = getTeam(route().id);
+    if (!tm) return;
+    const id = tm.id;
     if (teamPlayers(id).length) {
       return askConfirm({ title: t('deleteTeam'), message: t('teamHasPlayers'), ok: t('ok'), cancel: false });
     }
     const ok = await askConfirm({
       title: t('confirmDeleteTeam'),
-      message: esc(teamLabel(getTeam(id))),
+      message: esc(teamLabel(tm)),
       ok: t('deleteBtn'),
       danger: true,
     });
@@ -246,14 +258,15 @@ export const teamActions = {
     save();
     location.hash = '#/teams';
   },
-  'team-section': ({ v }) => {
+  'team-section': ({ v = '' }: DOMStringMap) => {
     teamOpen[v] = !teamOpen[v];
     rerender();
   },
   'add-player': () => openAddPlayer(),
   'add-coach': () => openAddCoach(),
-  'edit-player': ({ id }) => {
+  'edit-player': ({ id }: DOMStringMap) => {
     const p = db.players.find((x) => x.id === id);
+    if (!p) return;
     openSheet(`
       <h3>${t('editPlayer')}</h3>
       <form class="form" data-form="edit-player" data-id="${p.id}">
@@ -264,8 +277,9 @@ export const teamActions = {
         <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
       </form>`);
   },
-  'delete-player': async ({ id }) => {
+  'delete-player': async ({ id }: DOMStringMap) => {
     const p = db.players.find((x) => x.id === id);
+    if (!p) return;
     const ok = await askConfirm({
       title: t('removePlayerTitle'),
       message: t('confirmRemovePlayer', { name: `<b>${esc(p.name)}</b>` }),

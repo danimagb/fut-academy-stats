@@ -1,8 +1,6 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
+// The Admin page (the admin only, online only): accounts and team memberships.
 import { rerender } from '@/shared/lib/rerender';
 import { deleteMember } from '@/features/team-people/team-people';
-// The Admin page (the admin only, online only): accounts and team memberships. Moved from
-// app/legacy.js.
 import {
   OFFLINE,
   accessError,
@@ -24,43 +22,73 @@ import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { rerenderSoon } from '@/shared/lib/rerender';
 import { main } from '@/shared/ui/main';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Role } from '@/domain/types';
+
+type AdminAccount = { user_id: string; email: string; kind: 'director' | 'coach'; is_admin: boolean };
+type AdminTeam = { id: string; club: string; name: string };
+type AdminMember = { team_id: string; user_id: string; role: Role };
+type AdminState = {
+  status: 'loading' | 'ok' | 'offline' | 'error';
+  accounts: AdminAccount[];
+  teams: AdminTeam[];
+  members: AdminMember[];
+};
+/** An error from the admin function or a query, with its code and HTTP status. */
+type AdminFailure = Error & { code?: string; status?: number };
+
+/** This page's state (kept in `remote`, which the route change resets). */
+const adminState = (): AdminState | null => remote.admin as AdminState | null;
+
+/** The Supabase client (this page only shows when there is one). */
+const client = (): SupabaseClient => {
+  if (!sb) throw OFFLINE;
+  return sb;
+};
 
 // ---------- Admin page ----------
 
 // Call the `admin` Edge Function. Errors come back as { error: code, message } with a status.
-export async function adminCall(body) {
-  const { data, error } = await sb.functions.invoke('admin', { body });
+export async function adminCall(body: Record<string, unknown>): Promise<unknown> {
+  const { data, error } = await client().functions.invoke('admin', { body });
   if (!error) return data;
-  const err = new Error(error.message);
-  err.status = error.name === 'FunctionsFetchError' ? 0 : error.context?.status;
+  const fail = error as { message: string; name: string; context?: Response };
+  const err: AdminFailure = new Error(fail.message);
+  err.status = fail.name === 'FunctionsFetchError' ? 0 : fail.context?.status;
   try {
-    const j = await error.context.json();
+    const j = (await fail.context?.json()) as {
+      error?: string;
+      code?: string;
+      message?: string;
+      msg?: string;
+    };
     Object.assign(err, { code: j.error || j.code, message: j.message || j.msg || error.message });
   } catch {}
   throw err;
 }
 
-export function adminError(e) {
-  if (isOffline(e)) return t('needsInternet');
+export function adminError(err: unknown): string {
+  if (isOffline(err)) return t('needsInternet');
+  const e = err as AdminFailure;
   if (e.code === 'exists') return t('errExists');
   if (e.code === 'invalid_email') return t('errEmail');
   if (e.code === 'not_admin') return t('errNotAdmin');
   if (e.code === 'self') return t('errSelf');
   if (e.code === 'is_admin') return t('errIsAdmin');
   if (e.status === 401) return t('errSession', { msg: esc(e.message) });
-  return accessError(e);
+  return accessError(err);
 }
 
-export async function loadAdmin() {
-  const st = { status: 'loading', accounts: [], teams: [], members: [] };
+export async function loadAdmin(): Promise<void> {
+  const st: AdminState = { status: 'loading', accounts: [], teams: [], members: [] };
   remote.admin = st;
   try {
     if (!navigator.onLine) throw OFFLINE;
     const [accounts, teams] = await Promise.all([
-      q(sb.from('accounts').select('user_id, email, kind, is_admin').order('email')),
-      q(sb.from('teams').select('id, club, name').is('deleted_at', null).order('name')),
+      q<AdminAccount[]>(client().from('accounts').select('user_id, email, kind, is_admin').order('email')),
+      q<AdminTeam[]>(client().from('teams').select('id, club, name').is('deleted_at', null).order('name')),
     ]);
-    const members = await q(sb.from('team_members').select('team_id, user_id, role'));
+    const members = await q<AdminMember[]>(client().from('team_members').select('team_id, user_id, role'));
     Object.assign(st, { accounts, teams, members, status: 'ok' });
   } catch (e) {
     st.status = isOffline(e) ? 'offline' : 'error';
@@ -71,7 +99,7 @@ export async function loadAdmin() {
 
 // An admin change: run it, say how it went, reload the page's data. Membership changes may be
 // about this user's own teams, so sync too.
-export async function adminDo(fn, okText, sync = false) {
+export async function adminDo(fn: () => Promise<unknown>, okText?: string, sync = false): Promise<void> {
   try {
     await fn();
     if (okText) toast(okText);
@@ -79,16 +107,17 @@ export async function adminDo(fn, okText, sync = false) {
     notify(adminError(e));
   }
   await loadAdmin();
-  if (sync) syncNow();
+  if (sync) void syncNow();
 }
 
-export function viewAdmin() {
+export function viewAdmin(): void {
   const head = bar(t('admin'), '#/profile');
-  if (!sb || !cloud.account?.isAdmin) {
+  const account = cloud.account;
+  if (!sb || !account || 'none' in account || !account.isAdmin) {
     main.innerHTML = `${head}<p class="empty">${t('adminOnly')}</p>`;
     return;
   }
-  const st = remote.admin;
+  const st = adminState();
   const me = myId();
   const give = `
     <h2>${t('giveAccess')}</h2>
@@ -101,16 +130,16 @@ export function viewAdmin() {
       <button class="btn primary">${t('giveAccess')}</button>
     </form>
     <p class="hint">${t('giveAccessHint')}</p>`;
-  let body;
+  let body: string;
   if (!st || st.status === 'loading') body = `<p class="hint">${t('loading')}</p>`;
   else if (st.status !== 'ok')
     body = `<p class="hint warn">${t('needsInternet')}</p><button class="btn small ghost" data-action="admin-reload">${t('tryAgain')}</button>`;
   else {
     const email = new Map(st.accounts.map((a) => [a.user_id, a.email]));
-    const teamsOf = (uid) => st.members.filter((m) => m.user_id === uid).length;
+    const teamsOf = (uid: string): number => st.members.filter((m) => m.user_id === uid).length;
     const kindSelect = (
-      a,
-    ) => `<select class="mini" data-change="admin-kind" data-id="${esc(a.user_id)}" aria-label="${t('accountKind')}">
+      a: AdminAccount,
+    ): string => `<select class="mini" data-change="admin-kind" data-id="${esc(a.user_id)}" aria-label="${t('accountKind')}">
       ${['director', 'coach'].map((k) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('')}</select>`;
     const accounts = `
       <h2>${t('accounts')} <span class="muted small">${st.accounts.length}</span></h2>
@@ -130,8 +159,8 @@ export function viewAdmin() {
         )
         .join('')}</ul>`;
     const roleSelect = (
-      m,
-    ) => `<select class="mini" data-change="admin-role" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
+      m: AdminMember,
+    ): string => `<select class="mini" data-change="admin-role" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
       ${['director', 'coach'].map((r) => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}</select>`;
     const teams = st.teams
       .map((tm) => {
@@ -176,7 +205,7 @@ export function viewAdmin() {
       ${st.teams.length ? `<ul class="list">${teams}</ul>` : `<p class="empty">${t('noCloudTeams')}</p>`}`;
   }
   main.innerHTML = `${head}${give}${body}`;
-  if (!st) loadAdmin();
+  if (!st) void loadAdmin();
 }
 
 /** The Admin page: its screen, actions and forms (app/ registers them at startup). */
@@ -188,50 +217,52 @@ export const adminPage = {
       remote.admin = null;
       rerender();
     },
-    'admin-remove-account': async ({ id }) => {
-      const a = remote.admin?.accounts.find((x) => x.user_id === id);
+    'admin-remove-account': async ({ id }: DOMStringMap) => {
+      const a = adminState()?.accounts.find((x) => x.user_id === id);
       const ok = await askConfirm({
         title: t('removeAccess'),
         message: t('removeAccessConfirm', { email: `<b>${esc(a?.email || '')}</b>` }),
         ok: t('removeAccess'),
         danger: true,
       });
-      if (ok) adminDo(() => adminCall({ action: 'delete_account', user_id: id }), t('accessRemoved'));
+      if (ok) await adminDo(() => adminCall({ action: 'delete_account', user_id: id }), t('accessRemoved'));
     },
-    'admin-remove-member': async ({ tid, id }) => {
-      const a = remote.admin?.accounts.find((x) => x.user_id === id);
+    'admin-remove-member': async ({ tid = '', id = '' }: DOMStringMap) => {
+      const a = adminState()?.accounts.find((x) => x.user_id === id);
       const ok = await askConfirm({
         title: t('removeFromTeam'),
         message: t('removeMemberConfirm', { email: `<b>${esc(a?.email || '')}</b>` }),
         ok: t('removeFromTeam'),
         danger: true,
       });
-      if (ok) adminDo(() => deleteMember(tid, id), t('removed'), true);
+      if (ok) await adminDo(() => deleteMember(tid, id), t('removed'), true);
     },
   },
   forms: {
-    'admin-create': (data, formEl) => {
+    'admin-create': (data: FormData, formEl: HTMLFormElement) => {
       const email = String(data.get('email')).trim().toLowerCase();
       const btn = formEl.querySelector('button');
-      btn.disabled = true;
+      if (btn) btn.disabled = true;
       return adminDo(async () => {
         await adminCall({ action: 'create_account', email, kind: String(data.get('kind')) });
         notify(t('accessGiven', { email: `<b>${esc(email)}</b>` }), t('accessGivenTitle'));
       }).finally(() => {
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
       });
     },
-    'admin-add-member': (data, formEl) => {
+    'admin-add-member': (data: FormData, formEl: HTMLFormElement) => {
       const teamId = formEl.dataset.tid;
       return adminDo(
         () =>
           q(
-            sb.from('team_members').insert({
-              team_id: teamId,
-              user_id: String(data.get('user')),
-              role: String(data.get('role')),
-              invited_by: myId(),
-            }),
+            client()
+              .from('team_members')
+              .insert({
+                team_id: teamId,
+                user_id: String(data.get('user')),
+                role: String(data.get('role')),
+                invited_by: myId(),
+              }),
           ),
         t('memberAdded'),
         true,

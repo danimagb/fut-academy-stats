@@ -1,5 +1,4 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// The report screen: a game's stats sheet, as it will look in the PDF. Moved from app/legacy.js.
+// The report screen: a game's stats sheet, as it will look in the PDF.
 import { currentGame } from '@/data/queries';
 import { exportPdf } from '@/features/share-pdf/share-pdf';
 import { statsSheet } from '@/data/report-sheet';
@@ -15,15 +14,18 @@ import { esc } from '@/shared/lib/html';
 import { matchTitle } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import type { Sheet, SheetCol } from '@/data/report-sheet';
+import type { Game } from '@/domain/types';
 
 /** Date, format and team size of a game (escaped). */
-export const formatLine = (g) =>
+export const formatLine = (g: Game): string =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
 
-export function sheetPreview(sh) {
+export function sheetPreview(sh: Sheet): string {
   const S = 1.3;
-  const x = (i) => Math.round(sh.cols.slice(0, i).reduce((n, c) => n + c.w, 0) * S);
-  const cell = (lines, c) => `<td class="${c.left ? 'l' : ''}">${lines.map(esc).join('<br>')}</td>`;
+  const x = (i: number): number => Math.round(sh.cols.slice(0, i).reduce((n, c) => n + c.w, 0) * S);
+  const cell = (lines: string[], c: SheetCol | undefined): string =>
+    `<td class="${c?.left ? 'l' : ''}">${lines.map(esc).join('<br>')}</td>`;
   return `<div class="pdf-preview"><div class="pp-page" style="width:${x(sh.cols.length) + 40}px">
     <div class="pp-title">${esc(sh.title)}</div>
     <div class="pp-meta">${sh.meta.map(([k, v, col]) => `<span style="left:${x(col)}px"><b>${esc(k)}</b> ${esc(v)}</span>`).join('')}</div>
@@ -36,7 +38,7 @@ export function sheetPreview(sh) {
   </div></div>`;
 }
 
-export function viewReport(id) {
+export function viewReport(id: string | undefined): void {
   const g = getGame(id);
   if (!g) return notFound();
   const d = derive(g);
@@ -57,7 +59,10 @@ export function viewReport(id) {
 }
 
 export const reportActions = {
-  pdf: () => exportPdf(currentGame()),
+  pdf: () => {
+    const g = currentGame();
+    if (g) void exportPdf(g);
+  },
 };
 
 /** The report screen: its screen and actions (app/ registers them at startup). */

@@ -1,5 +1,4 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// The Profile page: account, settings (language, theme) and backup. Moved from app/legacy.js.
+// The Profile page: account, settings (language, theme) and backup.
 import { $ } from '@/shared/lib/dom';
 import { sb, syncNow } from '@/data/session';
 import { db } from '@/data/store';
@@ -20,6 +19,9 @@ import { persistedState } from '@/data/persist';
 import { esc } from '@/shared/lib/html';
 import { getLang, t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import type { SignInMode } from '@/data/session';
+import type { Lang } from '@/domain/types';
+import type { ThemeChoice } from '@/features/theme-switch/theme';
 
 // ---------- Views: profile / settings ----------
 // App settings live here; add new sections as more settings appear.
@@ -29,8 +31,8 @@ import { main } from '@/shared/ui/main';
 // creating an account / choosing a password, Account stays open.
 export let profileOpen = 'account';
 
-export function viewProfile() {
-  const seg = (action, current, options) =>
+export function viewProfile(): void {
+  const seg = (action: string, current: string, options: [string, string][]): string =>
     `<span class="seg big" role="group">${options
       .map(
         ([v, label]) =>
@@ -46,14 +48,14 @@ export function viewProfile() {
       : [
           cloud.session.user.email,
           a &&
-            !a.none &&
+            !('none' in a) &&
             (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')),
         ]
           .filter(Boolean)
           .join(' · ')
     : t('notSignedIn');
   const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[getTheme()];
-  const section = (id, title, summary, body) => `
+  const section = (id: string, title: string, summary: string, body: string): string => `
     <section class="acc ${open === id ? 'open' : ''}">
       <button class="acc-head" data-action="profile-section" data-v="${id}" aria-expanded="${open === id}" aria-controls="acc-${id}">
         <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum">${esc(summary)}</span></span>
@@ -107,14 +109,14 @@ export const profileActions = {
     Object.assign(cloud, { step: 'email', error: '' });
     rerender();
   },
-  'profile-section': ({ v }) => {
+  'profile-section': ({ v = '' }: DOMStringMap) => {
     profileOpen = profileOpen === v ? '' : v; // tap the open one to close it
     rerender();
   },
-  'auth-mode': ({ v }) => {
+  'auth-mode': ({ v }: DOMStringMap) => {
     // Keep a typed email when switching between Sign in / Activate account / Reset.
-    const typed = $('main input[name="email"]')?.value.trim();
-    Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
+    const typed = ($('main input[name="email"]') as HTMLInputElement | null)?.value.trim();
+    Object.assign(cloud, { mode: v as SignInMode, step: 'email', error: '', email: typed || cloud.email });
     rerender();
   },
   'change-password': () => {
@@ -125,7 +127,7 @@ export const profileActions = {
     Object.assign(cloud, { changingPassword: false, error: '' });
     rerender();
   },
-  'signin-resend': () => sendCode(cloud.email),
+  'signin-resend': () => void sendCode(cloud.email),
   'sign-out': async () => {
     const n = pendingCount();
     const message = [
@@ -137,16 +139,16 @@ export const profileActions = {
       .join(' ');
     if (!(await askConfirm({ title: t('signOut'), message, ok: t('signOut'), danger: n > 0 }))) return;
     removeCloudData(); // cloud teams leave this phone; teams on this phone stay
-    await sb.auth.signOut({ scope: 'local' }); // local: works offline too
+    await sb?.auth.signOut({ scope: 'local' }); // local: works offline too
     rerender();
   },
-  'sync-now': () => syncNow(),
-  theme: ({ v }) => {
-    setTheme(v);
+  'sync-now': () => void syncNow(),
+  theme: ({ v }: DOMStringMap) => {
+    setTheme(v as ThemeChoice);
     rerender();
   },
-  lang: ({ v }) => {
-    switchLanguage(v);
+  lang: ({ v }: DOMStringMap) => {
+    switchLanguage(v as Lang);
     rerender();
   },
 };
