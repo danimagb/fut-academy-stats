@@ -6,7 +6,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { route } from '@/shared/lib/route';
 import { rerender, rerenderTabbar } from '@/shared/lib/rerender';
-import { fetchAccount, storeAccount, storedAccount } from './auth';
+import { fetchAccount, managedClubs, storeAccount, storedAccount } from './auth';
 import type { Account } from './auth';
 import { getSupabase } from './supabase';
 import { runSync } from './sync';
@@ -55,7 +55,7 @@ export const renderIfProfile = (): void => {
   else rerenderTabbar();
 };
 
-/** Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline. */
+/** Fetch this user's accounts row (admin flag, clubs). Kept locally so Profile shows it offline. */
 export async function refreshAccount(): Promise<void> {
   const userId = cloud.session?.user?.id;
   if (!sb || !userId) return;
@@ -71,9 +71,10 @@ const realAccount = (): Exclude<Account, { none: true }> | null =>
   cloud.account && !('none' in cloud.account) ? cloud.account : null;
 
 export const canSync = (): boolean => !!(sb && cloud.session && realAccount() && !cloud.needsPassword);
+/** May create cloud teams: club managers (in their clubs) and the admin. */
 export const canUpload = (): boolean => {
   const account = realAccount();
-  return canSync() && !!account && (account.kind === 'director' || account.isAdmin);
+  return canSync() && !!account && (account.isAdmin || managedClubs(account).length > 0);
 };
 
 /**

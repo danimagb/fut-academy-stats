@@ -158,7 +158,7 @@ In the dashboard:
      and save: it is still safe, because the function verifies the session and the admin flag on
      its own.
 5. Test it: in the app, sign in with your admin account → **Profile → Account → Admin** →
-   **Give access** with a second email of yours (as a coach account). It should say the person
+   **Give access** with a second email of yours (in a club; create one first under **Clubs**). It should say the person
    can now sign in; the email appears under **Accounts** (and in **Authentication → Users**).
    Remove it again with ✕.
 
