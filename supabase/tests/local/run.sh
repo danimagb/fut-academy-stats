@@ -36,6 +36,13 @@ psql_q -d postgres -c "create database $db"
 psql_q -d "$db" -c "create extension pgtap"
 psql_q -d "$db" -f "$here/supabase_stub.sql"
 for m in "$supabase_dir"/migrations/*.sql; do
+  # Data in the shape of the earlier migrations, for the tests of a migration's data changes
+  # (e.g. before_20261107000000_clubs.sql, checked by tests/clubs_migration.test.sql).
+  seed="$here/before_$(basename "$m")"
+  if [ -f "$seed" ]; then
+    echo "Seeding $(basename "$seed")"
+    psql_q -d "$db" -f "$seed"
+  fi
   echo "Applying $(basename "$m")"
   psql_q -d "$db" -f "$m"
   # Applying it a second time checks that the migration is re-runnable.
