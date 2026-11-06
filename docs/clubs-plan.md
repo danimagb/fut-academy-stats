@@ -35,7 +35,8 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 | 3   | Admin: clubs, their people and club managers                 | ⏳ to do     |           |
 | 4   | Sync + permissions in the app (club manager role)            | ⏳ to do     |           |
 | 5   | Club manager screens: club teams, players, staff             | ⏳ to do     |           |
-| 6   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |           |
+| 6   | Club logo (storage, upload, screens, PDFs)                   | ⏳ to do     |           |
+| 7   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |           |
 
 **Where things stand:** plan agreed with the maintainer (see "Decisions" at the end); step 2 next.
 
@@ -195,6 +196,38 @@ The central guard in the click/submit handlers learns the new action lists the s
 - i18n (`en` + `pt`): Club / Clube, Club manager / Coordenador, Team manager / Diretor, Staff / Equipa técnica, etc.
   Existing `roleDirector` = Diretor, `roleCoach` = Treinador already match.
 
+## Club logo
+
+The club manager (or the admin) can add the club's logo; the app shows it on every screen
+where the club appears.
+
+- **Storage**: Supabase Storage, bucket `club-logos`, one file per club at
+  `{club_id}/logo.webp`. The bucket is **public for reading** (a crest isn't private, and a
+  plain URL works in `<img>` and in the service worker cache) and limited to images
+  (`image/png`, `image/jpeg`, `image/webp`) of at most 512 KB. Writes go through RLS on
+  `storage.objects`: insert / update / delete only if `is_club_manager(<first folder of the
+path>)` or `is_admin()`; anon and other users can't write.
+- **Table**: `clubs.logo_version int` (null = no logo), bumped by an RPC
+  `set_club_logo(_club_id, _present bool)` after the upload (same RLS rule). It moves
+  `clubs.updated_at`, so phones learn about a new logo on the next pull. The URL is
+  `…/storage/v1/object/public/club-logos/{club_id}/logo.webp?v={logo_version}`.
+- **Upload in the app**: Club screen → "Logo" → pick a photo/file → the app crops it to a
+  square and resizes it to 256 × 256 WebP in a canvas (a few tens of KB) before uploading,
+  with a preview, "Change" and "Remove". Online only.
+- **Offline**: after a pull, the app downloads the logo once per `logo_version` and keeps it
+  as a data URL in its own localStorage key (`fut-academy-stats.logos`, by club id), not in
+  `db` (so backups and change tracking don't carry images). No logo or not downloaded yet →
+  the current look (text only).
+- **Where it shows**: teams list (club header), Club and team screens, game screen
+  scoreboard (small, next to the club's short name), games list, report preview, and the
+  game report and player stats **PDFs** (header). The PDF writer (`share-pdf.ts`, written by
+  hand) embeds a JPEG made from the cached logo through a canvas (`/DCTDecode` image
+  XObject), so it needs no library.
+- **Local teams** have no logo for now (possible later: a logo stored on the phone).
+- Tests: storage policies in `rls.test.sql` (club manager of club A can write `A/…` only;
+  team managers, team coaches and outsiders can't write; admin can); E2E with the fake
+  Supabase serving an image.
+
 ## Steps (PRs)
 
 2. **Database**: migration `2026xxxx_clubs.sql` (tables, helpers, policies, RPCs, triggers,
@@ -206,7 +239,9 @@ The central guard in the click/submit handlers learns the new action lists the s
    (validate.ts, store normalize), clubs cache, access helpers. Unit tests in `sync.test.ts`.
 5. **Club manager screens**: teams grouped by club, new team in a club, Staff with roles,
    upload-local-team-into-club. E2E: club manager / team manager / team coach phones.
-6. **Finishing**: team manager limits in the UI, README + "How your data is handled" text,
+6. **Club logo**: bucket + storage policies + `set_club_logo` (migration and tests), upload
+   on the Club screen, offline cache, logo on the screens and in the PDFs.
+7. **Finishing**: team manager limits in the UI, README + "How your data is handled" text,
    test on two real phones against the real project.
 
 ## Decisions (agreed with the maintainer, 2026-11-06)
@@ -223,3 +258,4 @@ The central guard in the click/submit handlers learns the new action lists the s
    teams, picking them from a list with a search filter.
 7. The existing team goes into a club **Padroense FC** created by the migration.
 8. The maintainer's account becomes admin + club manager of Padroense FC (by the migration).
+9. Club managers can add a club logo (Supabase Storage), shown on the screens and in the PDFs.
