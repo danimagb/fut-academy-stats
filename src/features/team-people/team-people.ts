@@ -51,8 +51,9 @@ export function accessError(e: unknown): string {
   return t('actionFailed', { msg: esc(err.message ?? String(e)) });
 }
 
-export const roleLabel = (role: string): string => t(role === 'director' ? 'roleDirector' : 'roleCoach');
-export const kindLabel = (kind: string): string => t(kind === 'director' ? 'acctDirector' : 'acctCoach');
+/** A team role's label: `manager` (and the old name `director`) = Diretor, `coach` = Treinador. */
+export const roleLabel = (role: string): string =>
+  t(role === 'manager' || role === 'director' ? 'roleDirector' : 'roleCoach');
 export const myId = (): string | undefined => cloud.session?.user?.id;
 
 export const OFFLINE = Object.assign(new Error('offline'), { status: 0 });

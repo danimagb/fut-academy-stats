@@ -14,10 +14,10 @@ import { initLanguage } from '@/features/language-switch/language';
 import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
 import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
-import { adminDo } from '@/pages/admin/admin';
+import { setClubRole, setTeamRole } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
 import { $, $$ } from '@/shared/lib/dom';
-import { remote, q, loadPeople, addCoach } from '@/features/team-people/team-people';
+import { remote, loadPeople, addCoach } from '@/features/team-people/team-people';
 import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
@@ -56,13 +56,6 @@ import type { MessageKey } from '@/shared/i18n/i18n';
 import type { Db, Player, RecordKind } from '@/domain/types';
 import type { Draft } from '@/pages/game-edit/game-edit';
 import type { ActionHandler } from '@/app/actions';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-/** The Supabase client (the admin controls only show when there is one). */
-const client = (): SupabaseClient => {
-  if (!sb) throw new Error('offline');
-  return sb;
-};
 
 type AnyRecord = { id: string; teamId?: string };
 /** A store's records of one kind, as one list type (the backup restore treats them alike). */
@@ -273,32 +266,10 @@ export function boot(): void {
     const el = e.target as HTMLInputElement; // selects and the backup file input
     if (!el.dataset) return;
     const { change, id = '', tid = '' } = el.dataset; // (data-tid: data-team is the team screen's inputs)
-    // Admin page: account type and team roles (RLS lets only the admin change them).
-    if (change === 'admin-kind') {
-      return adminDo(async () => {
-        const rows = await q<{ user_id: string }[]>(
-          client().from('accounts').update({ kind: el.value }).eq('user_id', id).select('user_id'),
-        );
-        if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
-      }, t('kindChanged'));
-    }
-    if (change === 'admin-role') {
-      return adminDo(
-        async () => {
-          const rows = await q<{ user_id: string }[]>(
-            client()
-              .from('team_members')
-              .update({ role: el.value })
-              .eq('team_id', tid)
-              .eq('user_id', id)
-              .select('user_id'),
-          );
-          if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
-        },
-        t('roleChanged'),
-        true,
-      );
-    }
+    // Admin page: club and team roles (RLS lets only the admin change them).
+    const { cid = '' } = el.dataset;
+    if (change === 'admin-club-role') return setClubRole(cid, id, el.value);
+    if (change === 'admin-role') return setTeamRole(tid, id, el.value);
     if (change !== 'restore') return;
     const file = el.files?.[0];
     if (!file) return;

@@ -1,18 +1,54 @@
-import type { Page } from '@playwright/test';
+import type { Page, Request } from '@playwright/test';
 
 // A signed-in user without a real Supabase project: a stored session (read by supabase-js on
-// start-up) and canned answers for the REST and auth calls the app makes. Tests never reach
-// the real project.
+// start-up) and an in-memory stand-in for the REST tables, the auth calls and the `admin`
+// Edge Function. Tests never reach the real project. There is no RLS here: tests check screens.
 
 export const ADMIN = { id: '00000000-0000-0000-0000-0000000000ad', email: 'admin@example.com' };
 
-type Tables = Record<string, unknown[]>;
+type Row = Record<string, unknown>;
+type Tables = Record<string, Row[]>;
+/** Answers a call to the `admin` Edge Function: [HTTP status, JSON body]. */
+type AdminFunction = (body: Row, rows: Tables) => [number, unknown];
+
+/** The row filters supabase-js puts in the query string: eq., in.(…), is.null. */
+function matches(row: Row, url: URL): boolean {
+  for (const [col, cond] of url.searchParams) {
+    if (['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'].includes(col)) continue;
+    const v = row[col];
+    if (cond.startsWith('eq.') && String(v) !== cond.slice(3)) return false;
+    if (cond.startsWith('in.(')) {
+      const list = cond
+        .slice(4, -1)
+        .split(',')
+        .map((x) => x.replace(/^"|"$/g, ''));
+      if (!list.includes(String(v))) return false;
+    }
+    if (cond === 'is.null' && v != null) return false;
+  }
+  return true;
+}
+
+/** A default `admin` function: creates the account (if new) and the club role. */
+export const fakeAdminFunction: AdminFunction = (body, rows) => {
+  if (body.action !== 'create_account') return [400, { error: 'unknown_action', message: 'Unknown action' }];
+  const email = String(body.email).toLowerCase();
+  let account = (rows.accounts ??= []).find((a) => a.email === email);
+  const existed = !!account;
+  if (!account) {
+    account = { user_id: crypto.randomUUID(), email, is_admin: false };
+    rows.accounts.push(account);
+  }
+  (rows.club_members ??= []).push({ club_id: body.club_id, user_id: account.user_id, role: body.role });
+  return [200, { ok: true, user_id: account.user_id, existed }];
+};
 
 export async function signInAs(
   page: Page,
   user = ADMIN,
-  account = { kind: 'coach', is_admin: true },
+  account: Row = { is_admin: true },
   tables: Tables = {},
+  adminFunction: AdminFunction = fakeAdminFunction,
 ) {
   const now = Math.floor(Date.now() / 1000);
   const session = {
@@ -26,31 +62,59 @@ export async function signInAs(
   await page.addInitScript((s) => localStorage.setItem('fut-academy-stats.auth', s), JSON.stringify(session));
   const rows: Tables = {
     accounts: [{ user_id: user.id, email: user.email, ...account }],
+    clubs: [],
+    club_members: [],
     teams: [],
     players: [],
     games: [],
     team_members: [],
     ...tables,
   };
+  const body = (req: Request): unknown => {
+    try {
+      return req.postDataJSON();
+    } catch {
+      return null;
+    }
+  };
   await page.route('https://*.supabase.co/**', (route) => {
-    const url = new URL(route.request().url());
+    const req = route.request();
+    const url = new URL(req.url());
     if (url.pathname.startsWith('/auth/v1/user')) return route.fulfill({ json: session.user });
     if (url.pathname.startsWith('/auth/v1/token')) return route.fulfill({ json: session });
-    const table = url.pathname.match(/^\/rest\/v1\/(\w+)/)?.[1];
-    if (table) {
-      // Apply `col=eq.value` filters, the only kind these screens use to pick rows.
-      let list = rows[table] ?? [];
-      for (const [col, cond] of url.searchParams) {
-        if (cond.startsWith('eq.'))
-          list = list.filter((r) => String((r as Record<string, unknown>)[col]) === cond.slice(3));
-      }
-      // maybeSingle() / single() ask for one object
-      const one = (route.request().headers().accept ?? '').includes('vnd.pgrst.object');
-      return route.fulfill({
-        json: one ? (list[0] ?? null) : list,
-        headers: { 'content-range': `0-${list.length}/*` },
-      });
+    if (url.pathname === '/functions/v1/admin') {
+      const [status, json] = adminFunction((body(req) ?? {}) as Row, rows);
+      return route.fulfill({ status, json });
     }
-    return route.fulfill({ status: 404, json: {} });
+    const table = url.pathname.match(/^\/rest\/v1\/(\w+)/)?.[1];
+    if (!table) return route.fulfill({ status: 404, json: {} });
+    const list = (rows[table] ??= []);
+    const method = req.method();
+    let result: Row[];
+    if (method === 'POST') {
+      const input = body(req);
+      result = (Array.isArray(input) ? input : [input]) as Row[];
+      for (const r of result) {
+        if (table === 'clubs' && !r.id) r.id = crypto.randomUUID();
+        list.push(r);
+      }
+    } else if (method === 'PATCH') {
+      result = list.filter((r) => matches(r, url));
+      for (const r of result) Object.assign(r, body(req));
+    } else if (method === 'DELETE') {
+      result = list.filter((r) => matches(r, url));
+      rows[table] = list.filter((r) => !result.includes(r));
+    } else {
+      result = list.filter((r) => matches(r, url));
+    }
+    // maybeSingle() / single() ask for one object; writes without .select() want no body.
+    const one = (req.headers().accept ?? '').includes('vnd.pgrst.object');
+    const wantsRows = method === 'GET' || (req.headers().prefer ?? '').includes('return=representation');
+    if (!wantsRows) return route.fulfill({ status: method === 'POST' ? 201 : 204, body: '' });
+    return route.fulfill({
+      json: one ? (result[0] ?? null) : result,
+      headers: { 'content-range': `0-${result.length}/*` },
+    });
   });
+  return rows;
 }

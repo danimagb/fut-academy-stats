@@ -150,9 +150,14 @@ export function accountSectionBody(syncStatus = ''): string {
     const email = cloud.session.user.email ?? '';
     const kind =
       a && !('none' in a)
-        ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')]
+        ? [
+            a.isAdmin ? esc(t('acctAdmin')) : '',
+            ...a.clubs.map(
+              (c) => `${esc(c.name)} · ${t(c.role === 'manager' ? 'clubManager' : 'clubStaff')}`,
+            ),
+          ]
             .filter(Boolean)
-            .join(' · ')
+            .join('<br>')
         : '';
     return `${head}
       <ul class="list settings">

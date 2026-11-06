@@ -49,7 +49,11 @@ export function viewProfile(): void {
           cloud.session.user.email,
           a &&
             !('none' in a) &&
-            (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')),
+            (a.isAdmin
+              ? t('acctAdmin')
+              : a.clubs.some((c) => c.role === 'manager')
+                ? t('clubManager')
+                : a.clubs[0]?.name),
         ]
           .filter(Boolean)
           .join(' · ')

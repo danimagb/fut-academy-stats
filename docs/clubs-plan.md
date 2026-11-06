@@ -35,8 +35,8 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 | #   | Step                                                         | Status       | PR                            |
 | --- | ------------------------------------------------------------ | ------------ | ----------------------------- |
 | 1   | Plan (this document)                                         | ✅ approved  | danimagb/fut-academy-stats#59 |
-| 2   | Database: clubs, club managers, new RLS, migration, tests    | 🔄 in review | (this PR)                     |
-| 3   | Admin: clubs, their people and club managers                 | ⏳ to do     |                               |
+| 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged    | danimagb/fut-academy-stats#63 |
+| 3   | Admin: clubs, their people and club managers                 | 🔄 in review | (this PR)                     |
 | 4   | Sync + permissions in the app (club manager role)            | ⏳ to do     |                               |
 | 5   | Club manager screens: club teams, players, staff             | ⏳ to do     |                               |
 | 6   | Club logo (storage, upload, screens, PDFs)                   | ⏳ to do     |                               |
@@ -75,6 +75,22 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
     also moves its teams' `updated_at`; a short-name change only moves the club's.
   - The `admin` Edge Function still inserts `kind` (fails after this migration): step 3.
   - Error order to expect: BEFORE triggers (23514) → RLS (42501) → constraints (23502…).
+- Done in step 3 (admin; not deployed yet):
+  - `admin` Edge Function: `create_account { email, club_id, role: 'manager' | 'staff' }` (no
+    kind). An email that already has access is added to the club (`existed: true`). Unit tests:
+    `npx deno@2 test --allow-env --no-lock supabase/functions/admin/` (6, with a fake service-role client).
+  - Account on the phone (`src/data/auth.ts`): `{ email, isAdmin, clubs: [{ id, name,
+shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an account stored by
+    an older version (with `kind`) is read as one with no clubs. `managedClubs(account)`;
+    `canUpload()` = admin or club manager. Profile shows "Padroense FC · Coordinator".
+  - Admin page rewritten: give access (email + club + role in the club), clubs (create; name
+    and short name; delete when it has no teams), each club's people (role, remove, add an
+    existing account) and teams with their staff (role, remove, add someone of the club), and
+    accounts with their clubs.
+  - E2E: `e2e/cloud-stub.ts` now keeps writes (insert / update / delete, `in.` and `is.null`
+    filters) and fakes the `admin` function; `e2e/admin.spec.ts` has 3 tests.
+  - The team screen's People section and the sync engine still use `director` /
+    `add_team_coach`: step 4 and 5.
 
 ## What changes, in one table
 
