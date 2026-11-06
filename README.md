@@ -2,11 +2,13 @@
 
 A phone web app for running youth football games: lineups, live substitutions, goals, cards and minutes played, with a report at full time.
 
-It's a TypeScript web app (built with Vite) with no server of its own. Data is saved on the phone (browser `localStorage`); signing in adds optional, invite-only [cloud sync](#cloud-sync-optional). Once opened over HTTPS it can be added to the home screen and works offline.
+It's a TypeScript web app (built with Vite), with its data in the cloud ([Supabase](#accounts-clubs-and-sync), invite-only) and a copy on the phone, so games can be run offline. Once opened over HTTPS it can be added to the home screen.
+
+The app needs an account: it opens on a welcome screen with **Sign in** and **Activate account** until you're signed in.
 
 ## Using it
 
-1. **Teams**: create your team once (club name, e.g. "Padroense F.C.", and team name, e.g. "Sub-7B") and add its players: shirt number, shirt name (shown on the game screen) and full name (used in the report/PDF; optional).
+1. **Teams**: the club's coordinator creates the club's teams (age groups, e.g. "Sub-7B") and adds their players: shirt number, shirt name (shown on the game screen) and full name (used in the report/PDF; optional).
 2. **New game**: team, opponent, home/away, round (jornada), date/time, age group. The last team used is preselected.
    - U7 = 1 GK + 3 and U8 = 1 GK + 4; every preset can be changed.
    - Set the number of periods, minutes per period, and the auto-stop limit (see below).
@@ -28,10 +30,9 @@ It's a TypeScript web app (built with Vite) with no server of its own. Data is s
    (tap one for its report). **Share PDF** sends the sheet as a one-page PDF, ready to send to the
    family.
 6. **Profile** (bottom tab) holds your account and the app settings:
-   - **Account** (optional): sign in to sync teams to the cloud. See [Cloud sync](#cloud-sync-optional).
+   - **Account**: who you are, your club and role, Sync now, change password, sign out. See [Accounts, clubs and sync](#accounts-clubs-and-sync).
    - **Language**: English | Português (Portuguese is the default on phones set to Portuguese). The PDF follows the app language.
    - **Theme**: ☀️ Light | 🌙 Dark | Auto. Light has stronger contrast and is easier to read outdoors in sunlight; Auto follows the phone's setting (the default).
-   - **Backup**: Export/Import, since teams that aren't synced live only on that phone. Once there is data, the app asks the browser to keep it stored (persistent storage), so it isn't cleared on its own; Profile shows whether the browser agreed.
 
 ### Game clock and extra time
 
@@ -45,23 +46,21 @@ You end each half yourself with **End 1st half** and then **Start 2nd half**. Sa
 - If a half runs past its regular time by the **auto-stop limit** (default 10 min), the app stops it automatically, even if the app was closed.
 - **⏱ Fix times** lets you say when the half really ended (regular, +1, +2, +3, +5, now or a custom value) and whether the next half has already started ("started 5 min ago"). The clock and any subs, goals or cards logged in the meantime are re-timed using the real time they were recorded. It also works after full time if you ended the game late.
 
-## Cloud sync (optional)
+## Accounts, clubs and sync
 
-Without an account the app works exactly as above, with everything on the phone. Signing in
-adds cloud sync through [Supabase](https://supabase.com) (EU region), so a team survives losing
-the phone and can be shared with other coaches.
+Teams, players and games live in [Supabase](https://supabase.com) (EU region), shared by the
+people of the club, with a copy on each phone so games can be run without signal.
 
 - **Invite-only, by club.** Nobody can create an account. The **admin** creates the **clubs**
   (e.g. Padroense FC) and gives people access in a club on the in-app **Admin** page (the
   _Admin_ tab, only visible to the admin), as the club's **coordinator** or as **staff**.
-  Profile → Account has two tabs. **Activate account** (first time): the email the admin
+  The welcome screen (and Profile → Account) has two tabs. **Activate account** (first time): the email the admin
   registered → a code sent to that email → choose a password. **Sign in**: email + password
   (the app keeps you signed in). _Forgot your password?_ uses the same code steps.
   Passwords are stored by Supabase Auth only as bcrypt hashes.
-- **Synced or local.** Every team is either _Synced_ (in a club) or _Local_ (only on the
-  phone). The teams list shows synced teams under their club and local ones under _On this
-  phone_. Coordinators create their club's teams (the age groups: Sub-7A, Sub-7B, Sub-10C…) as
-  synced, or upload a local team into their club; everyone else keeps their own teams local.
+- **Every team is a club's team.** The teams list shows them under their club. Only the club's
+  coordinators create teams (the age groups: Sub-7A, Sub-7B, Sub-10C…); staff without a team
+  yet are told the coordinator adds them.
 - **Roles.** In the club: the **Coordinator** can do everything in every team of the club:
   create, rename and delete teams, players and games, give the club's people a role in each
   team (team screen → _Staff_ → ＋, picking from the club's people with a search), and set the
@@ -76,12 +75,15 @@ the phone and can be shared with other coaches.
   after a change, when the signal comes back, every minute, or with _Sync now_): with weak or no
   signal at the pitch, it simply waits. Changing a synced team (its players, its name, new or
   deleted teams) and creating, editing or deleting games **need the internet**; offline the app
-  says so. Teams that are only on the phone work offline for everything. - **One phone per game.** The phone that kicks off a synced team's game logs it until full
+  says so.
+- **One phone per game.** The phone that kicks off a synced team's game logs it until full
   time; on other phones it's read-only ("… is logging this game on another phone"), and the
   database ignores their changes to it. If that phone stops (battery, lost), a director or the
   club's coordinator uses ⋯ → _Continue on this phone_ (online) to carry on there.
-- **Signing out** removes the synced teams from that phone (they stay in the cloud); teams that
-  were only on the phone stay.
+- **Signing out** removes everything from that phone (it stays in the cloud) and goes back to
+  the welcome screen; it warns first if game changes haven't been uploaded yet.
+- **Copies of the data** are made with SQL in the Supabase dashboard (the free plan has no
+  backups); the app has no export or import.
 - **Your data**: Profile → Account → _How your data is handled_.
 
 Setting it up (once, by the maintainer) is described in

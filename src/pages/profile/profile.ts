@@ -16,7 +16,6 @@ import { accountSection } from '@/features/sign-in/sign-in';
 import { syncStatusText } from '@/features/sync-status/sync-status';
 import { cloud } from '@/data/session';
 import { bar } from '@/shared/ui/bar';
-import { persistedState } from '@/data/persist';
 import { esc } from '@/shared/lib/html';
 import { getLang, t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
@@ -94,18 +93,6 @@ export function viewProfile(): void {
             ['auto', t('themeAuto')],
           ])}</li>
       </ul>`,
-    )}
-    ${section(
-      'backup',
-      t('backupTitle'),
-      t('backupSummary'),
-      `
-      <p class="hint">${t('backupHint')}</p>
-      ${persistedState() === null ? '' : `<p class="hint ${persistedState() ? 'ok' : 'warn'}">${persistedState() ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
-      <div class="row gap">
-        <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
-        <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
-      </div>`,
     )}
     </div>`;
 }

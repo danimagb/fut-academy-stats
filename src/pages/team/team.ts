@@ -17,24 +17,23 @@ import { rerender } from '@/shared/lib/rerender';
 import { onLeave, route } from '@/shared/lib/route';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { toast } from '@/shared/ui/toast';
-import { teamBadge } from '@/features/sync-status/sync-status';
 import { $ } from '@/shared/lib/dom';
 import { loadPeople, peopleHtml, remote, showPeople, staffSummary } from '@/features/team-people/team-people';
 import { canManageTeam, readOnlyTeam } from '@/data/access';
 import { teamEditableNow } from '@/data/online';
 import { teamGroups, teamShortLabel } from '@/data/clubs';
-import { logoSrc, teamCrest } from '@/data/logos';
+import { logoSrc } from '@/data/logos';
 import { crest } from '@/features/club-logo/club-logo';
 import { readOnlyPill } from '@/features/team-access/read-only';
 import { getTeam, teamPlayers } from '@/data/queries';
-import { canSync, canUpload, cloud } from '@/data/session';
+import { canSync, cloud } from '@/data/session';
 import { managedClubs } from '@/data/auth';
 import { plural } from '@/shared/i18n/i18n';
 import { bar } from '@/shared/ui/bar';
 import { accSection } from '@/shared/ui/accordion';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { roleOf } from '@/data/sync';
-import { db, isCloudTeam } from '@/data/store';
+import { db } from '@/data/store';
 import { esc } from '@/shared/lib/html';
 import { byNumber } from '@/domain/players';
 import { teamLabel } from '@/domain/titles';
@@ -44,71 +43,60 @@ import type { Team } from '@/domain/types';
 
 // ---------- Views: teams and their players ----------
 
-// In a club's group, just the age group (the club is the group's heading).
-const teamCard = (tm: Team, inClub = false): string => `
+// Under its club's heading, just the age group.
+const teamCard = (tm: Team): string => `
       <li><a class="card" href="#/team/${tm.id}">
         <div class="grow">
-          <strong>${esc(inClub ? tm.name || t('unnamedTeam') : teamLabel(tm))}</strong>
+          <strong>${esc(tm.name || t('unnamedTeam'))}</strong>
         </div>
         <div class="right">
           <span class="badge">${plural('playersCount', teamPlayers(tm.id).length)}</span>
-          ${teamBadge(tm)}
         </div>
       </a></li>`;
 
-/** Teams list: cloud teams under their club (club managers get a link to the club), then the teams on this phone. */
+/** Teams list: the teams by club (club managers get a link to the club and + New team). */
 export function viewTeams(): void {
-  const groups = teamGroups();
   const managed = new Set(managedClubs(cloud.account).map((c) => c.id));
-  const grouped = groups.some((g) => g.clubId);
   const list = !db.teams.length
-    ? `<p class="empty">${t('noTeams')}</p>`
-    : !grouped
-      ? `<ul class="list">${db.teams.map((tm) => teamCard(tm)).join('')}</ul>`
-      : groups
-          .map(
-            (g) => `
-      <h2 class="team-group">${
-        g.clubId
-          ? `${crest({ name: g.name, shortName: g.shortName, src: logoSrc(g.clubId) })}<span class="grow">${esc(g.name)}${g.shortName ? ` <span class="muted small">(${esc(g.shortName)})</span>` : ''}</span>
-        ${managed.has(g.clubId) ? `<a class="btn small ghost" href="#/club/${esc(g.clubId)}">${t('manageClub')}</a>` : ''}`
-          : `<span class="grow">${t('onThisPhone')}</span>`
-      }</h2>
-      <ul class="list">${g.teams.map((tm) => teamCard(tm, !!g.clubId)).join('')}</ul>`,
-          )
-          .join('');
+    ? `<p class="empty">${t(managed.size ? 'noTeams' : 'noTeamsYet')}</p>`
+    : teamGroups()
+        .map(
+          (g) => `
+      <h2 class="team-group">${crest({ name: g.name, shortName: g.shortName, src: logoSrc(g.clubId) })}<span class="grow">${esc(g.name)}${g.shortName ? ` <span class="muted small">(${esc(g.shortName)})</span>` : ''}</span>
+        ${g.clubId && managed.has(g.clubId) ? `<a class="btn small ghost" href="#/club/${esc(g.clubId)}">${t('manageClub')}</a>` : ''}</h2>
+      <ul class="list">${g.teams.map(teamCard).join('')}</ul>`,
+        )
+        .join('');
   main.innerHTML = `
     ${bar(t('teams'))}
-    <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
+    ${managed.size ? `<button class="btn primary block" data-action="new-team">${t('newTeam')}</button>` : ''}
     ${list}`;
 }
 
-// Which club a new or uploaded team goes into, when this user manages more than one.
-function openClubPicker(purpose: 'new' | 'upload'): void {
+// Which club a new team goes into, when this user manages more than one.
+function openClubPicker(): void {
   const clubs = managedClubs(cloud.account);
   openSheet(`
-    <h3>${t(purpose === 'new' ? 'newTeamWhere' : 'uploadWhere')}</h3>
+    <h3>${t('newTeamWhere')}</h3>
     <div class="list">${clubs
       .map(
         (c) =>
-          `<button class="item" data-action="pick-club" data-for="${purpose}" data-cid="${esc(c.id)}"><span class="grow">${esc(c.name)}</span></button>`,
+          `<button class="item" data-action="pick-club" data-cid="${esc(c.id)}"><span class="grow">${esc(c.name)}</span></button>`,
       )
       .join('')}
-      ${purpose === 'new' ? `<button class="item" data-action="pick-club" data-for="new" data-cid=""><span class="grow">${t('onThisPhoneOnly')}</span></button>` : ''}
     </div>
     <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
 }
 
-/** A new team: in this club (a cloud team), or only on this phone. */
-function createTeam(clubId: string | undefined): void {
-  const club = clubId ? managedClubs(cloud.account).find((c) => c.id === clubId) : undefined;
-  const tm: Team = { id: uid(), club: club?.name ?? (db.teams[0]?.club || ''), name: '' };
+/** A new team in one of this user's clubs (created on this phone, uploaded straight away). */
+function createTeam(clubId: string): void {
+  const club = managedClubs(cloud.account).find((c) => c.id === clubId);
+  if (!club) return;
+  const tm: Team = { id: uid(), club: club.name, name: '' };
   db.teams.push(tm);
   save();
-  if (club) {
-    newCloudTeam = tm.id;
-    uploadTeams([tm.id], club.id);
-  }
+  newCloudTeam = tm.id;
+  uploadTeams([tm.id], club.id);
   location.hash = `#/team/${tm.id}`;
 }
 
@@ -120,33 +108,21 @@ export function viewTeam(teamId: string | undefined): void {
   const id = tm.id;
   const ps = teamPlayers(id).sort(byNumber);
   const ro = readOnlyTeam(id);
-  const cloudTeam = isCloudTeam(id);
-  // The team itself (its name, and the club of a team on this phone): whoever manages it. A cloud
-  // team's club is its club's name, set by the server.
+  // The team's name: whoever manages it, online. Its club is the club's name (set by the server).
   const manage = canManageTeam(id) && !ro;
-  // Offline, a cloud team's name is read-only (changing the team needs the internet).
   const editable = manage && teamEditableNow(id);
   const field = (key: 'club' | 'name', label: string, ph: string): string =>
-    !editable || (key === 'club' && cloudTeam)
+    !editable || key === 'club'
       ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
       : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
   main.innerHTML = `
     ${bar(esc(teamShortLabel(tm)), '#/teams', teamMenu(id, !manage), ro ? readOnlyPill() : '')}
-    ${teamBadge(tm) ? `<div class="team-kind">${crest(teamCrest(id))}${teamBadge(tm)}</div>` : ''}
     ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
-    ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
+
     <div class="form">
       ${field('club', t('club'), t('clubPh'))}
       ${field('name', t('ageGroup'), t('teamPh'))}
     </div>
-    ${
-      canUpload() && !cloudTeam
-        ? `<div class="upload-team">
-      <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
-      <p class="hint">${t('uploadTeamHint')}</p>
-    </div>`
-        : ''
-    }
     <div class="accordion team-sections">
     ${teamSection(
       'players',
@@ -171,20 +147,16 @@ export function viewTeam(teamId: string | undefined): void {
             .join('')}</ul>`
         : `<p class="empty">${t('noPlayers')}</p>`,
     )}
-    ${
-      cloudTeam
-        ? teamSection(
-            'staff',
-            t('people'),
-            staffSummary(id),
-            roleOf(id) === 'club_manager' && canSync() ? 'add-staff-open' : '',
-            `<div id="people" class="people-section">${peopleHtml(id)}</div>`,
-          )
-        : ''
-    }
+    ${teamSection(
+      'staff',
+      t('people'),
+      staffSummary(id),
+      roleOf(id) === 'club_manager' && canSync() ? 'add-staff-open' : '',
+      `<div id="people" class="people-section">${peopleHtml(id)}</div>`,
+    )}
     </div>`;
   // Members are loaded online, once per visit of this screen (and after changes).
-  if (cloudTeam && canSync()) {
+  if (canSync()) {
     if (db.sync.uploads.includes(id)) {
       remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
       showPeople();
@@ -232,17 +204,9 @@ export function openAddPlayer(added = ''): void {
 }
 
 export const teamActions = {
-  'upload-team': () => {
-    const id = route().id;
-    if (!id) return;
-    if (managedClubs(cloud.account).length > 1) return openClubPicker('upload');
-    uploadTeams([id]);
-  },
-  'pick-club': ({ for: purpose, cid = '' }: DOMStringMap) => {
+  'pick-club': ({ cid = '' }: DOMStringMap) => {
     closeSheet();
-    if (purpose === 'new') return createTeam(cid || undefined);
-    const id = route().id;
-    if (id) uploadTeams([id], cid);
+    createTeam(cid);
   },
   'add-staff': ({ id = '' }: DOMStringMap) => {
     const teamId = route().id;
@@ -293,11 +257,11 @@ export const teamActions = {
     if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
   },
   'new-team': ({ cid }: DOMStringMap) => {
-    // From a club page: straight into that club.
+    // From a club page: straight into that club; else the user's club (asked if several).
     if (cid && managedClubs(cloud.account).some((c) => c.id === cid)) return createTeam(cid);
-    const clubs = canUpload() ? managedClubs(cloud.account) : [];
-    if (clubs.length > 1) return openClubPicker('new');
-    createTeam(clubs[0]?.id);
+    const clubs = managedClubs(cloud.account);
+    if (clubs.length > 1) return openClubPicker();
+    if (clubs[0]) createTeam(clubs[0].id);
   },
   'delete-team': async () => {
     const tm = getTeam(route().id);

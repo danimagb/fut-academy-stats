@@ -32,7 +32,6 @@ export const READ_ONLY_OK: ReadonlySet<string> = new Set([
   'soon', // navigation
   'theme',
   'lang',
-  'backup', // settings
   'signin-back',
   'signin-resend',
   'sign-out',
@@ -59,5 +58,4 @@ export const READ_ONLY_FORMS: ReadonlySet<string> = new Set([
   'signin-code',
   'signin-password',
   'set-password',
-  'upload-teams',
 ]);

@@ -9,8 +9,13 @@ import { db } from './store';
 export const LOGOS_KEY = 'fut-academy-stats.logos';
 const BUCKET = 'club-logos';
 
-/** One club's logo on this phone: its version, the image (for screens), a JPEG copy (for PDFs). */
-type Cached = { v: number; img: string; jpeg: string };
+/**
+ * One club's logo on this phone: its version, the image (for screens), a JPEG copy (for PDFs);
+ * `at`: when this phone uploaded it (a sync that read the club before that doesn't remove it).
+ */
+type Cached = { v: number; img: string; jpeg: string; at?: number };
+/** How long a just-uploaded logo is kept even if a sync still says the club has an older one. */
+const FRESH_MS = 120000;
 
 function load(): Record<string, Cached> {
   try {
@@ -72,11 +77,25 @@ export function logoJpeg(clubId: string | null | undefined): Uint8Array | null {
   return jpeg ? dataUrlBytes(jpeg) : null;
 }
 
-/** Keeps the logo of a club from an image already in hand (just uploaded). */
-export async function keepLogo(clubId: string, version: number, image: Blob): Promise<void> {
-  cache[clubId] = { v: version, img: await dataUrlOf(image), jpeg: await jpegOnWhite(image, LOGO_PX) };
+/** Keeps the logo of a club from an image already in hand (`uploaded`: by this phone, just now). */
+export async function keepLogo(
+  clubId: string,
+  version: number,
+  image: Blob,
+  uploaded = false,
+): Promise<void> {
+  cache[clubId] = {
+    v: version,
+    img: await dataUrlOf(image),
+    jpeg: await jpegOnWhite(image, LOGO_PX),
+    ...(uploaded ? { at: Date.now() } : {}),
+  };
   store();
 }
+
+/** A sync started before this phone's upload can still say "no logo" or an older version. */
+const staleForFresh = (c: Cached | undefined, v: number | null | undefined): boolean =>
+  !!c?.at && Date.now() - c.at < FRESH_MS && (v == null || v < c.v);
 
 /**
  * Downloads the logos whose version changed, and forgets those of clubs without a logo or no
@@ -86,6 +105,7 @@ export async function refreshLogos(fetcher: typeof fetch = fetch): Promise<boole
   let changed = false;
   for (const id of Object.keys(cache)) {
     const v = db.sync.clubs[id]?.logoVersion;
+    if (staleForFresh(cache[id], v)) continue;
     if (v == null) {
       delete cache[id];
       changed = true;
@@ -93,7 +113,7 @@ export async function refreshLogos(fetcher: typeof fetch = fetch): Promise<boole
   }
   for (const [id, club] of Object.entries(db.sync.clubs)) {
     const v = club.logoVersion;
-    if (v == null || cache[id]?.v === v) continue;
+    if (v == null || cache[id]?.v === v || staleForFresh(cache[id], v)) continue;
     try {
       const res = await fetcher(logoUrl(id, v));
       if (!res.ok) continue;

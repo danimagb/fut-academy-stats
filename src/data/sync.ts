@@ -162,7 +162,6 @@ export const sameRecord = (a: object, b: object): boolean =>
 
 export const roleOf = (teamId: string | null | undefined): Role | null =>
   (teamId && db.sync.teams[teamId]) || null;
-export const localTeams = (): Team[] => db.teams.filter((tm) => !isCloudTeam(tm.id));
 const ROLES: readonly Role[] = ['club_manager', 'team_manager', 'team_coach'];
 /**
  * What a role may write in a cloud team (the database checks it too): club managers everything;
@@ -477,7 +476,15 @@ async function pull(epoch: number): Promise<void> {
 
   // Everything is downloaded: apply it in one go (no awaits from here on).
   let changed = false;
-  const removed = Object.keys(prev).filter((id) => !teams[id]);
+  // The app is account-only: every team on the phone is one of this user's cloud teams. One the
+  // cloud doesn't list (removed from it, or left from before) leaves the phone, unless it has
+  // changes not uploaded (a new team the server refused: it stays, with the sync error shown).
+  const unsent = (id: string): boolean =>
+    RECORD_KINDS.some((kind) => list(kind).some((r) => r.dirty && teamIdOf(kind, r) === id));
+  const removed = [
+    ...Object.keys(prev).filter((id) => !teams[id]),
+    ...db.teams.filter((tm) => !prev[tm.id] && !teams[tm.id] && !unsent(tm.id)).map((tm) => tm.id),
+  ];
   if (removed.length) {
     // Removed from these teams. Changes not uploaded yet for them are lost (a director removed
     // while offline with pending edits).

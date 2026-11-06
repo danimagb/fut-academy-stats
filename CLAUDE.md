@@ -6,8 +6,9 @@ does.
 
 ## Cloud sync
 
-Optional cloud sync with Supabase (invite-only, local-first) was built on the
-`feature/cloud-sync` branch in steps; **`docs/cloud-sync-plan.md`** describes the design and
+The app is **account-only** (no teams that live only on a phone: `docs/account-only-plan.md`);
+games run offline from the phone's copy and sync later. Cloud sync with Supabase (invite-only,
+local-first) was built on the `feature/cloud-sync` branch in steps; **`docs/cloud-sync-plan.md`** describes the design and
 its "Progress" section records what was done in each step and the known limitations. Clubs,
 coordinators and the team roles (club `manager` / `staff`, team `manager` / `coach`; UI:
 Coordenador, Diretor, Treinador) and club logos came after, on `feature/clubs`:

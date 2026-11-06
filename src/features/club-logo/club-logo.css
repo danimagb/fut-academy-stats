@@ -23,11 +23,6 @@
 .team-group .club-logo {
   margin-right: 2px;
 }
-.team-kind {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 /* Club page header: the crest (tap it to add or change the logo), the name and a summary. */
 .club-head {
   display: flex;

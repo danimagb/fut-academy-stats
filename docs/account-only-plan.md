@@ -9,13 +9,13 @@ Running a game still works offline (see "Offline" below), as it does now.
 
 ## Progress
 
-| #   | Step                                                            | Status       | PR        |
-| --- | --------------------------------------------------------------- | ------------ | --------- |
-| 1   | Plan (this document)                                            | 📝 draft     |           |
-| 2   | Sign-in first: the app opens on sign-in when there's no session | 🔄 in review | (this PR) |
-| 3   | Teams already on phones: upload into the club, or export        | ⏳ to do     |           |
-| 4   | Remove the local mode (code, screens, texts)                    | ⏳ to do     |           |
-| 5   | Tests on accounts only, README / privacy text, two phones       | ⏳ to do     |           |
+| #   | Step                                                            | Status       | PR                            |
+| --- | --------------------------------------------------------------- | ------------ | ----------------------------- |
+| 1   | Plan (this document)                                            | 📝 draft     |                               |
+| 2   | Sign-in first: the app opens on sign-in when there's no session | ✅ merged    | danimagb/fut-academy-stats#84 |
+| 3   | Teams already on phones: upload into the club, or export        | ⏳ to do     |                               |
+| 4   | Remove the local mode (code, screens, texts)                    | 🔄 in review | (this PR)                     |
+| 5   | Tests on accounts only, README / privacy text, two phones       | ⏳ to do     |                               |
 
 **Where things stand:**
 
@@ -24,6 +24,13 @@ Running a game still works offline (see "Offline" below), as it does now.
   returns a view, every route shows the welcome screen (`pages/welcome`: the app's name, a
   tagline, the Sign in / Activate account tabs from Profile → Account), and the tab bar is
   hidden (`body.gated`). Local teams still work underneath (step 4 removes them).
+- Done in step 4: every team on the phone is a cloud team. A team the cloud doesn't list leaves
+  the phone on the next pull (unless it has changes not uploaded: a refused new team stays,
+  with the error). Gone: the upload offer and button, Local / Synced badges, "On this phone",
+  the "only on this phone" choice for new teams, Backup (export and import) on Profile, and the
+  local-team exceptions in `canManageTeam`, `teamEditableNow` and `online-only.ts`. "+ New
+  team" only for coordinators; staff with no team see "You're not in a team yet…". README,
+  privacy text and CLAUDE.md updated.
 - E2E: every test runs signed in by default (`e2e/fixtures.ts`: coordinator of "Test FC" in the
   cloud stub); `welcome.spec.ts` covers the gate.
 
