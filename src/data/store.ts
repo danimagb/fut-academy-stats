@@ -4,7 +4,7 @@
 // `db` is a live binding: importers always see the current object. `initStore()` loads it at
 // startup and `setDb()` replaces it (restoring a backup).
 import { checkShape, type Check } from '@/domain/validate';
-import type { Db, RecordKind, SyncState, Tombstone } from '@/domain/types';
+import type { Db, RecordKind, Role, SyncState, Tombstone } from '@/domain/types';
 import { uid } from '@/shared/lib/id';
 
 export const STORE_KEY = 'fut-academy-stats.v1';
@@ -48,7 +48,7 @@ export function dropInvalid(
 
 /** Cloud sync bookkeeping, kept out of the records so it doesn't count as a change. */
 export function emptySync(): SyncState {
-  return { userId: null, lastPulledAt: null, lastSyncAt: null, teams: {}, uploads: [] };
+  return { userId: null, lastPulledAt: null, lastSyncAt: null, teams: {}, clubs: {}, uploads: [] };
 }
 
 export function normalizeSync(s: unknown): SyncState {
@@ -57,6 +57,14 @@ export function normalizeSync(s: unknown): SyncState {
     ...(s && typeof s === 'object' ? (s as Partial<SyncState>) : {}),
   };
   if (!sync.teams || typeof sync.teams !== 'object' || Array.isArray(sync.teams)) sync.teams = {};
+  // Roles stored before clubs: 'director' / 'coach' (the next pull brings the real ones).
+  const OLD: Record<string, Role> = { director: 'team_manager', coach: 'team_coach' };
+  for (const [id, role] of Object.entries(sync.teams)) {
+    const r = OLD[role] ?? role;
+    if (r === 'club_manager' || r === 'team_manager' || r === 'team_coach') sync.teams[id] = r;
+    else delete sync.teams[id];
+  }
+  if (!sync.clubs || typeof sync.clubs !== 'object' || Array.isArray(sync.clubs)) sync.clubs = {};
   if (!Array.isArray(sync.uploads)) sync.uploads = [];
   return sync;
 }

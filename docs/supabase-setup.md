@@ -100,12 +100,12 @@ In **Authentication → URL Configuration**:
 1. In **Authentication → Users → Add user → Create new user**:
    - Email: your email.
    - Tick **Auto confirm user**. A password isn't needed: you'll sign in with a code.
-2. In **SQL Editor → New query**, run this (with your email), to give yourself a director
-   account with admin rights:
+2. In **SQL Editor → New query**, run this (with your email), to give yourself an account
+   with admin rights:
 
    ```sql
-   insert into public.accounts (user_id, email, kind, is_admin)
-   select id, lower(email), 'director', true
+   insert into public.accounts (user_id, email, is_admin)
+   select id, lower(email), true
    from auth.users
    where email = 'your@email.com';
    ```
@@ -115,7 +115,8 @@ In **Authentication → URL Configuration**:
    other people access from the app's Admin page (once the `admin` function from step 9 is
    deployed).
 
-You become a team's director automatically when you create or upload that team from the app.
+From the app's Admin page you then create the clubs and choose their managers (you can make
+yourself the manager of a club, to create its teams).
 
 ## 8. Send the app's connection details
 
@@ -157,7 +158,7 @@ In the dashboard:
      and save: it is still safe, because the function verifies the session and the admin flag on
      its own.
 5. Test it: in the app, sign in with your admin account → **Profile → Account → Admin** →
-   **Give access** with a second email of yours (as a coach account). It should say the person
+   **Give access** with a second email of yours (in a club; create one first under **Clubs**). It should say the person
    can now sign in; the email appears under **Accounts** (and in **Authentication → Users**).
    Remove it again with ✕.
 

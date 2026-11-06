@@ -1,0 +1,49 @@
+/* Club logos: square images, rounded a little, never stretched. */
+.club-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex: none;
+  vertical-align: middle;
+}
+.club-logo.lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  display: block;
+  margin: 0 auto 6px;
+}
+.score-row .side .club-logo {
+  display: block;
+  margin: 0 auto 4px;
+  width: 32px;
+  height: 32px;
+}
+.team-group .club-logo {
+  margin-right: 2px;
+}
+.team-kind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.club-logo-edit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.club-logo-edit .club-logo.lg {
+  margin: 0;
+}
+.club-logo-empty {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 1.6rem;
+}

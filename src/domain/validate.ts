@@ -71,6 +71,7 @@ const SHAPES: Record<RecordKind, (r: unknown) => Check> = {
 export function teamSanity(r: Team): Check {
   const p: string[] = [];
   for (const k of ['club', 'name'] as const) if (!isText(r[k])) p.push(k);
+  if (r.clubId !== undefined && !isId(r.clubId)) p.push('clubId');
   return result(p);
 }
 

@@ -14,10 +14,12 @@ import { initLanguage } from '@/features/language-switch/language';
 import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
 import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
-import { adminDo } from '@/pages/admin/admin';
+import { setClubRole, setTeamRole } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
+import { clubPage, uploadClubLogo } from '@/pages/club/club';
 import { $, $$ } from '@/shared/lib/dom';
-import { remote, q, loadPeople, addCoach } from '@/features/team-people/team-people';
+import { filterStaff, remote, loadPeople, setStaffRole } from '@/features/team-people/team-people';
+import { canManageTeam } from '@/data/access';
 import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
@@ -33,7 +35,8 @@ import { closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync, localTeams, roleOf } from '@/data/sync';
+import { configureSync, localTeams } from '@/data/sync';
+import { refreshLogos } from '@/data/logos';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -56,13 +59,6 @@ import type { MessageKey } from '@/shared/i18n/i18n';
 import type { Db, Player, RecordKind } from '@/domain/types';
 import type { Draft } from '@/pages/game-edit/game-edit';
 import type { ActionHandler } from '@/app/actions';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-/** The Supabase client (the admin controls only show when there is one). */
-const client = (): SupabaseClient => {
-  if (!sb) throw new Error('offline');
-  return sb;
-};
 
 type AnyRecord = { id: string; teamId?: string };
 /** A store's records of one kind, as one list type (the backup restore treats them alike). */
@@ -84,7 +80,7 @@ const actions: Record<string, ActionHandler> = {
       cancel: false,
     }),
 
-  // Signed in with a director (or admin) account: new teams are cloud teams straight away.
+  // Signed in as a club manager: new teams are cloud teams of that club straight away.
 
   // Fix a goal given to the wrong player: pick who was on the pitch at that moment, or remove it.
   'menu-toggle': (_, el) => {
@@ -134,6 +130,7 @@ export function boot(): void {
   // Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
   addViews(gamesPage.views);
   addViews(adminPage.views);
+  addViews(clubPage.views);
   addViews(profilePage.views);
   addViews(teamPage.views);
   addViews(gameEditPage.views);
@@ -154,7 +151,7 @@ export function boot(): void {
 
   window.addEventListener('hashchange', () => {
     resetDraft();
-    Object.assign(remote, { people: null, admin: null }); // online screens load again when opened
+    Object.assign(remote, { people: null, admin: null, club: null }); // online screens load again when opened
     render();
     window.scrollTo(0, 0);
   });
@@ -170,6 +167,10 @@ export function boot(): void {
     onChange: () => renderSoon(),
     onRejected: (n) => toast(plural('skippedN', n)),
     afterSync: ({ firstOk }) => {
+      // Club logos whose version changed (downloaded once, then kept on the phone).
+      void refreshLogos().then((changed) => {
+        if (changed) renderSoon();
+      });
       // The team screen was waiting for its upload to show People.
       const ppl = remote.people;
       if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId))
@@ -202,6 +203,8 @@ export function boot(): void {
   registerActions(gamesPage.actions);
   registerActions(adminPage.actions);
   registerForms(adminPage.forms);
+  registerActions(clubPage.actions);
+  registerForms(clubPage.forms);
   registerActions(profilePage.actions);
   registerActions(teamPage.actions);
   registerActions(gameEditPage.actions);
@@ -234,10 +237,13 @@ export function boot(): void {
       if (preview) preview.textContent = fixPreview(g);
       return;
     }
+    if (el.dataset.filter === 'staff') return filterStaff(el.value);
     const teamKey = el.dataset.team;
     if (teamKey === 'club' || teamKey === 'name') {
       const tm = getTeam(route().id);
       if (!tm) return;
+      // Only whoever manages the team changes it; a cloud team's club comes from its club.
+      if (!canManageTeam(tm.id) || (teamKey === 'club' && isCloudTeam(tm.id))) return refuseReadOnly();
       tm[teamKey] = el.value.trim();
       syncGameTeams(db, tm.id);
       save();
@@ -273,31 +279,20 @@ export function boot(): void {
     const el = e.target as HTMLInputElement; // selects and the backup file input
     if (!el.dataset) return;
     const { change, id = '', tid = '' } = el.dataset; // (data-tid: data-team is the team screen's inputs)
-    // Admin page: account type and team roles (RLS lets only the admin change them).
-    if (change === 'admin-kind') {
-      return adminDo(async () => {
-        const rows = await q<{ user_id: string }[]>(
-          client().from('accounts').update({ kind: el.value }).eq('user_id', id).select('user_id'),
-        );
-        if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
-      }, t('kindChanged'));
+    // Admin page: club and team roles (RLS lets only the admin change them).
+    const { cid = '' } = el.dataset;
+    if (change === 'admin-club-role') return setClubRole(cid, id, el.value);
+    if (change === 'admin-role') return setTeamRole(tid, id, el.value);
+    // Club page: a new logo chosen.
+    if (change === 'club-logo') {
+      const file = el.files?.[0];
+      el.value = '';
+      return file ? uploadClubLogo(cid, file) : undefined;
     }
-    if (change === 'admin-role') {
-      return adminDo(
-        async () => {
-          const rows = await q<{ user_id: string }[]>(
-            client()
-              .from('team_members')
-              .update({ role: el.value })
-              .eq('team_id', tid)
-              .eq('user_id', id)
-              .select('user_id'),
-          );
-          if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
-        },
-        t('roleChanged'),
-        true,
-      );
+    // Team screen: a club manager changes someone's role in the team.
+    if (change === 'staff-role') {
+      const teamId = route().id;
+      return teamId ? setStaffRole(teamId, id, el.value) : undefined;
     }
     if (change !== 'restore') return;
     const file = el.files?.[0];
@@ -347,14 +342,6 @@ export function boot(): void {
     const data = new FormData(formEl);
     const handler = formHandler(form);
     if (handler) return void handler(data, formEl);
-    if (form === 'add-coach') {
-      // Directors only (the form isn't shown to coaches; the database checks it too).
-      const teamId = route().id;
-      if (!teamId || roleOf(teamId) !== 'director') return refuseReadOnly();
-      teamOpen.staff = true; // the result shows in the Staff section
-      render();
-      return void addCoach(teamId, String(data.get('email')).trim().toLowerCase());
-    }
     if (form === 'signin-email') return void sendCode(String(data.get('email')).trim().toLowerCase());
     if (form === 'signin-password')
       return void signInPassword(
@@ -367,7 +354,7 @@ export function boot(): void {
     if (form === 'upload-teams') {
       closeSheet();
       const ids = data.getAll('team').map(String);
-      if (ids.length) uploadTeams(ids);
+      if (ids.length) uploadTeams(ids, String(data.get('club') ?? ''));
       return;
     }
     if (form === 'game-info') {

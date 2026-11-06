@@ -1,5 +1,9 @@
 # Cloud sync plan (Supabase, invite-only)
 
+> **Accounts and roles changed later**: account kinds (director / coach) were replaced by clubs,
+> coordinators and team roles. See [`clubs-plan.md`](clubs-plan.md); the parts of this document
+> about accounts, roles and `add_team_coach` describe the first version.
+
 Work happens on the `feature/cloud-sync` branch, in small PRs into that branch. The feature
 branch is merged into `main` only once everything works end to end.
 

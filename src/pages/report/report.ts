@@ -11,6 +11,8 @@ import { fmtDate } from '@/domain/titles';
 import { scoreHtml } from '@/features/score/score';
 import { bar } from '@/shared/ui/bar';
 import { esc } from '@/shared/lib/html';
+import { teamLogoSrc } from '@/data/logos';
+import { clubLogo } from '@/features/club-logo/club-logo';
 import { matchTitle } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
@@ -21,12 +23,14 @@ import type { Game } from '@/domain/types';
 export const formatLine = (g: Game): string =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
 
-export function sheetPreview(sh: Sheet): string {
+/** The PDF's first page as HTML; `logo`: the club's logo (top right, as in the PDF). */
+export function sheetPreview(sh: Sheet, logo: string | null = null): string {
   const S = 1.3;
   const x = (i: number): number => Math.round(sh.cols.slice(0, i).reduce((n, c) => n + c.w, 0) * S);
   const cell = (lines: string[], c: SheetCol | undefined): string =>
     `<td class="${c?.left ? 'l' : ''}">${lines.map(esc).join('<br>')}</td>`;
   return `<div class="pdf-preview"><div class="pp-page" style="width:${x(sh.cols.length) + 40}px">
+    ${logo ? `<img class="pp-logo" src="${esc(logo)}" alt="">` : ''}
     <div class="pp-title">${esc(sh.title)}</div>
     <div class="pp-meta">${sh.meta.map(([k, v, col]) => `<span style="left:${x(col)}px"><b>${esc(k)}</b> ${esc(v)}</span>`).join('')}</div>
     <table class="pp-table" style="width:${x(sh.cols.length)}px">
@@ -46,6 +50,7 @@ export function viewReport(id: string | undefined): void {
   main.innerHTML = `
     ${bar(t('gameReport'), `#/game/${g.id}`, '', readOnlyGame(g) ? readOnlyPill() : '')}
     <section class="scoreboard">
+      ${clubLogo(teamLogoSrc(g.teamId), 'lg')}
       <strong>${esc(matchTitle(g))}</strong>
       <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${scoreHtml(g, d, ' – ', true)}</div>
@@ -55,7 +60,7 @@ export function viewReport(id: string | undefined): void {
     <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
     ${readOnlyGame(g) ? '' : `<button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>`}
     <p class="hint">${t('reportHint')}</p>
-    ${sheetPreview(statsSheet(g))}`;
+    ${sheetPreview(statsSheet(g), teamLogoSrc(g.teamId))}`;
 }
 
 export const reportActions = {

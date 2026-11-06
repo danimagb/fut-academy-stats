@@ -59,39 +59,111 @@ select.mini {
   width: auto;
   min-height: 36px;
   height: 36px;
-  padding: 0 8px;
+  padding: 0 28px 0 8px;
   flex: none;
 }
-.admin-team {
+.admin-team,
+.admin-club {
   display: grid;
   gap: 8px;
   align-items: stretch;
 }
-.admin-team .members {
+/* A club on the Admin page: names (folded), its people, then its teams with their staff. */
+.admin-club > * {
+  min-width: 0;
+}
+.admin-club summary {
+  cursor: pointer;
+  flex-wrap: wrap;
+  list-style: none;
+  min-height: 36px;
+}
+.admin-club summary::-webkit-details-marker {
+  display: none;
+}
+.admin-club summary::after {
+  content: '✎';
+  color: var(--muted);
+}
+.admin-club details[open] summary::after {
+  content: '▴';
+}
+.admin-club .club-names {
+  margin-top: 8px;
+}
+.admin-club h3 {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.admin-club-teams {
+  display: grid;
+  gap: 12px;
+}
+.admin-club-teams .admin-team {
+  padding: 8px 0 0;
+  border-top: 1px solid var(--line);
+}
+.admin-club .members .email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  overflow-wrap: normal;
+}
+.admin-club .members li,
+.admin-club .add-member {
+  min-width: 0;
+}
+.admin-club .members li > .grow,
+.admin-club .add-member select.grow {
+  min-width: 0;
+}
+label.short {
+  flex: 0 0 7.5rem;
+}
+.add-club {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.add-club > .grow {
+  flex-basis: 100%;
+}
+.admin-team .members,
+.admin-club .members {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: 6px;
 }
-.admin-team .members li {
+.admin-team .members li,
+.admin-club > .members li {
   padding: 6px 0;
   border-top: 1px solid var(--line);
 }
-.admin-team .add-member {
+.admin-team .add-member,
+.admin-club .add-member {
   margin: 4px 0 0;
 }
-.admin-team .add-member select.grow {
+.admin-team .add-member select.grow,
+.admin-club .add-member select.grow {
   min-height: 36px;
   height: 36px;
   padding: 0 8px;
 }
-.admin-team .members select {
+.admin-team .members select,
+.admin-club .members select {
   width: auto;
   flex: none;
   min-height: 36px;
   height: 36px;
-  padding: 0 8px;
+  padding: 0 28px 0 8px;
 }
 .link-btn {
   font: inherit;
@@ -129,4 +201,59 @@ select.mini {
 }
 .auth-steps .sub-title {
   margin-top: 8px;
+}
+select.mini,
+.admin-team .members select,
+.admin-club .members select {
+  background-position: right 8px center;
+}
+.add-club label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+/* Teams list: a heading per club (with the club page link for its coordinators). */
+.team-group {
+  align-items: center;
+}
+.team-group .btn {
+  font-weight: 600;
+}
+/* "Add to the staff" sheet: search, role, then the club's people. */
+.staff-search {
+  width: 100%;
+}
+.staff-role {
+  margin: 10px 0 2px;
+}
+.staff-role label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.staff-picks {
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+.staff-pick {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.staff-picks .email,
+.club-people .email {
+  overflow-wrap: anywhere;
+}
+.people .item select.mini {
+  flex: none;
+}
+.club-short {
+  align-items: flex-end;
+}
+.staff-pick-row[hidden] {
+  display: none;
 }

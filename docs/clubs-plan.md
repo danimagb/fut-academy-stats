@@ -4,6 +4,10 @@ Adds **clubs** (e.g. "Padroense F.C.") above teams (the age groups: Sub-7A, Sub-
 and a new person in charge of a club, the **club manager**. Builds on the cloud sync design in
 `docs/cloud-sync-plan.md` (read it first): local-first, invite-only, all access decided by RLS.
 
+Work happens on the `feature/clubs` branch, in PRs into it (steps 2 to 5 depend on each other:
+the database change alone breaks the current app's Admin page and team creation). The branch is
+merged into `main`, and the migration applied to the Supabase project, once they all work.
+
 > **Every PR for this feature updates the "Progress" section below.**
 
 **Names.** Code and database use the English role names; the app shows the Portuguese terms
@@ -22,23 +26,144 @@ and team coaches are always club staff; there is no club-wide "coach" role, beca
 same person can be team manager of Sub-7A and team coach of Sub-8 (e.g. João: club `staff`,
 `manager` in Sub-7A, `coach` in Sub-8).
 
-Identifiers follow it: `is_club_manager()`, `is_team_manager()`, `is_team_coach()`, `Role = 'club_manager' |
+Identifiers follow it: `is_club_manager()`, `is_team_manager()`, `Role = 'club_manager' |
 'team_manager' | 'team_coach'` in the app. Existing `director` names in code and i18n keys
 and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed in the step that touches them.
 
 ## Progress
 
-| #   | Step                                                         | Status       | PR        |
-| --- | ------------------------------------------------------------ | ------------ | --------- |
-| 1   | Plan (this document)                                         | 🔄 in review | (this PR) |
-| 2   | Database: clubs, club managers, new RLS, migration, tests    | ⏳ to do     |           |
-| 3   | Admin: clubs, their people and club managers                 | ⏳ to do     |           |
-| 4   | Sync + permissions in the app (club manager role)            | ⏳ to do     |           |
-| 5   | Club manager screens: club teams, players, staff             | ⏳ to do     |           |
-| 6   | Club logo (storage, upload, screens, PDFs)                   | ⏳ to do     |           |
-| 7   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |           |
+| #   | Step                                                         | Status       | PR                            |
+| --- | ------------------------------------------------------------ | ------------ | ----------------------------- |
+| 1   | Plan (this document)                                         | ✅ approved  | danimagb/fut-academy-stats#59 |
+| 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged    | danimagb/fut-academy-stats#63 |
+| 3   | Admin: clubs, their people and club managers                 | ✅ merged    | danimagb/fut-academy-stats#64 |
+| 4   | Sync + permissions in the app (club manager role)            | ✅ merged    | danimagb/fut-academy-stats#66 |
+| 5   | Club manager screens: club teams, players, staff             | ✅ merged    | danimagb/fut-academy-stats#67 |
+| 6   | Club logo (storage, upload, screens, PDFs)                   | ✅ merged    | danimagb/fut-academy-stats#68 |
+| 7   | Team manager limits, README / privacy text, test on 2 phones | 🔄 in review | (this PR)                     |
 
-**Where things stand:** plan agreed with the maintainer (see "Decisions" at the end); step 2 next.
+**Where things stand:**
+
+- Done in step 2 (database; **not applied to the Supabase project yet**):
+  - `supabase/migrations/20261107000000_clubs.sql`: tables `clubs` and `club_members`,
+    `teams.club_id` (required), team roles `manager` / `coach`, helpers (`is_club_member`,
+    `is_club_manager`, `manages_team_club`, `is_team_manager`, `can_read_team`,
+    `can_play_team`, `can_manage_team`, `manages_club_of`), `my_teams()`, triggers and the
+    rewritten policies. Drops `accounts.kind`, `can_create_teams()`, `is_team_director()`,
+    `add_team_coach()` and the creator / last-director triggers. Existing data: one club per
+    distinct `teams.club` (Padroense FC), everyone in its teams becomes `staff`, admins
+    `manager`, `director` → `manager`.
+  - Tests: `supabase/tests/rls.test.sql` rewritten for the clubs model (202 checks) and
+    `supabase/tests/clubs_migration.test.sql` (13 checks) for the data migration;
+    `tests/local/run.sh` now runs `tests/local/before_<migration>.sql` (data in the old shape)
+    before applying that migration. `supabase/README.md` and `docs/supabase-setup.md` updated.
+- What the next steps need to know about the database:
+  - Team roles are written **directly** in `team_members` (insert / upsert on
+    `(team_id, user_id)` / update `role` / delete) by the club's managers and the admin; there
+    is no RPC. A person who isn't in the team's club is refused with error 23514 ("only people
+    of the team's club…"), which is raised before RLS, so it also shows for a person without
+    an account. `invited_by` is set by the server.
+  - `club_members` is written by the admin only (the Edge Function for new accounts). Club
+    managers see their club's rows and the accounts in them; staff see only their own row.
+  - Teams need `club_id`; `club` is overwritten by the server with the club's name. Upserting
+    a team needs `club_id` in the row and club-manager (or admin) rights: **team managers must
+    not push team rows** (42501). Only the admin can move a team to another club (roles of
+    people outside the new club are dropped).
+  - `my_teams()` → `(team_id, role)` with `club_manager` / `team_manager` / `team_coach`,
+    including soft-deleted teams: the sync pull should use it instead of `team_members`.
+  - Clubs: pull them in full (few rows): `id, name, short_name, updated_at`. A club rename
+    also moves its teams' `updated_at`; a short-name change only moves the club's.
+  - The `admin` Edge Function still inserts `kind` (fails after this migration): step 3.
+  - Error order to expect: BEFORE triggers (23514) → RLS (42501) → constraints (23502…).
+- Done in step 3 (admin; not deployed yet):
+  - `admin` Edge Function: `create_account { email, club_id, role: 'manager' | 'staff' }` (no
+    kind). An email that already has access is added to the club (`existed: true`). Unit tests:
+    `npx deno@2 test --allow-env --no-lock --node-modules-dir=none supabase/functions/admin/` (6, with a fake service-role client).
+  - Account on the phone (`src/data/auth.ts`): `{ email, isAdmin, clubs: [{ id, name,
+shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an account stored by
+    an older version (with `kind`) is read as one with no clubs. `managedClubs(account)`;
+    `canUpload()` = admin or club manager. Profile shows "Padroense FC · Coordinator".
+  - Admin page rewritten: give access (email + club + role in the club), clubs (create; name
+    and short name; delete when it has no teams), each club's people (role, remove, add an
+    existing account) and teams with their staff (role, remove, add someone of the club), and
+    accounts with their clubs.
+  - E2E: `e2e/cloud-stub.ts` now keeps writes (insert / update / delete, `in.` and `is.null`
+    filters) and fakes the `admin` function; `e2e/admin.spec.ts` has 3 tests.
+- Done in step 4 (sync and permissions):
+  - `Role` = `club_manager` / `team_manager` / `team_coach`; roles stored by older versions
+    (`director` / `coach`) are read as team roles until the next pull. `Team.clubId` (cloud
+    teams); `db.sync.clubs` = `{ [clubId]: { name, shortName } }`, pulled in full every sync.
+  - Pull: `rpc('my_teams')` instead of `team_members`. Push: `roleCanWrite(role, kind)`: club
+    managers everything, team managers players and games (not the team row, nor its delete),
+    team coaches nothing; a team record a team manager changed comes back from the cloud.
+    `toRow.teams` sends `club_id`.
+  - Uploads go into a club the user manages (`uploadTeams(ids, clubId)`, the first-sign-in
+    sheet asks which club when there are several); "+ New team" makes a cloud team of the
+    first managed club. `canUpload()` = manages a club. `access.ts`: `readOnlyTeam` =
+    `team_coach`; `canManageTeam` (rename, delete, staff) = local team or club manager.
+  - Staff section: club managers add by email (looked up in `accounts`, then a direct insert;
+    the database refuses people outside the club) and remove anyone. The picker comes in step 5.
+  - Texts that said "director" for managing teams now say the club's coordinators.
+  - Tests: sync unit tests on the new roles and clubs (118 unit tests); e2e
+    `club-roles.spec.ts` (coach read-only, team manager and club manager can edit players;
+    Profile shows the club role); the e2e stub answers `rpc/my_teams`.
+- Done in step 5 (screens):
+  - Teams list: cloud teams under a heading per club (with "⚙ Club" for its coordinators),
+    then "On this phone". `src/data/clubs.ts`: `teamGroups()`, `teamShortLabel()` ("PFC -
+    Sub-7B", used in the team screen title and the games filter).
+  - "+ New team" / "Sync this team": a coordinator of several clubs picks the club (new teams
+    can also stay on this phone).
+  - Team screen: a cloud team's club is read-only; its name, Delete and staff only for whoever
+    manages it (`canManageTeam`); the input handler refuses the rest.
+  - Staff: "＋ Add" opens a sheet with the club's people (search as you type, Coach / Director),
+    those already in the team marked; club managers change roles inline and remove people. The
+    email form and its texts are gone.
+  - Club page `#/club/<id>` (coordinators): short name, the club's teams, + New team, and the
+    club's people with their team roles (online).
+  - E2E: `club-manager.spec.ts` (5 tests); 27 e2e tests in all. Checked at phone size in both
+    themes.
+- Done in step 6 (club logo):
+  - Migration `20261108000000_club_logos.sql`: `clubs.logo_version`, `set_club_logo(club, present)`
+    (club managers / admin; bumps or clears the version), the public bucket `club-logos` (512 KB,
+    PNG / JPEG / WebP) and its write policies on `storage.objects` (first folder = the club). The
+    local test stub has a minimal `storage` schema; 16 new RLS checks (231 in all).
+  - App: Club page "Add / Change / Remove logo": the centre square of the image at 256 px (WebP,
+    PNG on Safari) uploaded to `<club>/logo`, then `set_club_logo`. `src/data/logos.ts` keeps each
+    logo on the phone (`fut-academy-stats.logos`: the image and a JPEG copy on white), downloads
+    it again when `logo_version` changes (after each sync) and forgets them on sign-out.
+  - Shown on the teams list (club heading), team screen, game scoreboard, report (screen and
+    preview) and both PDFs (the PDF writer now embeds JPEG images, `/DCTDecode`).
+  - Tests: unit tests for the PDF images and the logo cache; e2e `club-logo.spec.ts` (upload,
+    show, remove; another phone downloads it once). The e2e stub fakes Storage. PDFs checked by
+    rendering them.
+- Done in step 7: README ("Cloud sync": clubs, roles, logo), "How your data is handled" (en +
+  pt), CLAUDE.md, a note at the top of `docs/cloud-sync-plan.md`.
+
+### Merging `feature/clubs` into `main` (what happens, in order)
+
+1. CI runs on the PR, including the Database and functions job (all migrations from scratch).
+2. On merge, the **Supabase GitHub integration** applies the two new migrations to the project
+   (`20261107000000_clubs.sql`, `20261108000000_club_logos.sql`) and deploys the new `admin`
+   function. The clubs migration turns today's data into **Padroense FC** with the maintainer
+   as its coordinator, drops `accounts.kind` and renames `director` → `manager`. It can't be
+   undone by hand easily: check the project's backup first (Database → Backups; on the free
+   plan, download one if offered, or run `supabase db dump --data-only`).
+3. GitHub Pages deploys the new app a few minutes later; installed apps update on next open.
+   In between, the old app can't load the Admin page (it asks for `kind`) and its sync gets
+   errors (`add_team_coach`, `team_members` roles); nothing is lost: changes wait on the phone.
+4. Check: the Supabase check on the merge commit is green; in the SQL editor,
+   `select * from public.clubs` shows Padroense FC and
+   `select role from public.club_members` shows `manager` for the maintainer.
+
+### Test on two phones (after the merge)
+
+- Phone 1 (maintainer, admin + coordinator): Admin → the club shows the team; Give access to a
+  second email as **staff** of Padroense FC; ⚙ Club → add the logo.
+- Phone 2: activate the account with the code → no teams yet. Phone 1: team → Staff → ＋ →
+  pick the second account as **Coach** → phone 2 gets the team, read-only, with the logo.
+- Phone 1 changes the role to **Director** → phone 2 can add a player and run a game; phone 1
+  sees the game and its events after a sync; phone 2 can't rename or delete the team.
+- Offline on phone 2 during a game, then back online: the game reaches phone 1.
 
 ## What changes, in one table
 
@@ -71,8 +196,8 @@ Changes:
 - `teams.club_id text not null references clubs`: **every cloud team belongs to a club**.
   `teams.club` (text) **stays** and is set by a trigger from `clubs.name`, so the app, the PDF
   and offline display keep working with no change to the `Team` shape (`clubId?` is added as
-  an optional field; local teams keep their free-text club). A change of the club's name or
-  short name touches its teams' `updated_at`, so phones pull it.
+  an optional field; local teams keep their free-text club). A change of the club's name
+  moves its teams' `updated_at`; clubs themselves are pulled in full on every sync.
 - `short_name` is shown where space is tight (game screen, games list, team chips: "PFC ·
   Sub-7B"); the full name stays on the report/PDF. Empty = use the full name.
 - `accounts.kind` is **removed**. Today, when the admin gives access, they also pick an
@@ -98,26 +223,22 @@ New SECURITY DEFINER helpers (same style as today, empty `search_path`):
 | table          | select                                                                                         | insert / update / delete                                                                                                     |
 | -------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `clubs`        | club managers of it, members of its teams, admin                                               | insert / `name` / delete: admin; `short_name`: its club managers or admin (column grant)                                     |
-| `club_members` | members of the club (to show names in staff lists), admin                                      | admin only                                                                                                                   |
+| `club_members` | own rows, the club's managers, admin                                                           | admin only                                                                                                                   |
 | `teams`        | `can_read_team`, admin                                                                         | insert: club manager of `club_id` (or admin); update/delete: `can_manage_team`; `club_id` can't change (except by the admin) |
 | `team_members` | `can_read_team`, admin                                                                         | through RPCs only for club managers; admin direct; anyone can leave                                                          |
 | `players`      | `can_read_team`                                                                                | `can_play_team` (team managers add, edit and remove players)                                                                 |
 | `games`        | `can_read_team`                                                                                | `can_play_team` (finished-game lock and data checks unchanged)                                                               |
 | `accounts`     | self, admin, people sharing a team, **club managers see the accounts of their club's members** | admin only (as today)                                                                                                        |
 
-- RPCs replacing `add_team_coach` (dropped; only the admin's own phone used it):
-  `set_team_member(_team_id, _user_id, _role)` → `added` / `updated` (club manager of the
-  team's club, or admin); the person must be a **member of that club** (error otherwise), so a
-  club manager can only staff teams with their club's people. `remove_team_member(_team_id,
-_user_id)`. Accounts are only created by the admin.
+- Club managers write `team_members` directly (no RPC; `add_team_coach` is dropped); a trigger
+  refuses people who aren't in the team's club. Accounts are only created by the admin.
 - Removing someone from a club (admin) also removes them from that club's teams.
 - **Last-manager rule**: dropped (a team may have no team manager; the club's club managers can
   always reach it).
-- Creating a team: today the creator becomes its director (trigger). For a club manager that
-  isn't needed (they reach the team through the club): the trigger skips it when the creator
-  manages the team's club.
-- Removing a club manager / a club: their teams stay; deleting a club = soft-delete its teams
-  (admin only, with a confirmation that names how many teams and games go).
+- Creating a team gives nobody a team role (the club's managers reach it through the club); the
+  "creator becomes director" trigger is dropped.
+- Removing a club manager: their club's teams stay. A club can be deleted (admin) only once it
+  has no teams left (soft-deleted teams are then removed with it).
 - Tests in `supabase/tests/rls.test.sql`, at least: club manager of club A can't read or write
   club B; club manager can create teams only in their club and can't move a team to another
   club; club manager can set `short_name` but not `name`; team manager can write players and games
