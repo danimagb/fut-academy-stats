@@ -125,7 +125,7 @@ export function viewClub(clubId: string | undefined): void {
   const cid = esc(clubId);
   const nPeople = st?.status === 'ok' ? plural('peopleN', st.people.length) : '';
   // The crest is where you tap to add or change it (＋ when there's none, ✎ when there is).
-  const crest = `<label class="club-crest ${logo ? '' : 'empty'}" aria-label="${t(logo ? 'logoChange' : 'logoAdd')}">
+  const crest = `<label class="club-crest ${logo ? '' : 'is-empty'}" aria-label="${t(logo ? 'logoChange' : 'logoAdd')}">
       ${logo ? clubLogo(logo, 'lg') : '<span class="club-crest-blank" aria-hidden="true">🛡</span>'}
       <span class="club-crest-badge" aria-hidden="true">${logo ? '✎' : '＋'}</span>
       <input type="file" accept="image/png,image/jpeg,image/webp" class="club-logo-file" hidden>
