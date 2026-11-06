@@ -15,6 +15,22 @@ export function registerActions(map: Record<string, ActionHandler>): void {
   }
 }
 
+/** A form handler gets the form's data and the form. */
+export type FormHandler = (data: FormData, form: HTMLFormElement) => unknown;
+
+const forms: Record<string, FormHandler> = {};
+
+/** Handlers for `<form data-form="name">` submissions (see the submit listener in app/). */
+export function registerForms(map: Record<string, FormHandler>): void {
+  for (const [name, fn] of Object.entries(map)) {
+    if (forms[name]) throw new Error(`Form "${name}" is registered twice`);
+    forms[name] = fn;
+  }
+}
+
+/** The registered handler for a form, if any. */
+export const formHandler = (name: string): FormHandler | undefined => forms[name];
+
 export type ClickOptions = {
   /** Swallow this click entirely (e.g. the click that ends a drag). */
   ignore?: (e: MouseEvent) => boolean;

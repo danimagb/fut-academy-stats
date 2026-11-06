@@ -11,12 +11,12 @@ export function watchErrors(page: Page): string[] {
   return errors;
 }
 
-/** Creates "Test FC - U8" with players 1..n (shirt names P1..Pn) and stays on the team screen. */
-export async function createTeam(page: Page, n = 6): Promise<void> {
+/** Creates "Test FC - <ageGroup>" with players 1..n (shirt names P1..Pn) and stays on the team screen. */
+export async function createTeam(page: Page, n = 6, ageGroup = 'U8'): Promise<void> {
   await page.goto('#/teams');
   await page.getByRole('button', { name: '+ New team' }).click();
   await page.getByPlaceholder('e.g. Padroense F.C.').fill('Test FC');
-  await page.getByPlaceholder('e.g. U7 B').fill('U8');
+  await page.getByPlaceholder('e.g. U7 B').fill(ageGroup);
   await page.keyboard.press('Tab');
   await page.getByRole('button', { name: '＋ Add' }).first().click();
   const sheet = page.locator('#sheet-body');

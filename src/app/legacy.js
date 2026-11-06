@@ -1,38 +1,34 @@
+import { teamOpen, openAddPlayer, teamPage } from '@/pages/team/team';
+import { profilePage } from '@/pages/profile/profile';
+import { initTheme } from '@/features/theme-switch/theme';
+import { initLanguage } from '@/features/language-switch/language';
+import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
+import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
+import { showSyncStatus } from '@/features/sync-status/sync-status';
+import { adminDo } from '@/pages/admin/admin';
+import { adminPage } from '@/pages/admin/admin';
+import { $, $$ } from '@/shared/lib/dom';
+import { remote, q, loadPeople, addCoach } from '@/features/team-people/team-people';
+import { readOnlyGame, readOnlyTeam, writableTeams } from '@/data/access';
+import { readOnlyPill, refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { derive, getGame, getTeam, teamPlayers } from '@/data/queries';
-import {
-  SETPW_KEY,
-  canSync,
-  canUpload,
-  cloud,
-  refreshAccount,
-  renderIfProfile,
-  sb,
-  syncNow,
-} from '@/data/session';
+import { canSync, canUpload, cloud, sb, syncNow } from '@/data/session';
 import { fmtDate } from '@/domain/titles';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
-import { installActionListener, registerActions } from '@/app/actions';
-import { onRender, render, route, setViews } from '@/app/router';
+import { formHandler, installActionListener, registerActions, registerForms } from '@/app/actions';
+import { addViews, onRender, render, route, setFallbackView } from '@/app/router';
+import { gamesPage, viewGames } from '@/pages/games/games';
+import { gamesTeam } from '@/data/prefs';
+import { scoreHtml } from '@/features/score/score';
 import { keepScreenOn } from '@/app/wake-lock';
 import { buzz, download } from '@/shared/lib/device';
 import { bar, closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { storeAccount } from '@/data/auth';
-import {
-  SyncError,
-  configureSync,
-  isOffline,
-  localTeams,
-  pendingCount,
-  removeCloudData,
-  roleOf,
-  syncState,
-} from '@/data/sync';
-import { $, $$ } from '@/shared/lib/dom';
+import { configureSync, localTeams, roleOf } from '@/data/sync';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -42,12 +38,10 @@ import {
   isCloudTeam,
   loadRejected,
   normalize,
-  saveQuiet,
   setDb,
   syncGameTeams,
   teamIdOf,
 } from '@/data/store';
-import { persistedState } from '@/data/persist';
 import { checkIncoming } from '@/domain/validate';
 import { fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
@@ -76,43 +70,20 @@ import {
   teamStats as teamSeason,
 } from '@/domain/stats';
 import { gameTeam, matchTitle, periodName, seasonOf, teamFull, teamLabel } from '@/domain/titles';
-import { getLang, locale, setLang, t } from '@/shared/i18n/i18n';
+import { locale, t } from '@/shared/i18n/i18n';
 
 // ---------- Config ----------
 
-const LANG_KEY = 'fut-academy-stats.lang';
-const THEME_KEY = 'fut-academy-stats.theme'; // 'light' | 'dark' | 'auto' (follow the device)
-const GAMES_TEAM_KEY = 'fut-academy-stats.gamesTeam'; // team filter on the games page ('' = all)
 const STATS_TEAM_KEY = 'fut-academy-stats.statsTeam'; // team picked on the stats page
 const STATS_SEASON_KEY = 'fut-academy-stats.statsSeason'; // season picked on the stats page (e.g. '2026/2027')
 
 // ---------- Language ----------
 
-const savedLang = localStorage.getItem(LANG_KEY);
-setLang(
-  savedLang === 'pt' || savedLang === 'en'
-    ? savedLang
-    : (navigator.language || '').toLowerCase().startsWith('pt')
-      ? 'pt'
-      : 'en',
-);
-document.documentElement.lang = getLang();
+initLanguage();
 
 // ---------- Theme ----------
 
-let theme = localStorage.getItem(THEME_KEY) || 'auto';
-const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
-
-function applyTheme() {
-  const resolved = theme === 'auto' ? (darkMq.matches ? 'dark' : 'light') : theme;
-  document.documentElement.dataset.theme = resolved;
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = resolved === 'light' ? '#eef0f3' : '#0e0f12';
-}
-applyTheme();
-darkMq.addEventListener?.('change', () => {
-  if (theme === 'auto') applyTheme();
-});
+initTheme();
 
 // ---------- Storage ----------
 
@@ -124,16 +95,6 @@ const main = $('#main');
 
 const formatLine = (g) =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
-
-// Score in the same order as matchTitle (home side first). With `colour`, our goals are
-// wrapped in .us and theirs in .them (no colour on a draw).
-function scoreHtml(g, d, sep = '–', colour = false) {
-  const goals = (who) => {
-    const n = who === 'us' ? d.us : d.them;
-    return colour && d.us !== d.them ? `<span class="${who}">${n}</span>` : `${n}`;
-  };
-  return g.home === false ? `${goals('them')}${sep}${goals('us')}` : `${goals('us')}${sep}${goals('them')}`;
-}
 
 const undoBtn = (eventId) => `<button data-action="undo-toast" data-id="${eventId}">${t('undo')}</button>`;
 
@@ -271,23 +232,20 @@ function describe(g, e) {
 
 let draft = null;
 
-setViews(
-  {
-    games: viewGames,
-    teams: viewTeams,
-    players: viewTeams,
-    team: viewTeam,
-    new: viewEdit,
-    edit: viewEdit,
-    game: viewGame,
-    report: viewReport,
-    profile: viewProfile,
-    admin: viewAdmin,
-    stats: viewStats,
-    player: viewPlayer,
-  },
-  viewGames,
-);
+addViews({
+  new: viewEdit,
+  edit: viewEdit,
+  game: viewGame,
+  report: viewReport,
+  stats: viewStats,
+  player: viewPlayer,
+});
+// Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
+addViews(gamesPage.views);
+addViews(adminPage.views);
+addViews(profilePage.views);
+addViews(teamPage.views);
+setFallbackView(viewGames);
 onRender({
   before: () => {
     renderPending = false;
@@ -345,241 +303,7 @@ function notFound() {
 
 // ---------- Views: games list ----------
 
-// Team shown on the games page, or '' for all (only when there's more than one team).
-function gamesTeam() {
-  const id = localStorage.getItem(GAMES_TEAM_KEY) || '';
-  return db.teams.length > 1 && getTeam(id) ? id : '';
-}
-
-function viewGames() {
-  const team = gamesTeam();
-  const games = db.games
-    .filter((g) => !team || g.teamId === team)
-    .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
-  main.innerHTML = `
-    ${bar('⚽ Fut Academy Stats')}
-    <div class="row gap">
-      <a class="btn primary grow" href="#/new">${t('newGame')}</a>
-      <a class="btn" href="#/teams">${t('teamsBtn', { n: db.teams.length })}</a>
-    </div>
-    ${
-      db.teams.length > 1
-        ? `<div class="pick-row filter" role="tablist">
-      ${[['', t('allTeams')], ...db.teams.map((tm) => [tm.id, esc(teamLabel(tm))])]
-        .map(
-          ([id, label]) =>
-            `<button class="pick ${id === team ? 'on' : ''}" role="tab" aria-selected="${id === team}" data-action="games-team" data-id="${id}">${label}</button>`,
-        )
-        .join('')}
-    </div>`
-        : ''
-    }
-    ${
-      games.length
-        ? `<ul class="list">${games.map(gameCard).join('')}</ul>`
-        : `<p class="empty">${team ? t('noGamesTeam') : t('noGames')}</p>`
-    }`;
-}
-
-// ---------- Cloud account (Supabase sign-in) ----------
-// Sign-in is email + password; a code by email is used the first time and for a forgotten
-// password, then the user chooses a password. Invite-only: the email gets a code only if the
-// admin gave it an account; `shouldCreateUser: false` never creates users. Everything else in
-// the app keeps working without signing in.
-
-if (sb) {
-  sb.auth.getSession().then(({ data }) => {
-    cloud.session = data.session;
-    if (cloud.session) refreshAccount().finally(syncNow);
-    renderIfProfile();
-  });
-  sb.auth.onAuthStateChange((event, session) => {
-    cloud.session = session;
-    if (!session) {
-      cloud.account = null;
-      storeAccount(null);
-    }
-    // Signed out (here or because the session ended): the cloud teams leave this phone, unless
-    // changes are still waiting; those are kept until this user signs in again (another user
-    // signing in removes them first, see syncOnce).
-    if (event === 'SIGNED_OUT' && !pendingCount()) removeCloudData();
-    // Supabase advises against calling it again from inside this callback.
-    if (event === 'SIGNED_IN') setTimeout(() => refreshAccount().finally(syncNow));
-    renderIfProfile();
-  });
-}
-
-function authMessage(error) {
-  const msg = `${error?.code || ''} ${error?.message || ''}`;
-  if (!navigator.onLine || error?.name === 'AuthRetryableFetchError' || error?.status === 0)
-    return t('authOffline');
-  if (error?.status === 429 || /rate.?limit/i.test(msg)) return t('authRateLimit');
-  if (/otp_disabled|signup_disabled|user_not_found|signups not allowed/i.test(msg)) return t('authNoAccess');
-  if (/invalid_credentials|invalid login credentials/i.test(msg)) return t('authBadPassword');
-  if (/same_password|should be different/i.test(msg)) return t('pwSame');
-  if (/weak_password|password should|weak/i.test(msg)) return t('pwWeak');
-  if (/otp_expired|invalid|expired/i.test(msg)) return t('authBadCode');
-  if (error instanceof Error && !error.status && !error.code && !error.name?.startsWith('Auth'))
-    return esc(error.message);
-  return t('authFailed', { msg: esc(error?.message || error) });
-}
-
-async function cloudStep(fn) {
-  cloud.busy = true;
-  cloud.error = '';
-  renderIfProfile();
-  try {
-    await fn();
-  } catch (e) {
-    cloud.error = authMessage(e);
-  }
-  cloud.busy = false;
-  renderIfProfile();
-}
-
-const sendCode = (email) =>
-  cloudStep(async () => {
-    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-    if (error) throw error;
-    Object.assign(cloud, { step: 'code', email });
-  });
-
-const verifyCode = (token) =>
-  cloudStep(async () => {
-    const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
-    if (error) throw error;
-    // Signed in with a code: first time or forgotten password, so a password is chosen next.
-    const pwMode = cloud.mode === 'reset' ? 'reset' : 'signup';
-    localStorage.setItem(SETPW_KEY, pwMode);
-    Object.assign(cloud, { mode: 'signin', step: 'email', needsPassword: true, pwMode });
-  });
-
-const signInPassword = (email, password) =>
-  cloudStep(async () => {
-    cloud.email = email; // kept if it fails (the form is drawn again), e.g. for "get a code"
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    Object.assign(cloud, { mode: 'signin', step: 'email', email: '' });
-    toast(t('signedIn'));
-  });
-
-// Supabase Auth stores only a bcrypt hash of the password (in auth.users); the app never keeps it.
-const setPassword = (pw, pw2) =>
-  cloudStep(async () => {
-    if (pw.length < 8) throw new Error(t('pwShort'));
-    if (pw !== pw2) throw new Error(t('pwMismatch'));
-    const { error } = await sb.auth.updateUser({ password: pw });
-    if (error) throw error;
-    const wasNew = cloud.needsPassword;
-    localStorage.removeItem(SETPW_KEY);
-    Object.assign(cloud, { needsPassword: false, changingPassword: false, email: '' });
-    toast(wasNew ? t('signedIn') : t('pwSaved'));
-    if (wasNew) setTimeout(syncNow); // sync was held back until the password was chosen
-  });
-
-function setPasswordForm(busy, err, cancel) {
-  const step3 = cloud.needsPassword;
-  return `${step3 ? `<p class="step-label">${t('stepOf', { n: 3 })}</p>` : ''}
-    <h3 class="sub-title">${step3 ? t('stepPassword') : t('changePassword')}</h3>
-    <p class="hint">${t('setPwHint')}</p>
-    <form class="form" data-form="set-password">
-      <input type="email" name="username" autocomplete="username" value="${esc(cloud.session.user.email)}" hidden>
-      <label>${t('newPassword')}<input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
-      <label>${t('repeatPassword')}<input name="password2" type="password" required minlength="8" autocomplete="new-password"></label>
-      <button class="btn primary" ${busy}>${step3 && cloud.pwMode === 'signup' ? t('createAccount') : t('savePassword')}</button>
-      ${cancel ? `<button type="button" class="btn ghost" data-action="cancel-password">${t('cancel')}</button>` : ''}
-    </form>${err}`;
-}
-
-function accountSection() {
-  return `${accountSectionBody()}<p class="hint"><button class="link-btn" data-action="privacy">${t('privacyLink')}</button></p>`;
-}
-
-function accountSectionBody() {
-  const head = '';
-  if (!sb) return `${head}<p class="hint">${t('cloudUnavailable')}</p>`;
-  const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
-  const busy = cloud.busy ? 'disabled' : '';
-  if (cloud.session && cloud.needsPassword) {
-    // Step 3 of "Activate account" / "Reset your password": nothing else until it's done.
-    return `${head}<section class="auth-steps">${cloud.pwMode === 'reset' ? `<p class="muted small">${t('resetTitle')}</p>` : ''}
-      ${setPasswordForm(busy, err, false)}</section>`;
-  }
-  if (cloud.session) {
-    const a = cloud.account;
-    const kind =
-      a && !a.none
-        ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')]
-            .filter(Boolean)
-            .join(' · ')
-        : '';
-    return `${head}
-      <ul class="list settings">
-        <li class="item"><span class="grow"><strong class="acct-email" title="${esc(cloud.session.user.email)}">${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span></li>
-        ${
-          canSync()
-            ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatusText()}</span>
-          <button class="btn small ghost" data-action="sync-now">${t('syncNow')}</button></li>`
-            : ''
-        }
-      </ul>
-      ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
-      ${
-        cloud.changingPassword
-          ? setPasswordForm(busy, err, true)
-          : `${err}<div class="row gap wrap acct-actions">
-            <button class="btn small ghost" data-action="change-password">${t('changePassword')}</button>
-            <button class="btn small ghost" data-action="sign-out">${t('signOut')}</button></div>`
-      }`;
-  }
-  const tabs =
-    cloud.mode === 'reset'
-      ? ''
-      : `<div class="seg big auth-tabs" role="tablist">
-      <button role="tab" class="${cloud.mode === 'signin' ? 'on' : ''}" aria-selected="${cloud.mode === 'signin'}" data-action="auth-mode" data-v="signin" ${busy}>${t('tabSignIn')}</button>
-      <button role="tab" class="${cloud.mode === 'signup' ? 'on' : ''}" aria-selected="${cloud.mode === 'signup'}" data-action="auth-mode" data-v="signup" ${busy}>${t('tabSignUp')}</button>
-    </div>`;
-  if (cloud.mode === 'signin') {
-    return `${head}${tabs}
-      <p class="hint">${t('accountHint')}</p>
-      <form class="form" data-form="signin-password">
-        <label>${t('email')}<input name="email" type="email" required autocomplete="username" inputmode="email" value="${esc(cloud.email)}"></label>
-        <label>${t('password')}<input name="password" type="password" required autocomplete="current-password"></label>
-        <button class="btn primary" ${busy}>${t('signInPw')}</button>
-      </form>
-      ${err}
-      <p class="hint"><button class="link-btn" data-action="auth-mode" data-v="reset" ${busy}>${t('forgotPassword')}</button></p>`;
-  }
-  // signup / reset: step 1 (email) or step 2 (code)
-  const title = cloud.mode === 'reset' ? `<h3 class="sub-title">${t('resetTitle')}</h3>` : '';
-  const intro = cloud.mode === 'reset' ? t('resetIntro') : t('signUpIntro');
-  const back =
-    cloud.mode === 'reset'
-      ? `<p class="hint"><button class="link-btn" data-action="auth-mode" data-v="signin" ${busy}>${t('backToSignIn')}</button></p>`
-      : '';
-  if (cloud.step === 'code') {
-    return `${head}${tabs}<section class="auth-steps">${title}
-      <p class="step-label">${t('stepOf', { n: 2 })}</p>
-      <p class="hint">${t('codeSent', { email: `<b>${esc(cloud.email)}</b>` })}</p>
-      <form class="form" data-form="signin-code">
-        <label>${t('stepCode')}<input name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10"></label>
-        <button class="btn primary" ${busy}>${t('confirmCode')}</button>
-      </form>
-      ${err}
-      <div class="row gap wrap signin-links">
-        <button class="btn small ghost" data-action="signin-back" ${busy}>${t('otherEmail')}</button>
-        <button class="btn small ghost" data-action="signin-resend" ${busy}>${t('resendCode')}</button>
-      </div></section>${back}`;
-  }
-  return `${head}${tabs}<section class="auth-steps">${title}
-    ${intro ? `<p class="hint">${intro}</p>` : ''}
-    <p class="step-label">${t('stepOf', { n: 1 })}</p>
-    <form class="form" data-form="signin-email">
-      <label>${t('stepEmail')}<input name="email" type="email" required autocomplete="email" inputmode="email" value="${esc(cloud.email)}"></label>
-      <button class="btn primary" ${busy}>${t('sendCode')}</button>
-    </form>
-    ${err}</section>${back}`;
-}
+watchAuth();
 
 // ---------- Cloud sync ----------
 // Local-first: the app keeps reading and writing `db` + save(). In the background, syncNow()
@@ -611,75 +335,6 @@ configureSync({
     if (firstOk && canUpload() && localTeams().length) offerUpload();
   },
 });
-
-// Upload teams from this phone: they become cloud teams with this user as director.
-function uploadTeams(ids) {
-  syncState.error = ''; // a previous upload's error (it stays until the next upload)
-  for (const id of ids) {
-    if (!getTeam(id) || isCloudTeam(id)) continue;
-    db.sync.teams[id] = 'director';
-    if (!db.sync.uploads.includes(id)) db.sync.uploads.push(id);
-    for (const kind of RECORD_KINDS) for (const r of db[kind]) if (teamIdOf(kind, r) === id) r.dirty = true;
-  }
-  saveQuiet();
-  toast(t('uploading'));
-  render();
-  syncNow();
-}
-
-// After the first sign-in on this phone (director accounts): which local teams to upload?
-function offerUpload() {
-  if (!$('#sheet').hidden || document.querySelector('.dialog')) return;
-  openSheet(`
-    <h3>${t('uploadTitle')}</h3>
-    <p class="hint">${t('uploadHint')}</p>
-    <form class="form" data-form="upload-teams">
-      <div class="check-list">${localTeams()
-        .map(
-          (tm) => `
-        <label class="check"><input type="checkbox" name="team" value="${esc(tm.id)}" checked>
-          <span class="grow"><strong>${esc(teamLabel(tm))}</strong>
-          <span class="muted small sub-line">${t('playersCount', { n: teamPlayers(tm.id).length })}</span></span></label>`,
-        )
-        .join('')}
-      </div>
-      <button class="btn primary block">${t('uploadSelected')}</button>
-      <button type="button" class="btn ghost block" data-action="close-sheet">${t('notNow')}</button>
-    </form>`);
-}
-
-// "Synced" / "On this phone" pill for a team ("On this phone" only matters when signed in).
-function teamBadge(tm) {
-  if (isCloudTeam(tm.id)) return `<span class="badge cloud">${t('badgeCloud')}</span>`;
-  return canSync() ? `<span class="badge">${t('badgeLocal')}</span>` : '';
-}
-
-function agoText(ms) {
-  const min = Math.floor((Date.now() - ms) / 60000);
-  if (min < 1) return t('agoNow');
-  if (min < 60) return t('agoMin', { n: min });
-  if (min < 24 * 60) return t('agoHour', { n: Math.floor(min / 60) });
-  return new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
-}
-
-function syncStatusText() {
-  const n = pendingCount();
-  const { status, error } = syncState;
-  let s;
-  if (status === 'running') s = t('syncing');
-  else if (status === 'offline') s = n ? plural('syncWaitingOffline', n) : t('syncOffline');
-  else if (status === 'failed') s = t('syncFailed');
-  else if (db.sync.lastSyncAt)
-    s = t('syncedAgo', { ago: agoText(db.sync.lastSyncAt) }) + (n ? ` · ${plural('syncWaiting', n)}` : '');
-  else s = n ? plural('syncWaiting', n) : t('syncNever');
-  return error ? `${s}<br>${esc(error)}` : s;
-}
-
-// Update the status line in place (no re-render, so nothing being typed is disturbed).
-function showSyncStatus() {
-  const el = document.getElementById('sync-status');
-  if (el) el.innerHTML = syncStatusText();
-}
 
 // Re-render after a sync changed the data, but not while the user is in the middle of
 // something (typing, a sheet or dialog open, a ⋯ menu, dragging a player): then later.
@@ -720,11 +375,6 @@ setInterval(() => {
 // edit controls, and the click / submit / input handlers and dragging refuse anything that would
 // change data (the database refuses those writes anyway). Teams on this phone are never
 // read-only.
-
-const readOnlyTeam = (teamId) => roleOf(teamId) === 'coach';
-const readOnlyGame = (g) => !!g && readOnlyTeam(g.teamId);
-// Teams this user may create games in / move games to.
-const writableTeams = () => db.teams.filter((tm) => !readOnlyTeam(tm.id));
 
 // Is the screen being shown (and its sheets) about a read-only team or game?
 function viewReadOnly() {
@@ -777,9 +427,6 @@ const READ_ONLY_FORMS = new Set([
   'upload-teams',
 ]);
 
-const refuseReadOnly = () => toast(t('readOnlyToast'));
-const readOnlyPill = () => `<span class="badge ro">${t('readOnly')}</span>`;
-
 // Tap on a player in a read-only game: who it is and how they're doing, no actions.
 function openPlayerInfo(g, id) {
   const d = derive(g);
@@ -795,539 +442,6 @@ function openPlayerInfo(g, id) {
     ${bits ? `<p>${bits}</p>` : ''}
     <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
-}
-
-// ---------- Team access: people of a team, admin page (online only) ----------
-// These screens read and change team_members / accounts directly (RLS decides what is allowed)
-// and the `admin` Edge Function for creating and removing accounts. Nothing is cached on the
-// phone: offline they show "Needs internet".
-
-const remote = { people: null, admin: null }; // reset when the route changes
-
-// Run a supabase-js query; throw its error (with HTTP status) instead of returning it.
-async function q(query) {
-  const { data, error, status } = await query;
-  if (error) throw new SyncError(error, status);
-  return data;
-}
-
-function accessError(e) {
-  if (isOffline(e)) return t('needsInternet');
-  if (e.code === '23514' || /at least one director/i.test(e.message)) return t('lastDirector');
-  if (e.code === '42501') return t('notAllowed');
-  return t('actionFailed', { msg: esc(e.message) });
-}
-
-const roleLabel = (role) => t(role === 'director' ? 'roleDirector' : 'roleCoach');
-const kindLabel = (kind) => t(kind === 'director' ? 'acctDirector' : 'acctCoach');
-const myId = () => cloud.session?.user?.id;
-
-const OFFLINE = Object.assign(new Error('offline'), { status: 0 });
-
-// Members of a team with their emails (teammates' accounts are visible through RLS).
-async function fetchMembers(teamIds) {
-  if (!navigator.onLine) throw OFFLINE; // don't wait for the request to time out
-  const rows = await q(sb.from('team_members').select('team_id, user_id, role').in('team_id', teamIds));
-  const ids = [...new Set(rows.map((r) => r.user_id))];
-  const accts = ids.length ? await q(sb.from('accounts').select('user_id, email').in('user_id', ids)) : [];
-  const email = new Map(accts.map((a) => [a.user_id, a.email]));
-  return rows
-    .map((r) => ({ ...r, email: email.get(r.user_id) || '?' }))
-    .sort(
-      (a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email),
-    );
-}
-
-async function loadPeople(teamId) {
-  const prev = remote.people;
-  const st = { teamId, status: 'loading', members: [], msg: prev?.teamId === teamId ? prev.msg : null };
-  remote.people = st;
-  showPeople();
-  try {
-    st.members = await fetchMembers([teamId]);
-    st.status = 'ok';
-  } catch (e) {
-    st.status = isOffline(e) ? 'offline' : 'error';
-    console.warn('People: load failed', e);
-  }
-  if (remote.people === st) showPeople();
-}
-
-// People section of a cloud team's screen (filled in place, so it never disturbs typing).
-function peopleHtml(teamId) {
-  const st = remote.people?.teamId === teamId ? remote.people : null;
-  if (!canSync()) return `<p class="hint">${t('peopleSignIn')}</p>`;
-  if (!st || st.status === 'loading') return `<p class="hint">${t('loading')}</p>`;
-  if (st.status === 'uploading') return `<p class="hint">${t('uploading')}</p>`;
-  if (st.status !== 'ok') {
-    return `<p class="hint warn">${t('needsInternet')}</p>
-      <button class="btn small ghost" data-action="people-reload">${t('tryAgain')}</button>`;
-  }
-  const me = myId();
-  const director = roleOf(teamId) === 'director';
-  const msg = st.msg ? `<p class="hint ${st.msg.ok ? 'ok' : 'warn'}" role="status">${st.msg.text}</p>` : '';
-  return `
-    <ul class="list people">${st.members
-      .map(
-        (m) => `
-      <li class="item">
-        <span class="grow"><span class="email">${esc(m.email)}</span>${m.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}</span>
-        <span class="badge ${m.role === 'director' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
-        ${
-          director && m.role === 'coach' && m.user_id !== me
-            ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>`
-            : ''
-        }
-      </li>`,
-      )
-      .join('')}</ul>
-    ${msg}
-    <button class="btn ghost danger small" data-action="leave-team">${t('leaveTeam')}</button>`;
-}
-
-function showPeople() {
-  const el = document.getElementById('people');
-  if (!el || !remote.people || route().view !== 'team' || route().id !== remote.people.teamId) return;
-  el.innerHTML = peopleHtml(remote.people.teamId);
-  const sum = document.getElementById('staff-sum');
-  if (sum) sum.textContent = staffSummary(remote.people.teamId);
-}
-
-// One-line summary in the Staff header: how many people, once they're loaded.
-function staffSummary(teamId) {
-  const st = remote.people?.teamId === teamId ? remote.people : null;
-  return st?.status === 'ok' ? plural('staffCount', st.members.length) : '';
-}
-
-function setPeopleMsg(text, ok) {
-  if (remote.people) remote.people.msg = { text, ok };
-  showPeople();
-}
-
-async function addCoach(teamId, email) {
-  try {
-    const r = await q(sb.rpc('add_team_coach', { _team_id: teamId, _email: email }));
-    const e = `<b>${esc(email)}</b>`;
-    if (r === 'added') setPeopleMsg(t('coachAdded', { email: e }), true);
-    else if (r === 'already_member') setPeopleMsg(t('coachAlready', { email: e }), true);
-    else setPeopleMsg(t('coachNoAccount'), false);
-  } catch (e) {
-    return setPeopleMsg(accessError(e), false);
-  }
-  loadPeople(teamId);
-}
-
-// Delete a membership; RLS skips rows it doesn't allow silently, so check something was deleted.
-async function deleteMember(teamId, userId) {
-  const rows = await q(
-    sb.from('team_members').delete().eq('team_id', teamId).eq('user_id', userId).select('user_id'),
-  );
-  if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
-}
-
-// ---------- Admin page ----------
-
-// Call the `admin` Edge Function. Errors come back as { error: code, message } with a status.
-async function adminCall(body) {
-  const { data, error } = await sb.functions.invoke('admin', { body });
-  if (!error) return data;
-  const err = new Error(error.message);
-  err.status = error.name === 'FunctionsFetchError' ? 0 : error.context?.status;
-  try {
-    const j = await error.context.json();
-    Object.assign(err, { code: j.error || j.code, message: j.message || j.msg || error.message });
-  } catch {}
-  throw err;
-}
-
-function adminError(e) {
-  if (isOffline(e)) return t('needsInternet');
-  if (e.code === 'exists') return t('errExists');
-  if (e.code === 'invalid_email') return t('errEmail');
-  if (e.code === 'not_admin') return t('errNotAdmin');
-  if (e.code === 'self') return t('errSelf');
-  if (e.code === 'is_admin') return t('errIsAdmin');
-  if (e.status === 401) return t('errSession', { msg: esc(e.message) });
-  return accessError(e);
-}
-
-async function loadAdmin() {
-  const st = { status: 'loading', accounts: [], teams: [], members: [] };
-  remote.admin = st;
-  try {
-    if (!navigator.onLine) throw OFFLINE;
-    const [accounts, teams] = await Promise.all([
-      q(sb.from('accounts').select('user_id, email, kind, is_admin').order('email')),
-      q(sb.from('teams').select('id, club, name').is('deleted_at', null).order('name')),
-    ]);
-    const members = await q(sb.from('team_members').select('team_id, user_id, role'));
-    Object.assign(st, { accounts, teams, members, status: 'ok' });
-  } catch (e) {
-    st.status = isOffline(e) ? 'offline' : 'error';
-    console.warn('Admin: load failed', e);
-  }
-  if (remote.admin === st && route().view === 'admin') renderSoon();
-}
-
-// An admin change: run it, say how it went, reload the page's data. Membership changes may be
-// about this user's own teams, so sync too.
-async function adminDo(fn, okText, sync = false) {
-  try {
-    await fn();
-    if (okText) toast(okText);
-  } catch (e) {
-    notify(adminError(e));
-  }
-  await loadAdmin();
-  if (sync) syncNow();
-}
-
-function viewAdmin() {
-  const head = bar(t('admin'), '#/profile');
-  if (!sb || !cloud.account?.isAdmin) {
-    main.innerHTML = `${head}<p class="empty">${t('adminOnly')}</p>`;
-    return;
-  }
-  const st = remote.admin;
-  const me = myId();
-  const give = `
-    <h2>${t('giveAccess')}</h2>
-    <form class="form" data-form="admin-create">
-      <label>${t('email')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
-      <label>${t('accountKind')}<select name="kind">
-        <option value="director">${t('acctDirector')}</option>
-        <option value="coach" selected>${t('acctCoach')}</option>
-      </select></label>
-      <button class="btn primary">${t('giveAccess')}</button>
-    </form>
-    <p class="hint">${t('giveAccessHint')}</p>`;
-  let body;
-  if (!st || st.status === 'loading') body = `<p class="hint">${t('loading')}</p>`;
-  else if (st.status !== 'ok')
-    body = `<p class="hint warn">${t('needsInternet')}</p><button class="btn small ghost" data-action="admin-reload">${t('tryAgain')}</button>`;
-  else {
-    const email = new Map(st.accounts.map((a) => [a.user_id, a.email]));
-    const teamsOf = (uid) => st.members.filter((m) => m.user_id === uid).length;
-    const kindSelect = (
-      a,
-    ) => `<select class="mini" data-change="admin-kind" data-id="${esc(a.user_id)}" aria-label="${t('accountKind')}">
-      ${['director', 'coach'].map((k) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('')}</select>`;
-    const accounts = `
-      <h2>${t('accounts')} <span class="muted small">${st.accounts.length}</span></h2>
-      <ul class="list admin-accounts">${st.accounts
-        .map(
-          (a) => `
-        <li class="item wrap">
-          <span class="grow"><span class="email">${esc(a.email)}</span>${a.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}
-            <div class="muted small">${a.is_admin ? `${t('acctAdmin')} · ` : ''}${plural('teamsN', teamsOf(a.user_id))}</div></span>
-          ${
-            a.user_id === me || a.is_admin
-              ? `<span class="muted small">${kindLabel(a.kind)}</span>`
-              : `${kindSelect(a)}
-          <button class="btn small ghost danger" data-action="admin-remove-account" data-id="${esc(a.user_id)}" aria-label="${t('removeAccess')}">✕</button>`
-          }
-        </li>`,
-        )
-        .join('')}</ul>`;
-    const roleSelect = (
-      m,
-    ) => `<select class="mini" data-change="admin-role" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
-      ${['director', 'coach'].map((r) => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}</select>`;
-    const teams = st.teams
-      .map((tm) => {
-        const ms = st.members
-          .filter((m) => m.team_id === tm.id)
-          .map((m) => ({ ...m, email: email.get(m.user_id) || '?' }))
-          .sort(
-            (a, b) =>
-              (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email),
-          );
-        const others = st.accounts.filter((a) => !ms.some((m) => m.user_id === a.user_id));
-        return `<li class="card admin-team">
-        <div class="row gap"><strong class="grow">${esc(teamLabel(tm))}</strong>
-          ${ms.some((m) => m.role === 'director') ? '' : `<span class="badge warn">${t('noDirector')}</span>`}</div>
-        ${
-          ms.length
-            ? `<ul class="members">${ms
-                .map(
-                  (m) => `
-          <li class="row gap"><span class="grow email">${esc(m.email)}</span>${roleSelect(m)}
-            <button class="btn small ghost danger" data-action="admin-remove-member" data-tid="${esc(m.team_id)}" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button></li>`,
-                )
-                .join('')}</ul>`
-            : `<p class="muted small">${t('noMembers')}</p>`
-        }
-        ${
-          others.length
-            ? `<form class="row gap add-member" data-form="admin-add-member" data-tid="${esc(tm.id)}">
-          <select class="grow" name="user" required aria-label="${t('pickAccount')}"><option value="">${t('pickAccount')}</option>
-            ${others.map((a) => `<option value="${esc(a.user_id)}">${esc(a.email)}</option>`).join('')}</select>
-          <select class="mini" name="role" aria-label="${t('roleDirector')} / ${t('roleCoach')}">
-            <option value="coach">${t('roleCoach')}</option><option value="director">${t('roleDirector')}</option></select>
-          <button class="btn small">${t('addMember')}</button>
-        </form>`
-            : ''
-        }
-      </li>`;
-      })
-      .join('');
-    body = `${accounts}
-      <h2>${t('cloudTeams')} <span class="muted small">${st.teams.length}</span></h2>
-      ${st.teams.length ? `<ul class="list">${teams}</ul>` : `<p class="empty">${t('noCloudTeams')}</p>`}`;
-  }
-  main.innerHTML = `${head}${give}${body}`;
-  if (!st) loadAdmin();
-}
-
-// ---------- Views: profile / settings ----------
-// App settings live here; add new sections as more settings appear.
-
-// Profile is an accordion: Account, Settings, Backup. One section open at a time (Account by
-// default, every time the app starts); each closed header shows a one-line summary. While
-// creating an account / choosing a password, Account stays open.
-let profileOpen = 'account';
-
-function viewProfile() {
-  const seg = (action, current, options) =>
-    `<span class="seg big" role="group">${options
-      .map(
-        ([v, label]) =>
-          `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`,
-      )
-      .join('')}</span>`;
-  const busyAuth = cloud.needsPassword || cloud.step === 'code';
-  const open = busyAuth ? 'account' : profileOpen;
-  const a = cloud.account;
-  const accountSum = cloud.session
-    ? cloud.needsPassword
-      ? t('stepOf', { n: 3 })
-      : [
-          cloud.session.user.email,
-          a &&
-            !a.none &&
-            (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')),
-        ]
-          .filter(Boolean)
-          .join(' · ')
-    : t('notSignedIn');
-  const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[theme];
-  const section = (id, title, summary, body) => `
-    <section class="acc ${open === id ? 'open' : ''}">
-      <button class="acc-head" data-action="profile-section" data-v="${id}" aria-expanded="${open === id}" aria-controls="acc-${id}">
-        <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum">${esc(summary)}</span></span>
-        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
-      <div class="acc-body" id="acc-${id}" ${open === id ? '' : 'hidden'}>${body}</div>
-    </section>`;
-  main.innerHTML = `
-    ${bar(t('tabProfile'))}
-    <div class="accordion">
-    ${section('account', t('account'), accountSum, accountSection())}
-    ${section(
-      'settings',
-      t('settings'),
-      `${getLang() === 'pt' ? 'Português' : 'English'} · ${themeLabel}`,
-      `
-      <ul class="list settings">
-        <li class="item"><span class="grow">${t('language')}</span>
-          ${seg('lang', getLang(), [
-            ['en', 'English'],
-            ['pt', 'Português'],
-          ])}</li>
-        <li class="item wrap"><span class="grow">${t('theme')}</span>
-          ${seg('theme', theme, [
-            ['light', `☀️ ${t('themeLight')}`],
-            ['dark', `🌙 ${t('themeDark')}`],
-            ['auto', t('themeAuto')],
-          ])}</li>
-      </ul>`,
-    )}
-    ${section(
-      'backup',
-      t('backupTitle'),
-      t('backupSummary'),
-      `
-      <p class="hint">${t('backupHint')}</p>
-      ${persistedState() === null ? '' : `<p class="hint ${persistedState() ? 'ok' : 'warn'}">${persistedState() ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
-      <div class="row gap">
-        <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
-        <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
-      </div>`,
-    )}
-    </div>`;
-}
-
-function gameCard(g) {
-  const d = derive(g);
-  const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
-  // Result of a finished game: win / draw / loss, shown as a coloured stripe and a pill.
-  const res = g.status === 'finished' ? (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw') : '';
-  // Our goals green, theirs red, both neutral on a draw.
-  const score = scoreHtml(g, d, '–', true);
-  // Only what helps pick a game out of the list (the title already names the team): date and round.
-  const meta = [esc(fmtDate(g)), g.round ? t('roundN', { n: esc(g.round) }) : ''].filter(Boolean).join(' · ');
-  return `<li><a class="card game ${res}" href="${href}">
-    <div class="grow">
-      <strong>${esc(matchTitle(g))}</strong>
-      <div class="muted small">${meta}</div>
-    </div>
-    <div class="right">
-      ${g.status !== 'scheduled' ? `<div class="score">${score}</div>` : ''}
-      ${res ? `<span class="badge result ${res}">${t(`res_${res}`)}</span>` : `<span class="badge ${g.status}">${t(`st_${g.status}`)}</span>`}
-    </div>
-  </a></li>`;
-}
-
-// ---------- Views: teams and their players ----------
-
-function viewTeams() {
-  main.innerHTML = `
-    ${bar(t('teams'), '#/games')}
-    <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
-    ${
-      db.teams.length
-        ? `<ul class="list">${db.teams
-            .map(
-              (tm) => `
-      <li><a class="card" href="#/team/${tm.id}">
-        <div class="grow">
-          <strong>${esc(teamLabel(tm))}</strong>
-        </div>
-        <div class="right">
-          <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
-          ${teamBadge(tm)}
-        </div>
-      </a></li>`,
-            )
-            .join('')}</ul>`
-        : `<p class="empty">${t('noTeams')}</p>`
-    }`;
-}
-
-let newCloudTeam = null; // id of a team just created as a cloud team (shows a note once)
-
-function viewTeam(id) {
-  const tm = getTeam(id);
-  if (!tm) return viewTeams();
-  const ps = teamPlayers(id).sort(byNumber);
-  const ro = readOnlyTeam(id);
-  const cloudTeam = isCloudTeam(id);
-  const field = (key, label, ph) =>
-    ro
-      ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
-      : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
-  main.innerHTML = `
-    ${bar(esc(teamLabel(tm)), '#/teams', teamMenu(id, ro), ro ? readOnlyPill() : '')}
-    ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
-    ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
-    ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
-    <div class="form">
-      ${field('club', t('club'), t('clubPh'))}
-      ${field('name', t('ageGroup'), t('teamPh'))}
-    </div>
-    ${
-      canUpload() && !cloudTeam
-        ? `<div class="upload-team">
-      <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
-      <p class="hint">${t('uploadTeamHint')}</p>
-    </div>`
-        : ''
-    }
-    <div class="accordion team-sections">
-    ${teamSection(
-      'players',
-      t('players'),
-      plural('playersCount', ps.length),
-      ro ? '' : 'add-player',
-      ps.length
-        ? `<ul class="list">${ps
-            .map(
-              (p) => `
-      <li class="item">
-        <span class="shirt">${esc(p.number) || '–'}</span>
-        <span class="grow">${esc(p.name)}${p.fullName ? `<div class="muted small">${esc(p.fullName)}</div>` : ''}</span>
-        ${
-          ro
-            ? ''
-            : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
-        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`
-        }
-      </li>`,
-            )
-            .join('')}</ul>`
-        : `<p class="empty">${t('noPlayers')}</p>`,
-    )}
-    ${
-      cloudTeam
-        ? teamSection(
-            'staff',
-            t('people'),
-            staffSummary(id),
-            roleOf(id) === 'director' && canSync() ? 'add-coach' : '',
-            `<div id="people" class="people-section">${peopleHtml(id)}</div>`,
-          )
-        : ''
-    }
-    </div>`;
-  // Members are loaded online, once per visit of this screen (and after changes).
-  if (cloudTeam && canSync()) {
-    if (db.sync.uploads.includes(id)) {
-      remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
-      showPeople();
-    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') loadPeople(id);
-  }
-}
-
-// Players and Staff on the team screen are collapsible sections, both closed by default
-// (each remembered while the app is open). `add` is the action of the section's ＋ button.
-const teamOpen = { players: false, staff: false };
-
-function teamSection(id, title, summary, add, body) {
-  const open = teamOpen[id];
-  return `
-    <section class="acc ${open ? 'open' : ''}">
-      <div class="acc-top">
-        <button class="acc-head" data-action="team-section" data-v="${id}" aria-expanded="${open}" aria-controls="acc-${id}">
-          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-          <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum" id="${id}-sum">${esc(summary)}</span></span>
-        </button>
-        ${add ? `<button class="btn small acc-add" data-action="${add}">＋ ${t('add')}</button>` : ''}
-      </div>
-      <div class="acc-body" id="acc-${id}" ${open ? '' : 'hidden'}>${body}</div>
-    </section>`;
-}
-
-// The ⋯ menu of the team screen: for now only Delete team (for whoever may change the team).
-const teamMenu = (id, ro) =>
-  ro
-    ? ''
-    : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`;
-
-function openAddCoach() {
-  openSheet(`
-    <h3>${t('addCoach')}</h3>
-    <form class="form" data-form="add-coach">
-      <label>${t('email')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
-      <p class="hint">${t('addCoachHint')}</p>
-      <button class="btn primary block">${t('addCoach')}</button>
-      <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
-    </form>`);
-  $('#sheet [name="email"]').focus();
-}
-
-// `added` is the name of the player just added, shown while the sheet waits for the next one.
-function openAddPlayer(added = '') {
-  openSheet(`
-    <h3>${t('newPlayer')}</h3>
-    ${added ? `<p class="hint ok" role="status">✓ ${t('playerAdded', { name: esc(added) })}</p>` : ''}
-    <form class="form" data-form="add-player">
-      <label>${t('shirtNumber')}<input name="number" inputmode="numeric" maxlength="3"></label>
-      <label>${t('shirtName')}<input name="name" required autocomplete="off"></label>
-      <label>${t('fullName')}<input name="fullName" autocomplete="off"></label>
-      <button class="btn primary block">${t('add')}</button>
-      <button type="button" class="btn ghost block" data-action="close-sheet">${t('done')}</button>
-    </form>`);
-  $('#sheet [name="number"]').focus();
 }
 
 // ---------- Views: new / edit game ----------
@@ -2545,196 +1659,14 @@ const exportPlayerPdf = (playerId) =>
 
 const actions = {
   'close-sheet': () => closeSheet(),
-  'games-team': ({ id }) => {
-    localStorage.setItem(GAMES_TEAM_KEY, id);
-    render();
-  },
   soon: ({ v }) =>
     askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
-  privacy: () =>
-    openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
-    <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
-  'signin-back': () => {
-    Object.assign(cloud, { step: 'email', error: '' });
-    render();
-  },
-  'profile-section': ({ v }) => {
-    profileOpen = profileOpen === v ? '' : v; // tap the open one to close it
-    render();
-  },
-  'auth-mode': ({ v }) => {
-    // Keep a typed email when switching between Sign in / Activate account / Reset.
-    const typed = $('main input[name="email"]')?.value.trim();
-    Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
-    render();
-  },
-  'change-password': () => {
-    Object.assign(cloud, { changingPassword: true, error: '' });
-    render();
-  },
-  'cancel-password': () => {
-    Object.assign(cloud, { changingPassword: false, error: '' });
-    render();
-  },
-  'signin-resend': () => sendCode(cloud.email),
-  'sign-out': async () => {
-    const n = pendingCount();
-    const message = [
-      t('signOutConfirm'),
-      Object.keys(db.sync.teams).length ? t('signOutCloud') : '',
-      n ? `<b>${plural('signOutLose', n)}</b>` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-    if (!(await askConfirm({ title: t('signOut'), message, ok: t('signOut'), danger: n > 0 }))) return;
-    removeCloudData(); // cloud teams leave this phone; teams on this phone stay
-    await sb.auth.signOut({ scope: 'local' }); // local: works offline too
-    render();
-  },
-  'sync-now': () => syncNow(),
-  'upload-team': () => uploadTeams([route().id]),
-
   // People of a cloud team (team screen)
-  'people-reload': () => loadPeople(route().id),
-  'remove-coach': async ({ id }) => {
-    const teamId = route().id;
-    const m = remote.people?.members.find((x) => x.user_id === id);
-    const ok = await askConfirm({
-      title: t('removeFromTeam'),
-      message: t('removeMemberConfirm', { email: `<b>${esc(m?.email || '')}</b>` }),
-      ok: t('removeFromTeam'),
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await deleteMember(teamId, id);
-      setPeopleMsg(t('removed'), true);
-    } catch (e) {
-      return setPeopleMsg(accessError(e), false);
-    }
-    loadPeople(teamId);
-  },
-  'leave-team': async () => {
-    const teamId = route().id;
-    const ok = await askConfirm({
-      title: t('leaveTeam'),
-      message: t('leaveTeamConfirm'),
-      ok: t('leaveTeam'),
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      if (pendingCount()) await syncNow(); // a director's changes go up first
-      await deleteMember(teamId, myId());
-    } catch (e) {
-      return notify(accessError(e));
-    }
-    toast(t('leftTeam'));
-    await syncNow(); // the team leaves this phone
-    if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
-  },
-
-  // Admin page
-  'admin-reload': () => {
-    remote.admin = null;
-    render();
-  },
-  'admin-remove-account': async ({ id }) => {
-    const a = remote.admin?.accounts.find((x) => x.user_id === id);
-    const ok = await askConfirm({
-      title: t('removeAccess'),
-      message: t('removeAccessConfirm', { email: `<b>${esc(a?.email || '')}</b>` }),
-      ok: t('removeAccess'),
-      danger: true,
-    });
-    if (ok) adminDo(() => adminCall({ action: 'delete_account', user_id: id }), t('accessRemoved'));
-  },
-  'admin-remove-member': async ({ tid, id }) => {
-    const a = remote.admin?.accounts.find((x) => x.user_id === id);
-    const ok = await askConfirm({
-      title: t('removeFromTeam'),
-      message: t('removeMemberConfirm', { email: `<b>${esc(a?.email || '')}</b>` }),
-      ok: t('removeFromTeam'),
-      danger: true,
-    });
-    if (ok) adminDo(() => deleteMember(tid, id), t('removed'), true);
-  },
-
-  theme: ({ v }) => {
-    theme = v;
-    localStorage.setItem(THEME_KEY, v);
-    applyTheme();
-    render();
-  },
-
-  lang: ({ v }) => {
-    setLang(v);
-    localStorage.setItem(LANG_KEY, v);
-    document.documentElement.lang = v;
-    render();
-  },
 
   // teams and players
   // Signed in with a director (or admin) account: new teams are cloud teams straight away.
   // Otherwise (signed out, coach account) they stay on this phone, as before.
-  'new-team': () => {
-    const tm = { id: uid(), club: db.teams[0]?.club || '', name: '' };
-    db.teams.push(tm);
-    save();
-    if (canUpload()) {
-      newCloudTeam = tm.id;
-      uploadTeams([tm.id]);
-    }
-    location.hash = `#/team/${tm.id}`;
-  },
-  'delete-team': async () => {
-    const id = route().id;
-    if (teamPlayers(id).length) {
-      return askConfirm({ title: t('deleteTeam'), message: t('teamHasPlayers'), ok: t('ok'), cancel: false });
-    }
-    const ok = await askConfirm({
-      title: t('confirmDeleteTeam'),
-      message: esc(teamLabel(getTeam(id))),
-      ok: t('deleteBtn'),
-      danger: true,
-    });
-    if (!ok) return;
-    db.teams = db.teams.filter((x) => x.id !== id);
-    save();
-    location.hash = '#/teams';
-  },
-  'team-section': ({ v }) => {
-    teamOpen[v] = !teamOpen[v];
-    render();
-  },
-  'add-player': () => openAddPlayer(),
-  'add-coach': () => openAddCoach(),
-  'edit-player': ({ id }) => {
-    const p = db.players.find((x) => x.id === id);
-    openSheet(`
-      <h3>${t('editPlayer')}</h3>
-      <form class="form" data-form="edit-player" data-id="${p.id}">
-        <label>${t('shirtNumber')}<input name="number" inputmode="numeric" maxlength="3" value="${esc(p.number)}"></label>
-        <label>${t('shirtName')}<input name="name" required autocomplete="off" value="${esc(p.name)}"></label>
-        <label>${t('fullName')}<input name="fullName" autocomplete="off" value="${esc(p.fullName)}"></label>
-        <button class="btn primary block">${t('save')}</button>
-        <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
-      </form>`);
-  },
-  'delete-player': async ({ id }) => {
-    const p = db.players.find((x) => x.id === id);
-    const ok = await askConfirm({
-      title: t('removePlayerTitle'),
-      message: t('confirmRemovePlayer', { name: `<b>${esc(p.name)}</b>` }),
-      ok: t('deleteBtn'),
-      danger: true,
-    });
-    if (!ok) return;
-    db.players = db.players.filter((x) => x.id !== id);
-    save();
-    render();
-  },
 
   // new / edit game
   sel: ({ id, v }) => {
@@ -3010,6 +1942,11 @@ const actions = {
 };
 
 registerActions(actions);
+registerActions(gamesPage.actions);
+registerActions(adminPage.actions);
+registerForms(adminPage.forms);
+registerActions(profilePage.actions);
+registerActions(teamPage.actions);
 installActionListener({
   ignore: () => drag.suppressClick, // the click that ends a drag
   allow: (name) => {
@@ -3129,39 +2066,14 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!READ_ONLY_FORMS.has(form) && viewReadOnly()) return refuseReadOnly();
   const data = new FormData(e.target);
+  const handler = formHandler(form);
+  if (handler) return handler(data, e.target);
   if (form === 'add-coach') {
     // Directors only (the form isn't shown to coaches; the database checks it too).
     if (roleOf(route().id) !== 'director') return refuseReadOnly();
     teamOpen.staff = true; // the result shows in the Staff section
     render();
     return addCoach(route().id, String(data.get('email')).trim().toLowerCase());
-  }
-  if (form === 'admin-create') {
-    const email = String(data.get('email')).trim().toLowerCase();
-    const btn = e.target.querySelector('button');
-    btn.disabled = true;
-    return adminDo(async () => {
-      await adminCall({ action: 'create_account', email, kind: String(data.get('kind')) });
-      notify(t('accessGiven', { email: `<b>${esc(email)}</b>` }), t('accessGivenTitle'));
-    }).finally(() => {
-      btn.disabled = false;
-    });
-  }
-  if (form === 'admin-add-member') {
-    const teamId = e.target.dataset.tid;
-    return adminDo(
-      () =>
-        q(
-          sb.from('team_members').insert({
-            team_id: teamId,
-            user_id: String(data.get('user')),
-            role: String(data.get('role')),
-            invited_by: myId(),
-          }),
-        ),
-      t('memberAdded'),
-      true,
-    );
   }
   if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
   if (form === 'signin-password')
