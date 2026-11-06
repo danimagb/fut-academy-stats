@@ -26,6 +26,8 @@
       }
     ],
     "no-var": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/ban-ts-comment": "error",
     "prefer-const": "error",
     "import/no-cycle": "error",
     "import/no-default-export": "error",
