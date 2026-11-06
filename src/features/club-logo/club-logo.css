@@ -103,3 +103,45 @@
   font-size: 0.85rem;
   color: var(--muted);
 }
+/* Default crest: a shield in the team's colour with its initials. */
+.club-logo.crest {
+  border-radius: 0;
+  overflow: visible;
+}
+.club-logo.crest path {
+  fill: var(--c);
+  stroke: color-mix(in srgb, var(--c) 70%, #000);
+  stroke-width: 1;
+}
+.club-logo.crest text {
+  fill: #fff;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-family: inherit;
+  letter-spacing: -0.02em;
+}
+/* Two crests side by side (report) or overlapping a little (games list). */
+.crest-pair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.crest-pair .vs {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.crest-pair .club-logo.lg {
+  margin: 0;
+  width: 56px;
+  height: 56px;
+}
+.game-crests {
+  display: flex;
+  flex: none;
+}
+.game-crests .club-logo + .club-logo {
+  margin-left: -8px;
+}

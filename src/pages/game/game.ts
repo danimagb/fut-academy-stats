@@ -28,8 +28,8 @@ import { openSheet } from '@/shared/ui/sheet';
 import { db } from '@/data/store';
 import { fmtMins } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
-import { teamLogoSrc } from '@/data/logos';
-import { clubLogo } from '@/features/club-logo/club-logo';
+import { teamCrest } from '@/data/logos';
+import { crest } from '@/features/club-logo/club-logo';
 import { formationsFor } from '@/domain/formats';
 import { fmtInPeriod, periodLabel, periodStart, timeOf } from '@/domain/clock';
 import { slotCoords } from '@/domain/pitch';
@@ -148,8 +148,8 @@ export function viewGame(id: string | undefined): void {
   const last = ro ? null : g.events[g.events.length - 1];
   const canEdit = g.status === 'scheduled' && g.events.length === 0;
   const overtime = g.status === 'live' && matchTime(g) - periodStart(g) >= g.periodMin * 60000;
-  const us = `${clubLogo(teamLogoSrc(g.teamId))}${esc(gameTeam(g) || t('unnamedTeam'))}`;
-  const them = esc(g.opponent || t('opponent'));
+  const us = `${crest(teamCrest(g.teamId, g.club))}${esc(gameTeam(g) || t('unnamedTeam'))}`;
+  const them = `${crest({ name: g.opponent || '?' })}${esc(g.opponent || t('opponent'))}`;
   const [home, away] = g.home === false ? [them, us] : [us, them];
 
   main.innerHTML = `
