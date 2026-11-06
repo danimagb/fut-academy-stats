@@ -32,8 +32,9 @@ straight into `main`: all code is now `.ts` and passes `strict`.
 | 8.2  | Sync engine typed                                                                      | ✅ merged | danimagb/fut-academy-stats#53 |
 | 8.3  | Features typed                                                                         | ✅ merged | danimagb/fut-academy-stats#56 |
 | 8.4  | Pages: report, stats, profile, admin, team                                             | ✅ merged | danimagb/fut-academy-stats#57 |
-| 8.5  | Game pages: game-edit, game, drag                                                      | 🔄 review | (this PR)                     |
-| 8.6  | `app/`; drop `allowJs`; oxlint `typescript` plugin                                     | ⏳ todo   |                               |
+| 8.5  | Game pages: game-edit, game, drag                                                      | ✅ merged | danimagb/fut-academy-stats#58 |
+| 8.6  | `app/`; drop `allowJs`; stricter compiler and lint rules                               | ✅ merged | danimagb/fut-academy-stats#60 |
+| 8.7  | `noUncheckedIndexedAccess`                                                             | ✅ merged | danimagb/fut-academy-stats#61 |
 | 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
 | 10   | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
 
