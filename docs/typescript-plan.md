@@ -30,7 +30,7 @@ is done as PRs straight into `main`.
 | 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
 | 8    | Strict TypeScript                                                                      | ⏳ todo   |                               |
 | 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
-| 10   | Merge `feature/typescript` into `main`                                                 | 🔄 review | (this PR)                     |
+| 10   | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
 
 **Where things stand (update this with every PR):**
 
@@ -414,6 +414,9 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - After the merge, the `Deploy to GitHub Pages` workflow publishes `dist/`, and installed
     apps move to the new service worker at the same `sw.js` address (see step 4).
   - Step 8 goes on in PRs into `main`. `feature/typescript` is no longer used.
+  - Merged as danimagb/fut-academy-stats#50. The first `Deploy to GitHub Pages` run (build and
+    deploy) passed, and the app is live from `dist/`. The owner checks the installed phone app
+    (update, data kept, sign-in and sync), because the cloud session can't reach the site.
 
 ## Why
 
