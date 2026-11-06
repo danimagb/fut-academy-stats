@@ -10,22 +10,22 @@ and a new person in charge of a club, the **coordinator**. Builds on the cloud s
 
 | #   | Step                                                      | Status     | PR  |
 | --- | --------------------------------------------------------- | ---------- | --- |
-| 1   | Plan (this document)                                      | 📝 draft   |     |
+| 1   | Plan (this document)                                      | ✅ agreed  |     |
 | 2   | Database: clubs, coordinators, new RLS, migration, tests  | ⏳ to do   |     |
 | 3   | Admin: clubs, invite coordinators, assign teams to clubs  | ⏳ to do   |     |
 | 4   | Sync + permissions in the app (coordinator role)          | ⏳ to do   |     |
 | 5   | Coordinator screens: club teams, players, staff           | ⏳ to do   |     |
 | 6   | Director limits, README / privacy text, test on 2 phones  | ⏳ to do   |     |
 
-**Where things stand:** plan only; open questions at the end.
+**Where things stand:** plan agreed with the maintainer (see "Decisions" at the end); step 2 next.
 
 ## What changes, in one table
 
 | Who             | Given by    | Scope                       | Can do                                                                                                                                  |
 | --------------- | ----------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Admin**       | dashboard   | everything                  | Create / rename clubs; invite coordinators (new account + club); give and remove access (accounts); assign existing teams to a club.   |
-| **Coordinator** | admin       | all teams of their club(s)  | Create / rename / delete teams of the club; add, edit, remove players; assign directors and coaches to teams; everything a director can. |
-| **Director**    | coordinator | the teams they're assigned  | Edit players; create, start, run and finish games (events, clock, lineup); reports and stats. Not: rename/delete the team, manage staff. |
+| **Admin**       | dashboard   | everything                  | Create clubs and set their name; invite coordinators (new account + club); give and remove access (accounts).                         |
+| **Coordinator** | admin       | all teams of their club(s)  | Everything inside the club: create / rename / delete teams; players; games; assign directors and coaches; set the club's short name.  |
+| **Director**    | coordinator | the teams they're assigned  | Add, edit, remove players; create, start, run and finish games (events, clock, lineup); reports and stats. Not: rename/delete the team, manage staff. |
 | **Coach**       | coordinator | the teams they're assigned  | Read-only (as today): team, games, reports, stats, share PDFs.                                                                          |
 
 - Directors and coaches still need an **active account given by the admin**. A coordinator
@@ -41,21 +41,25 @@ New tables:
 
 | table               | columns                                                              |
 | ------------------- | -------------------------------------------------------------------- |
-| `clubs`             | `id` (text), `name`, `created_at`, `created_by`, `updated_at`, `deleted_at` |
+| `clubs`             | `id` (text), `name` (set by the admin), `short_name` (e.g. "PFC", set by a coordinator or the admin), `created_at`, `created_by`, `updated_at`, `deleted_at` |
 | `club_coordinators` | `club_id`, `user_id` (→ `accounts`, cascade), `invited_by`, `created_at`; PK (club, user) |
 
 Changes:
 
-- `teams.club_id text references clubs` (nullable during the transition: existing cloud teams
-  have none until the admin assigns them). `teams.club` (text) **stays** and is set by a
-  trigger from `clubs.name` when `club_id` is set, so the app, the PDF and offline display
-  keep working with no change to the `Team` shape (`clubId?` is added as an optional field).
-  Renaming a club updates `club` on its teams (and their `updated_at`, so phones pull it).
-- `accounts.kind`: today `director` (may create cloud teams) / `coach`. With clubs, only
-  coordinators (and the admin) create cloud teams, so the kind no longer gates anything.
-  Proposal: allow `kind` = `coordinator` | `member`, migrate `director`/`coach` → `member`
-  (and accounts that are coordinators → `coordinator`), keep it as a label on the Admin page.
-  Being a coordinator is the `club_coordinators` row, not the kind. _(Open question 1.)_
+- `teams.club_id text not null references clubs`: **every cloud team belongs to a club**.
+  `teams.club` (text) **stays** and is set by a trigger from `clubs.name`, so the app, the PDF
+  and offline display keep working with no change to the `Team` shape (`clubId?` is added as
+  an optional field; local teams keep their free-text club). A change of the club's name or
+  short name touches its teams' `updated_at`, so phones pull it.
+- `short_name` is shown where space is tight (game screen, games list, team chips: "PFC ·
+  Sub-7B"); the full name stays on the report/PDF. Empty = use the full name.
+- `accounts.kind` is **removed**. Today, when the admin gives access, they also pick an
+  account kind (director account = may create cloud teams outside any club; coach account =
+  may not), separate from the role in each team. With clubs only coordinators (and the admin)
+  create teams, inside their club, so the kind no longer means anything: an account just
+  means "has access", being a coordinator is a `club_coordinators` row, and director / coach
+  is the role in each team. The Admin page asks only for the email (plus the club, when
+  inviting a coordinator).
 - `team_members` keeps `role in ('director','coach')`. More than one coordinator per club and
   one person in several clubs are allowed (the tables support it at no cost).
 
@@ -71,21 +75,21 @@ New SECURITY DEFINER helpers (same style as today, empty `search_path`):
 
 | table               | select                                    | insert / update / delete                                                                 |
 | ------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `clubs`             | coordinators of it, members of its teams, admin | admin only (coordinators may rename? open question 4)                              |
+| `clubs`             | coordinators of it, members of its teams, admin | insert / `name` / delete: admin; `short_name`: its coordinators or admin (column grant) |
 | `club_coordinators` | coordinators of the club, admin           | admin only                                                                               |
-| `teams`             | `can_read_team`, admin                    | insert: coordinator of `club_id` (or admin); update/delete: `can_manage_team`; `club_id` changes only by admin |
+| `teams`             | `can_read_team`, admin                    | insert: coordinator of `club_id` (or admin); update/delete: `can_manage_team`; `club_id` can't change (except by the admin) |
 | `team_members`      | `can_read_team`, admin                    | through RPCs only for coordinators; admin direct; anyone can leave                       |
-| `players`           | `can_read_team`                           | `can_play_team` (directors edit players, open question 2)                                |
+| `players`           | `can_read_team`                           | `can_play_team` (directors add, edit and remove players)                                 |
 | `games`             | `can_read_team`                           | `can_play_team` (finished-game lock and data checks unchanged)                           |
 | `accounts`          | self, admin, people sharing a team, **coordinators see accounts in their clubs' teams** | admin only (as today)                       |
 
-- RPCs replacing `add_team_coach`:
+- RPCs replacing `add_team_coach` (dropped; only the admin's own phone used it):
   `set_team_member(_team_id, _email, _role)` → `added` / `updated` / `already_member` /
   `no_account` (coordinator of the team's club, or admin);
-  `remove_team_member(_team_id, _user_id)`. Keep `add_team_coach` working (as an alias for
-  `role = 'coach'`) until every installed app has updated, then drop it.
-- **Last-director rule**: drop it for teams that have a club (the coordinator is always there
-  to fix things); keep it for teams without a club during the transition.
+  `remove_team_member(_team_id, _user_id)`. Accounts are only created by the admin: an email
+  without one returns `no_account`.
+- **Last-director rule**: dropped (a team may have no director; the club's coordinators can
+  always reach it).
 - Creating a team: today the creator becomes its director (trigger). For a coordinator that
   isn't needed (they reach the team through the club): the trigger skips it when the creator
   coordinates the team's club.
@@ -93,23 +97,29 @@ New SECURITY DEFINER helpers (same style as today, empty `search_path`):
   (admin only, with a confirmation that names how many teams and games go).
 - Tests in `supabase/tests/rls.test.sql`, at least: coordinator of club A can't read or write
   club B; coordinator can create teams only in their club and can't move a team to another
-  club; director can write players and games but not the team row or members; coach is
-  read-only; coordinator can't grant `coordinator`, can't touch `accounts`, can't add an email
-  without an account; admin can do all of it; anon gets nothing; old `add_team_coach` still
-  behaves.
+  club; coordinator can set `short_name` but not `name`; director can write players and games
+  but not the team row or members; coach is read-only; coordinator can't grant `coordinator`,
+  can't touch `accounts`, can't add an email without an account; a team without a club is
+  refused; admin can do all of it; anon gets nothing.
 
 ### Migration of existing data
 
-1. Migration creates the tables with no clubs; existing cloud teams have `club_id = null` and
-   keep working exactly as today (members and roles unchanged).
-2. Admin page lists "Teams without a club" and groups the rest by club name (`teams.club`
-   text) to suggest: "create club *Padroense F.C.* and put these 4 teams in it?".
-3. Once every team has a club, a later migration can make `club_id` not null and remove the
-   transition code (last-director rule, `add_team_coach`, "director account can create teams").
+Today there is one cloud team (the maintainer's, club "Padroense FC"). The migration, in one go:
+
+1. Creates one club per distinct `teams.club` text (trimmed, case-insensitive), with that
+   name as given, and sets `club_id` on those teams: today that is just **Padroense FC**.
+2. Makes `teams.club_id` not null, drops `accounts.kind`, the last-director trigger and
+   `add_team_coach`.
+3. Existing memberships stay as they are (the maintainer stays director of the team). The
+   admin then makes themselves (or someone else) coordinator of Padroense FC on the Admin page.
+
+No transition period is needed: phones running the old app are updated by the service worker
+on the next build, and the only old-app action that would now fail (creating a cloud team
+without a club) is refused by the server and stays local, as for any refused upload.
 
 ## Admin Edge Function
 
-- `create_account { email, kind }` stays; new `invite_coordinator { email, club_id }`: creates
+- `create_account { email }` (no kind any more); new `invite_coordinator { email, club_id }`: creates
   the account if needed (reuses an existing one), then the `club_coordinators` row. Adding an
   existing account as coordinator, or removing one, is a plain table write (RLS: admin), so
   only the account creation needs the service role.
@@ -140,14 +150,15 @@ The central guard in the click/submit handlers learns the new action lists the s
 
 ### Screens
 
-- **Admin tab**: new **Clubs** section — create / rename clubs; per club: coordinators (invite
-  by email, add an existing account, remove) and its teams; "Teams without a club" with an
-  "assign to club" picker. Accounts list shows each person's clubs/teams.
+- **Admin tab**: new **Clubs** section — create clubs (name, optional short name), change the
+  name; per club: coordinators (invite by email, add an existing account, remove) and its
+  teams. Giving access asks only for the email. Accounts list shows each person's clubs/teams.
 - **Teams list**: grouped by club (cloud teams), then "On this phone" (local teams). A
   coordinator sees "+ New team" under each of their clubs; the club name is fixed by the club.
 - **Team screen**:
   - Coordinator: everything as today's director, plus **Staff**: add by email with role
-    _Director_ or _Coach_, change role, remove.
+    _Director_ or _Coach_ (accounts must already exist), change role, remove.
+- **Club screen** (coordinator): the club's teams, "+ New team", and the short name.
   - Director: players (add / edit / remove, open question 2) and games; Staff is read-only
     (list only); no rename / delete team.
   - Coach: unchanged (read-only pill).
@@ -158,8 +169,8 @@ The central guard in the click/submit handlers learns the new action lists the s
 ## Steps (PRs)
 
 2. **Database**: migration `2026xxxx_clubs.sql` (tables, helpers, policies, RPCs, triggers,
-   `kind` change), tests, `supabase/README.md`. Nothing visible changes in the app (old
-   behaviour keeps working: teams without a club).
+   drop `kind`, Padroense FC from the existing team), tests, `supabase/README.md`. Ships
+   together with step 3 and 4 (the old app's team creation and Admin "kind" stop working).
 3. **Admin**: Edge Function `invite_coordinator`, Admin tab Clubs section, assign teams to
    clubs. Fake Supabase in `src/test/fake-supabase.ts` + `e2e/cloud-stub.ts` learn clubs.
 4. **Sync + permissions**: `my_teams()`, `Role` with `coordinator`, `clubId` on `Team`
@@ -167,22 +178,17 @@ The central guard in the click/submit handlers learns the new action lists the s
 5. **Coordinator screens**: teams grouped by club, new team in a club, Staff with roles,
    upload-local-team-into-club. E2E: coordinator / director / coach phones.
 6. **Finishing**: director limits in the UI, README + "How your data is handled" text,
-   test on two real phones against the real project; later migration making `club_id`
-   required once every team has a club.
+   test on two real phones against the real project.
 
-## Open questions (decide before step 2)
+## Decisions (agreed with the maintainer, 2026-11-06)
 
-1. **Account kinds**: OK to drop director/coach _account_ kinds (the per-team role is what
-   matters) and stop letting "director accounts" create cloud teams outside a club?
-2. **Directors and players**: can a director **add and remove** players, or only edit
-   existing ones (number / names)? The plan assumes add/edit/remove.
-3. **Coordinator in games**: does the coordinator have director rights in every team of the
-   club (assumed), or only read access unless assigned to the team?
-4. **Club name**: may coordinators rename their club, or only the admin?
-5. **Several clubs**: can one person coordinate more than one club, or be director in club A
-   and coach in club B? (The model allows it; the UI just needs to group by club.)
-6. **Coordinator invites**: should a coordinator be able to give access to new people
-   (create directors/coaches accounts) or does that stay admin-only as you described? The plan
-   keeps it admin-only.
-7. **Existing teams**: create the clubs from today's `teams.club` text automatically in the
-   migration, or let the admin do it on the Admin page?
+1. Account kinds (director / coach account) go away; an account only means "has access".
+   Cloud teams can't be created outside a club.
+2. Directors can add, edit and remove players.
+3. Coordinators can do everything inside their club.
+4. The admin creates the club and sets its name; coordinators can set a **short name**
+   (e.g. "PFC") instead of renaming it.
+5. The model allows several clubs per person and different roles in different clubs; the
+   UI doesn't need to handle it well yet (group by club and that's it).
+6. Access is by admin invite only. Coordinators assign existing accounts to teams.
+7. The existing team goes into a club **Padroense FC** created by the migration.
