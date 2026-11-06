@@ -1,6 +1,5 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
 // Live game actions that several screens share: the clock reminders and auto-stop, substitutions,
-// moving players, the Undo button, and how an event is described. Moved from app/legacy.js.
+// moving players, the Undo button, and how an event is described.
 import { addEvent, endPeriodAt } from '@/data/live';
 import { save } from '@/data/save';
 import { derive } from '@/data/queries';
@@ -14,13 +13,14 @@ import { pname } from '@/domain/players';
 import { periodName } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { rerender } from '@/shared/lib/rerender';
+import type { Game, GameEvent, Mark } from '@/domain/types';
 
 /** Undo button for a toast after logging an event. */
-export const undoBtn = (eventId) =>
-  `<button data-action="undo-toast" data-id="${eventId}">${t('undo')}</button>`;
+export const undoBtn = (eventId: string | null): string =>
+  `<button data-action="undo-toast" data-id="${eventId ?? ''}">${t('undo')}</button>`;
 
 // Reminders once regular time is up, and an automatic stop if the coach forgets.
-export function checkTime(g) {
+export function checkTime(g: Game): void {
   const check = timeCheck(g, Date.now());
   if (check.kind === 'none') return;
   const p = check.period;
@@ -62,7 +62,7 @@ export function checkTime(g) {
 
 // ---------- Game state (derived from events) ----------
 
-export function doSub(g, out, inn) {
+export function doSub(g: Game, out: string, inn: string): void {
   if (!canRecord(g)) return;
   const id = addEvent(g, { type: 'sub', playerId: out, inId: inn });
   rerender();
@@ -71,7 +71,7 @@ export function doSub(g, out, inn) {
 
 // Move a pitch player to a slot (swapping with whoever is there). Moving into or out of
 // goal changes the goalkeeper. Before kick-off this just edits the starting lineup.
-export function movePlayer(g, id, slot) {
+export function movePlayer(g: Game, id: string, slot: number): void {
   if (!canRecord(g)) return;
   const plan = planMove(g, derive(g), id, slot);
   if (plan.kind === 'none') return;
@@ -98,10 +98,11 @@ export function movePlayer(g, id, slot) {
 
 // Substitution line: green ▲ for the player coming on, red ▼ for the one going off.
 // Names must already be escaped.
-export const subLine = (inName, outName) =>
+export const subLine = (inName: string, outName: string): string =>
   `<span class="nw"><span class="sub-in" aria-hidden="true">▲</span>${inName}</span> <span class="nw"><span class="sub-out" aria-hidden="true">▼</span>${outName}</span>`;
 
-export function describe(g, e) {
+/** A timeline line for an event, or for a kick-off / end of a period. */
+export function describe(g: Game, e: GameEvent | Mark): string {
   switch (e.type) {
     case 'sub':
       return subLine(esc(pname(g, e.inId)), esc(pname(g, e.playerId)));

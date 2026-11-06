@@ -1,12 +1,18 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
 // Signing in: the Account section on Profile (sign in, activate an account, reset the
-// password, choose a password) and following the Supabase session. Moved from app/legacy.js.
+// password, choose a password) and following the Supabase session.
 import { SETPW_KEY, canSync, cloud, refreshAccount, renderIfProfile, sb, syncNow } from '@/data/session';
 import { toast } from '@/shared/ui/toast';
 import { storeAccount } from '@/data/auth';
 import { pendingCount, removeCloudData } from '@/data/sync';
 import { esc } from '@/shared/lib/html';
 import { t } from '@/shared/i18n/i18n';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/** The Supabase client; the sign-in forms only show when there is one (see accountSectionBody). */
+const auth = (): SupabaseClient['auth'] => {
+  if (!sb) throw new Error(t('cloudUnavailable'));
+  return sb.auth;
+};
 
 // ---------- Cloud account (Supabase sign-in) ----------
 // Sign-in is email + password; a code by email is used the first time and for a forgotten
@@ -15,7 +21,7 @@ import { t } from '@/shared/i18n/i18n';
 // the app keeps working without signing in.
 
 /** Follows the Supabase session: who is signed in, and what to do on sign-in and sign-out. */
-export function watchAuth() {
+export function watchAuth(): void {
   if (!sb) return;
   sb.auth.getSession().then(({ data }) => {
     cloud.session = data.session;
@@ -38,7 +44,11 @@ export function watchAuth() {
   });
 }
 
-export function authMessage(error) {
+/** Anything an auth call can throw: AuthError, a plain Error, or something else. */
+type AuthFailure = { code?: string; message?: string; name?: string; status?: number } | null | undefined;
+
+export function authMessage(e: unknown): string {
+  const error = e as AuthFailure;
   const msg = `${error?.code || ''} ${error?.message || ''}`;
   if (!navigator.onLine || error?.name === 'AuthRetryableFetchError' || error?.status === 0)
     return t('authOffline');
@@ -48,12 +58,12 @@ export function authMessage(error) {
   if (/same_password|should be different/i.test(msg)) return t('pwSame');
   if (/weak_password|password should|weak/i.test(msg)) return t('pwWeak');
   if (/otp_expired|invalid|expired/i.test(msg)) return t('authBadCode');
-  if (error instanceof Error && !error.status && !error.code && !error.name?.startsWith('Auth'))
-    return esc(error.message);
-  return t('authFailed', { msg: esc(error?.message || error) });
+  if (e instanceof Error && !error?.status && !error?.code && !e.name.startsWith('Auth'))
+    return esc(e.message);
+  return t('authFailed', { msg: esc(error?.message || String(e)) });
 }
 
-export async function cloudStep(fn) {
+export async function cloudStep(fn: () => Promise<void>): Promise<void> {
   cloud.busy = true;
   cloud.error = '';
   renderIfProfile();
@@ -66,16 +76,16 @@ export async function cloudStep(fn) {
   renderIfProfile();
 }
 
-export const sendCode = (email) =>
+export const sendCode = (email: string): Promise<void> =>
   cloudStep(async () => {
-    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    const { error } = await auth().signInWithOtp({ email, options: { shouldCreateUser: false } });
     if (error) throw error;
     Object.assign(cloud, { step: 'code', email });
   });
 
-export const verifyCode = (token) =>
+export const verifyCode = (token: string): Promise<void> =>
   cloudStep(async () => {
-    const { error } = await sb.auth.verifyOtp({ email: cloud.email, token, type: 'email' });
+    const { error } = await auth().verifyOtp({ email: cloud.email, token, type: 'email' });
     if (error) throw error;
     // Signed in with a code: first time or forgotten password, so a password is chosen next.
     const pwMode = cloud.mode === 'reset' ? 'reset' : 'signup';
@@ -83,21 +93,21 @@ export const verifyCode = (token) =>
     Object.assign(cloud, { mode: 'signin', step: 'email', needsPassword: true, pwMode });
   });
 
-export const signInPassword = (email, password) =>
+export const signInPassword = (email: string, password: string): Promise<void> =>
   cloudStep(async () => {
     cloud.email = email; // kept if it fails (the form is drawn again), e.g. for "get a code"
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    const { error } = await auth().signInWithPassword({ email, password });
     if (error) throw error;
     Object.assign(cloud, { mode: 'signin', step: 'email', email: '' });
     toast(t('signedIn'));
   });
 
 // Supabase Auth stores only a bcrypt hash of the password (in auth.users); the app never keeps it.
-export const setPassword = (pw, pw2) =>
+export const setPassword = (pw: string, pw2: string): Promise<void> =>
   cloudStep(async () => {
     if (pw.length < 8) throw new Error(t('pwShort'));
     if (pw !== pw2) throw new Error(t('pwMismatch'));
-    const { error } = await sb.auth.updateUser({ password: pw });
+    const { error } = await auth().updateUser({ password: pw });
     if (error) throw error;
     const wasNew = cloud.needsPassword;
     localStorage.removeItem(SETPW_KEY);
@@ -106,13 +116,13 @@ export const setPassword = (pw, pw2) =>
     if (wasNew) setTimeout(syncNow); // sync was held back until the password was chosen
   });
 
-export function setPasswordForm(busy, err, cancel) {
+export function setPasswordForm(busy: string, err: string, cancel: boolean): string {
   const step3 = cloud.needsPassword;
   return `${step3 ? `<p class="step-label">${t('stepOf', { n: 3 })}</p>` : ''}
     <h3 class="sub-title">${step3 ? t('stepPassword') : t('changePassword')}</h3>
     <p class="hint">${t('setPwHint')}</p>
     <form class="form" data-form="set-password">
-      <input type="email" name="username" autocomplete="username" value="${esc(cloud.session.user.email)}" hidden>
+      <input type="email" name="username" autocomplete="username" value="${esc(cloud.session?.user.email ?? '')}" hidden>
       <label>${t('newPassword')}<input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
       <label>${t('repeatPassword')}<input name="password2" type="password" required minlength="8" autocomplete="new-password"></label>
       <button class="btn primary" ${busy}>${step3 && cloud.pwMode === 'signup' ? t('createAccount') : t('savePassword')}</button>
@@ -121,11 +131,11 @@ export function setPasswordForm(busy, err, cancel) {
 }
 
 /** The Account section; `syncStatus` is the sync status line (HTML) shown when signed in. */
-export function accountSection(syncStatus = '') {
+export function accountSection(syncStatus = ''): string {
   return `${accountSectionBody(syncStatus)}<p class="hint"><button class="link-btn" data-action="privacy">${t('privacyLink')}</button></p>`;
 }
 
-export function accountSectionBody(syncStatus = '') {
+export function accountSectionBody(syncStatus = ''): string {
   const head = '';
   if (!sb) return `${head}<p class="hint">${t('cloudUnavailable')}</p>`;
   const err = cloud.error ? `<p class="hint warn" role="alert">${cloud.error}</p>` : '';
@@ -137,15 +147,16 @@ export function accountSectionBody(syncStatus = '') {
   }
   if (cloud.session) {
     const a = cloud.account;
+    const email = cloud.session.user.email ?? '';
     const kind =
-      a && !a.none
+      a && !('none' in a)
         ? [a.isAdmin && t('acctAdmin'), t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')]
             .filter(Boolean)
             .join(' · ')
         : '';
     return `${head}
       <ul class="list settings">
-        <li class="item"><span class="grow"><strong class="acct-email" title="${esc(cloud.session.user.email)}">${esc(cloud.session.user.email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span></li>
+        <li class="item"><span class="grow"><strong class="acct-email" title="${esc(email)}">${esc(email)}</strong>${kind ? `<div class="muted small">${kind}</div>` : ''}</span></li>
         ${
           canSync()
             ? `<li class="item"><span class="grow muted small" id="sync-status" aria-live="polite">${syncStatus}</span>
@@ -153,7 +164,7 @@ export function accountSectionBody(syncStatus = '') {
             : ''
         }
       </ul>
-      ${a?.none ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
+      ${a && 'none' in a ? `<p class="hint warn">${t('acctNone')}</p>` : ''}
       ${
         cloud.changingPassword
           ? setPasswordForm(busy, err, true)
