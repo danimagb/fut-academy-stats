@@ -42,11 +42,8 @@ export function viewGames(): void {
     .filter((g) => !team || g.teamId === team)
     .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
   main.innerHTML = `
-    ${bar('⚽ Fut Academy Stats')}
-    <div class="row gap">
-      <a class="btn primary grow" href="#/new">${t('newGame')}</a>
-      <a class="btn" href="#/teams">${t('teamsBtn', { n: db.teams.length })}</a>
-    </div>
+    ${bar(t('tabMatches'))}
+    <a class="btn primary block" href="#/new">${t('newGame')}</a>
     ${
       db.teams.length > 1
         ? `<div class="pick-row filter" role="tablist">
