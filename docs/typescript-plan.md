@@ -486,6 +486,14 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     can't come back.
   - Left for later: `noUncheckedIndexedAccess`, which reports 46 places. It goes in its own
     PR, because each place needs a decision (a check or a default).
+- Done in step 8.7: `noUncheckedIndexedAccess` is on, so every option the TypeScript standard
+  asks for is now set.
+  - Almost all 46 places were two lookups by a squad id: a player's names in the game
+    (`g.names[id]`) and their stats (`d.stats[id]`). They now go through two small domain
+    helpers with tests: `squadName(g, id)` in `domain/players` (placeholders, like `pname`'s
+    "?") and `statsOf(d, id)` in `domain/game-state` (zeros: not played).
+  - The ids always come from the game's own squad, so nothing visible changes. The game
+    report and player sheet PDFs are byte-identical to `main`'s.
 
 ## Why
 

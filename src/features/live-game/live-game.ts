@@ -9,7 +9,7 @@ import { toast } from '@/shared/ui/toast';
 import { esc } from '@/shared/lib/html';
 import { timeCheck } from '@/domain/clock';
 import { canRecord, planMove } from '@/domain/game-state';
-import { pname } from '@/domain/players';
+import { pname, squadName } from '@/domain/players';
 import { periodName } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { rerender } from '@/shared/lib/rerender';
@@ -90,8 +90,8 @@ export function movePlayer(g: Game, id: string, slot: number): void {
   rerender();
   toast(
     plan.kind === 'gk'
-      ? t('inGoalToast', { p: g.names[plan.playerId].name })
-      : t('posToast', { p: g.names[id].name }),
+      ? t('inGoalToast', { p: squadName(g, plan.playerId).name })
+      : t('posToast', { p: squadName(g, id).name }),
     undoBtn(eid),
   );
 }

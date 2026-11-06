@@ -2,10 +2,12 @@
 
 ## Compiler
 
-- `tsconfig.json` has `strict: true`, plus `noImplicitOverride`, `noFallthroughCasesInSwitch`
-  and `exactOptionalPropertyTypes`. Every file in `src/` is `.ts` (`allowJs` is off).
-- Still to turn on: `noUncheckedIndexedAccess` (about 46 places to handle). Write new code as
-  if it were on: check the result of `array[i]` and `record[key]` before using it.
+- `tsconfig.json` has `strict: true`, plus `noUncheckedIndexedAccess`, `noImplicitOverride`,
+  `noFallthroughCasesInSwitch` and `exactOptionalPropertyTypes`. Every file in `src/` is `.ts`
+  (`allowJs` is off).
+- With `noUncheckedIndexedAccess`, `array[i]` and `record[key]` may be `undefined`: check
+  them, or use the helper that gives a sensible default (`squadName(g, id)`,
+  `statsOf(d, id)`).
 - oxlint fails on `any` (`typescript/no-explicit-any`) and on `@ts-nocheck` / `@ts-ignore`
   (`typescript/ban-ts-comment`).
 - Target modern browsers (`ES2022`). Don't add polyfills: the app is for current phone

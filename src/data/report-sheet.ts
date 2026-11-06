@@ -3,8 +3,10 @@ import { derive, teamPlayers } from '@/data/queries';
 import { db } from '@/data/store';
 import { mmss } from '@/shared/lib/format';
 import { fmtAt } from '@/domain/clock';
+import { squadName } from '@/domain/players';
 import { gameTeam, matchTitle, seasonOf } from '@/domain/titles';
 import { locale, t } from '@/shared/i18n/i18n';
+import { statsOf } from '@/domain/game-state';
 import type { PlayerState } from '@/domain/game-state';
 import type { Game } from '@/domain/types';
 
@@ -39,7 +41,7 @@ export const SHEET_NAVY = '#1f3a5a';
 // Full name for the report: the player's current one (so fixing a name also fixes
 // past games), else the one saved with the game, else the shirt name.
 export function fullName(g: Game, id: string): string {
-  return db.players.find((p) => p.id === id)?.fullName || g.names[id].fullName || g.names[id].name;
+  return db.players.find((p) => p.id === id)?.fullName || squadName(g, id).fullName || squadName(g, id).name;
 }
 
 export function statsSheet(g: Game): Sheet {
@@ -60,9 +62,9 @@ export function statsSheet(g: Game): Sheet {
   // Players who played, then unused subs, then team players not called up;
   // alphabetical within each group, like the club's sheet.
   const squad: SheetPlayer[] = g.squad.map((id) => ({
-    p: g.names[id],
+    p: squadName(g, id),
     full: fullName(g, id),
-    s: d.stats[id],
+    s: statsOf(d, id),
     starter: g.starters.includes(id),
   }));
   const notCalled: SheetPlayer[] = (g.teamId ? teamPlayers(g.teamId) : [])

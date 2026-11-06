@@ -29,6 +29,20 @@ export type GameState = {
   slots: Lineup;
 };
 
+/** A player who hasn't played (yet). */
+const noStats = (): PlayerState => ({
+  intervals: [],
+  open: null,
+  goals: 0,
+  yellow: 0,
+  red: 0,
+  redAt: null,
+  played: 0,
+});
+
+/** A squad member's stats; an id outside the squad counts as not having played. */
+export const statsOf = (d: Pick<GameState, 'stats'>, id: string): PlayerState => d.stats[id] ?? noStats();
+
 /** The game's state at `now` (stints still open end at the current match time). */
 export function deriveState(g: Game, now: number): GameState {
   const on = new Set(g.starters);
@@ -38,8 +52,7 @@ export function deriveState(g: Game, now: number): GameState {
   let us = 0;
   let them = 0;
   const stats: Record<string, PlayerState> = {};
-  for (const id of g.squad)
-    stats[id] = { intervals: [], open: null, goals: 0, yellow: 0, red: 0, redAt: null, played: 0 };
+  for (const id of g.squad) stats[id] = noStats();
   for (const id of g.starters) if (stats[id]) stats[id].open = 0;
 
   const close = (s: PlayerState | undefined, time: number) => {
