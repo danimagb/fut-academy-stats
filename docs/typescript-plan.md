@@ -25,8 +25,8 @@ keeps deploying from the branch exactly as it does today.
 | 7    | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged    | danimagb/fut-academy-stats#43 |
 | 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
 | 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged    | danimagb/fut-academy-stats#45 |
-| 6.2b | Team and account screens                                                               | 🔄 in review | danimagb/fut-academy-stats#46 |
-| 6.3  | Game screens                                                                           | ⏳ todo      |                               |
+| 6.2b | Team and account screens                                                               | ✅ merged    | danimagb/fut-academy-stats#46 |
+| 6.3  | Game screens                                                                           | 🔄 in review | (this PR)                     |
 | 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ⏳ todo      |                               |
 | 8    | Strict TypeScript                                                                      | ⏳ todo      |                               |
 | 9    | Deploy workflow to GitHub Pages + docs                                                 | ⏳ todo      |                               |
@@ -335,6 +335,30 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     - **Team:** edit and remove players; a team with players can't be deleted, an empty one
       can.
     - 14 end-to-end tests in total.
+- Done in step 6.3: the game screens are out of `app/legacy.js`, which went from 2,287 to
+  1,397 lines.
+  - **`data/live.ts`** (typed): `matchTime`, `startClock`, `fmtNow`, `endPeriodAt`, `applyFix`,
+    `formationOf` and `addEvent`, all using the real time.
+  - **`features/live-game`**:
+    - `checkTime`: reminders and auto-stop
+    - `doSub` and `movePlayer`
+    - `undoBtn`, `subLine` and `describe`
+  - **`pages/game-edit`**: the new/edit game screen, with its `draft` and 4 actions. The draft
+    is exported, and legacy calls `resetDraft()` on navigation.
+  - **`pages/game`**:
+    - the live screen, the player sheet, the read-only player info and the Fix times sheet
+    - `tick()`; the 1-second timer stays in legacy
+    - 24 actions
+  - **Elsewhere:** `defaultTeamId` is now in `data/prefs.ts`, and `notFound` in
+    `shared/ui/not-found.ts`.
+  - **Still in legacy:**
+    - drag-and-drop (its document listeners and the `drag` state, which the click filter and
+      `renderSoon` use)
+    - the player forms and the team / game-field input listeners
+    - the report, stats and PDF, which move in 6.4
+  - New end-to-end test `game-actions.spec.ts`: yellow and red cards, a formation change,
+    removing a goal from the timeline, editing the opponent, and deleting the game. That makes
+    15 end-to-end tests.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").
