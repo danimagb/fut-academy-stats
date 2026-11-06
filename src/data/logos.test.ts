@@ -43,6 +43,17 @@ describe('club logos on the phone', () => {
     expect(logoSrc('c1')).toBeNull();
   });
 
+  it("a logo this phone just uploaded isn't removed by a sync that read the club before", async () => {
+    localStorage.setItem(LOGOS_KEY, JSON.stringify({ c1: { ...cached(2), at: Date.now() } }));
+    reloadLogos();
+    db.sync.clubs = { c1: { name: 'A', shortName: '', logoVersion: null } };
+    await refreshLogos(() => Promise.reject(new Error('no download expected')));
+    expect(logoSrc('c1')).not.toBeNull();
+    db.sync.clubs = { c1: { name: 'A', shortName: '', logoVersion: 1 } }; // older than ours
+    await refreshLogos(() => Promise.reject(new Error('no download expected')));
+    expect(logoSrc('c1')).not.toBeNull();
+  });
+
   it('signing out forgets every logo', () => {
     localStorage.setItem(LOGOS_KEY, JSON.stringify({ c1: cached(1) }));
     reloadLogos();

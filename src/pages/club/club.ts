@@ -200,7 +200,7 @@ export async function uploadClubLogo(clubId: string, file: File): Promise<void> 
       .upload(logoPath(clubId), image, { upsert: true, contentType: image.type, cacheControl: '31536000' });
     if (error) throw error;
     const v = await q<number>(client().rpc('set_club_logo', { _club_id: clubId, _present: true }));
-    await keepLogo(clubId, v, image);
+    await keepLogo(clubId, v, image, true);
     setVersion(clubId, v);
     toast(t('logoSaved'));
   } catch (e) {

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { action, createGame, createTeam, playGame, watchErrors } from './helpers';
 
 test('a finished game records nothing new, but its goals can still be edited', async ({ page }) => {

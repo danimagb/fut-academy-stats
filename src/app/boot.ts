@@ -12,7 +12,6 @@ import { profilePage } from '@/pages/profile/profile';
 import { initTheme } from '@/features/theme-switch/theme';
 import { initLanguage } from '@/features/language-switch/language';
 import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
-import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { setClubRole, setTeamRole } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
@@ -33,7 +32,7 @@ let wasOffline = false;
 import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
-import { canSync, canUpload, cloud, sb, syncNow } from '@/data/session';
+import { canSync, cloud, sb, signInGate, syncNow } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
 import {
@@ -43,42 +42,25 @@ import {
   registerActions,
   registerForms,
 } from '@/app/actions';
-import { addViews, onRender, render, route, setFallbackView } from '@/app/router';
+import { addViews, gated, onRender, render, route, setFallbackView, setGate } from '@/app/router';
+import { viewWelcome } from '@/pages/welcome/welcome';
 import { gamesPage, viewGames } from '@/pages/games/games';
 import { keepScreenOn } from '@/app/wake-lock';
-import { download } from '@/shared/lib/device';
 import { closeMenus } from '@/shared/ui/bar';
-import { askConfirm, notify } from '@/shared/ui/dialog';
+import { askConfirm } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync, localTeams } from '@/data/sync';
+import { configureSync } from '@/data/sync';
 import { refreshLogos } from '@/data/logos';
 import { uid } from '@/shared/lib/id';
-import {
-  RECORD_KINDS,
-  db,
-  dropInvalid,
-  initStore,
-  isCloudTeam,
-  loadRejected,
-  normalize,
-  setDb,
-  syncGameTeams,
-  teamIdOf,
-} from '@/data/store';
-import { checkIncoming } from '@/domain/validate';
-import { isoDate } from '@/shared/lib/format';
+import { db, initStore, isCloudTeam, loadRejected, syncGameTeams } from '@/data/store';
 import { FORMATS } from '@/domain/formats';
 import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import type { MessageKey } from '@/shared/i18n/i18n';
-import type { Db, Player, RecordKind } from '@/domain/types';
+import type { Player } from '@/domain/types';
 import type { Draft } from '@/pages/game-edit/game-edit';
 import type { ActionHandler } from '@/app/actions';
-
-type AnyRecord = { id: string; teamId?: string };
-/** A store's records of one kind, as one list type (the backup restore treats them alike). */
-const list = (from: Db, kind: RecordKind): AnyRecord[] => from[kind];
 
 // Wiring of the whole app (step 6 moved the screens into pages/ and features/). boot() runs once
 // at startup, from app/main.ts; importing this module does nothing else.
@@ -107,14 +89,6 @@ const actions: Record<string, ActionHandler> = {
     list.hidden = !open;
     el.setAttribute('aria-expanded', String(open));
   },
-
-  // backup
-  backup: () =>
-    download(
-      `fut-academy-backup-${isoDate(new Date())}.json`,
-      JSON.stringify(db, null, 2),
-      'application/json',
-    ),
 };
 
 // ---------- Keep the screen on during a live game ----------
@@ -136,6 +110,13 @@ export function start(): void {
 }
 
 /** Connects everything: screens, actions, listeners, sync and timers (once, at startup). */
+/** The tab bar, except while the welcome screen (sign-in) is shown. */
+function showTabbar(view: string): void {
+  const signingIn = gated();
+  document.body.classList.toggle('gated', signingIn);
+  if (!signingIn) renderTabbar(view);
+}
+
 export function boot(): void {
   initLanguage();
 
@@ -154,13 +135,15 @@ export function boot(): void {
   addViews(reportPage.views);
   addViews(statsPage.views);
   setFallbackView(viewGames);
+  // The app needs an account: until signed in with access, every route shows the welcome screen.
+  setGate(() => (signInGate() ? viewWelcome : null));
   onRender({
     before: () => {
       markRendered();
       closeSheet();
     },
     after: ({ view }) => {
-      renderTabbar(view);
+      showTabbar(view);
       updateWakeLock();
     },
   });
@@ -190,7 +173,7 @@ export function boot(): void {
     },
     onChange: () => renderSoon(),
     onRejected: (n) => toast(plural('skippedN', n)),
-    afterSync: ({ firstOk }) => {
+    afterSync: () => {
       // Club logos whose version changed (downloaded once, then kept on the phone).
       void refreshLogos().then((changed) => {
         if (changed) renderSoon();
@@ -199,15 +182,13 @@ export function boot(): void {
       const ppl = remote.people;
       if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId))
         void loadPeople(ppl.teamId);
-      // First sync on this phone (director accounts): offer to upload the teams on this phone.
-      if (firstOk && canUpload() && localTeams().length) offerUpload();
     },
   });
 
   setInterval(() => {
     if (renderPending && canRenderNow()) render();
   }, 1500);
-  setRerender({ now: () => render(), soon: () => renderSoon(), tabbar: () => renderTabbar(route().view) });
+  setRerender({ now: () => render(), soon: () => renderSoon(), tabbar: () => showTabbar(route().view) });
 
   // When to sync: coming back to the app, the network returning, and every minute while open.
   document.addEventListener('visibilitychange', () => {
@@ -316,6 +297,7 @@ export function boot(): void {
     const pick = el.dataset.pick ? actionHandler(el.dataset.pick) : undefined;
     if (pick) return void pick({ ...el.dataset, id: el.value }, el);
     const { change, id = '', tid = '' } = el.dataset; // (data-tid: data-team is the team screen's inputs)
+    if (!change) return;
     // Admin page: club and team roles (RLS lets only the admin change them).
     const { cid = '' } = el.dataset;
     if (change === 'admin-club-role') return setClubRole(cid, id, el.value);
@@ -324,43 +306,6 @@ export function boot(): void {
     if (change === 'staff-role') {
       const teamId = route().id;
       return teamId ? setStaffRole(teamId, id, el.value) : undefined;
-    }
-    if (change !== 'restore') return;
-    const file = el.files?.[0];
-    if (!file) return;
-    try {
-      const data = JSON.parse(await file.text()) as Record<string, unknown> & {
-        players?: unknown;
-        games?: unknown;
-        sync?: unknown;
-      };
-      if (!Array.isArray(data.players) || !Array.isArray(data.games)) throw new Error('bad file');
-      const ok = await askConfirm({
-        title: t('importBackup'),
-        message: t('confirmRestore', { p: data.players.length, g: data.games.length }),
-        ok: t('restoreBtn'),
-      });
-      if (!ok) return;
-      // Cloud teams aren't replaced by a backup (that would delete them in the cloud): they and
-      // the sync state stay as they are; the backup replaces the teams on this phone.
-      delete data.sync; // another phone's (or person's) sync state
-      // Damaged or implausible records in the file are left out (and counted).
-      const skipped = dropInvalid(data, checkIncoming, Date.now());
-      if (skipped.length) console.warn('Backup: records left out', skipped);
-      const restored = normalize(data);
-      const cloudIds = new Set(Object.keys(db.sync.teams));
-      for (const kind of RECORD_KINDS) {
-        (restored as Record<RecordKind, AnyRecord[]>)[kind] = list(restored, kind)
-          .filter((r) => !cloudIds.has(teamIdOf(kind, r)))
-          .concat(list(db, kind).filter((r) => cloudIds.has(teamIdOf(kind, r))));
-      }
-      Object.assign(restored, { sync: db.sync, deleted: db.deleted });
-      setDb(restored);
-      save();
-      render();
-      toast(skipped.length ? `${t('restored')} · ${plural('skippedN', skipped.length)}` : t('restored'));
-    } catch {
-      notify(t('badBackup'));
     }
   });
 
@@ -383,12 +328,6 @@ export function boot(): void {
     if (form === 'set-password')
       return void setPassword(String(data.get('password')), String(data.get('password2')));
     if (form === 'signin-code') return void verifyCode(String(data.get('code')).replace(/\D/g, ''));
-    if (form === 'upload-teams') {
-      closeSheet();
-      const ids = data.getAll('team').map(String);
-      if (ids.length) uploadTeams(ids, String(data.get('club') ?? ''));
-      return;
-    }
     if (form === 'game-info') {
       const g = currentGame();
       if (!g) return;

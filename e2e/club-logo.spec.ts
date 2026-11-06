@@ -37,8 +37,6 @@ test('a coordinator adds the club logo, and it shows next to the club', async ({
   expect(size).toEqual([256, 256]);
   await page.goto('#/teams');
   await expect(page.locator('h2.team-group img.club-logo')).toBeVisible();
-  await page.goto('#/team/t1');
-  await expect(page.locator('.team-kind img.club-logo')).toBeVisible();
 
   await page.goto('#/club/c1');
   await expect(page.locator('.club-crest-badge')).toHaveText('✎');

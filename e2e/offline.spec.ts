@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { createTeam } from './helpers';
 
 test('after one visit, the app opens with no network', async ({ page, context }) => {
@@ -13,5 +13,7 @@ test('after one visit, the app opens with no network', async ({ page, context })
   await context.setOffline(true);
   await page.reload();
   await page.goto('#/teams');
-  await expect(page.locator('#main')).toContainText('Test FC - U8');
+  // Signed in (the session is kept on the phone): past the welcome screen, with the team.
+  await expect(page.locator('h2.team-group')).toContainText('Test FC');
+  await expect(page.locator('#main .card')).toContainText('U8');
 });

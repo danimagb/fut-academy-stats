@@ -25,6 +25,7 @@ export function watchAuth(): void {
   if (!sb) return;
   sb.auth.getSession().then(({ data }) => {
     cloud.session = data.session;
+    cloud.authReady = true;
     if (cloud.session) refreshAccount().finally(syncNow);
     renderIfProfile();
   });

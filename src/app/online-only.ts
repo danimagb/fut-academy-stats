@@ -1,13 +1,9 @@
-// What needs the internet in a cloud team. Running a game works offline (kick-off, subs, goals,
-// cards, the clock, fixing times, full time) and syncs when the signal is back; changing the
-// team itself (players, the team's name, new or deleted teams) and creating, editing or deleting
-// games need the internet, so those changes reach the cloud straight away and never wait on a
-// phone. Teams that are only on this phone (no account) work offline for everything.
+// What needs the internet. Running a game works offline (kick-off, subs, goals, cards, the
+// clock, fixing times, full time) and syncs when the signal is back; changing the team itself
+// (players, the team's name, new or deleted teams) and creating, editing or deleting games need
+// the internet, so those changes reach the cloud straight away and never wait on a phone.
 import { draft } from '@/pages/game-edit/game-edit';
-import { canUpload } from '@/data/session';
 import { getGame } from '@/data/queries';
-import { writableTeams } from '@/data/access';
-import { isCloudTeam } from '@/data/store';
 import { route } from '@/shared/lib/route';
 import { t } from '@/shared/i18n/i18n';
 import { toast } from '@/shared/ui/toast';
@@ -49,15 +45,8 @@ function screenTeam(): string | null {
 /** Whether this action / form is about a cloud team (or would create one) while offline. */
 export function needsInternet(name: string): boolean {
   if (!offlineNow()) return false;
-  if (name === 'new-team') return canUpload(); // a club manager's new team is a cloud team
-  // New game: refused when every team a game could be created in is a cloud team (a team on
-  // this phone still works offline).
-  if (name === 'new-game') {
-    const teams = writableTeams();
-    return teams.length > 0 && teams.every((tm) => isCloudTeam(tm.id));
-  }
-  const tid = screenTeam();
-  return !!tid && isCloudTeam(tid);
+  if (name === 'new-team' || name === 'new-game') return true;
+  return !!screenTeam();
 }
 
 export const refuseOffline = (): void => toast(t('needsInternet'));

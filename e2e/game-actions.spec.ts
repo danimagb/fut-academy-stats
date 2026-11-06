@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { action, confirmDialog, createGame, createTeam, watchErrors } from './helpers';
 
 test('cards, formation, removing a goal, game details and deleting the game', async ({ page }) => {

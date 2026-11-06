@@ -1,18 +1,9 @@
-// What the app says about sync: the Synced / On this phone badge and the status line on
-// Profile.
-import { canSync } from '@/data/session';
+// What the app says about sync: the status line on Profile.
 import { plural } from '@/shared/i18n/i18n';
 import { pendingCount, syncState } from '@/data/sync';
-import { db, isCloudTeam } from '@/data/store';
+import { db } from '@/data/store';
 import { esc } from '@/shared/lib/html';
 import { locale, t } from '@/shared/i18n/i18n';
-import type { Team } from '@/domain/types';
-
-// "Synced" / "On this phone" pill for a team ("On this phone" only matters when signed in).
-export function teamBadge(tm: Pick<Team, 'id'>): string {
-  if (isCloudTeam(tm.id)) return `<span class="badge cloud">${t('badgeCloud')}</span>`;
-  return canSync() ? `<span class="badge">${t('badgeLocal')}</span>` : '';
-}
 
 export function agoText(ms: number): string {
   const min = Math.floor((Date.now() - ms) / 60000);
