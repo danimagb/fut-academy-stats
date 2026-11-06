@@ -1,8 +1,8 @@
 # TypeScript + Vite plan
 
 Steps 0–9 happened on the `feature/typescript` branch, as small PRs into that branch, and step
-10 squash-merged it into `main`. `main` now deploys through GitHub Actions. What's left (step 8)
-is done as PRs straight into `main`.
+10 squash-merged it into `main`. `main` deploys through GitHub Actions. Step 8 was done in PRs
+straight into `main`: all code is now `.ts` and passes `strict`.
 
 > **Every PR for this work updates the "Progress" section below**: its status, what was done,
 > and anything the next step needs to know. That's how the next PR, or the next Claude session,
@@ -10,31 +10,33 @@ is done as PRs straight into `main`.
 
 ## Progress
 
-| #       | Step                                                                                   | Status    | PR                            |
-| ------- | -------------------------------------------------------------------------------------- | --------- | ----------------------------- |
-| 0       | Plan and code standards                                                                | ✅ merged | danimagb/fut-academy-stats#32 |
-| 1       | Tooling skeleton (Vite, TypeScript, `package.json`)                                    | ✅ merged | danimagb/fut-academy-stats#33 |
-| 2       | CI: oxlint, tsc, Vitest, build                                                         | ✅ merged | danimagb/fut-academy-stats#35 |
-| 3       | Supabase and config as modules (drop `vendor/`)                                        | ✅ merged | danimagb/fut-academy-stats#36 |
-| 4       | Service worker via vite-plugin-pwa (drop `sw.js`)                                      | ✅ merged | danimagb/fut-academy-stats#37 |
-| 5.1     | Shared basics and types: I18N, format helpers, data types, formats                     | ✅ merged | danimagb/fut-academy-stats#38 |
-| 5.2     | Game logic: clock, pitch, game state, titles, stats + tests                            | ✅ merged | danimagb/fut-academy-stats#39 |
-| 5.3     | Storage, change tracking, validating data that comes in                                | ✅ merged | danimagb/fut-academy-stats#40 |
-| 5.4     | Supabase client, sync and sign-in logic                                                | ✅ merged | danimagb/fut-academy-stats#41 |
-| 5.5     | Database checks on what is stored (new migration)                                      | ✅ merged | danimagb/fut-academy-stats#42 |
-| 7       | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged | danimagb/fut-academy-stats#43 |
-| 6.1     | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged | danimagb/fut-academy-stats#44 |
-| 6.2a    | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged | danimagb/fut-academy-stats#45 |
-| 6.2b    | Team and account screens                                                               | ✅ merged | danimagb/fut-academy-stats#46 |
-| 6.3     | Game screens                                                                           | ✅ merged | danimagb/fut-academy-stats#47 |
-| 6.4     | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
-| 8.1     | Strict on; `data/` season, report sheet, session typed                                 | ✅ merged | danimagb/fut-academy-stats#52 |
-| 8.2     | Sync engine typed                                                                      | ✅ merged | danimagb/fut-academy-stats#53 |
-| 8.3     | Features typed                                                                         | ✅ merged | danimagb/fut-academy-stats#56 |
-| 8.4     | Pages: report, stats, profile, admin, team                                             | 🔄 review | (this PR)                     |
-| 8.5–8.6 | Game pages; app; drop `allowJs`                                                        | ⏳ todo   |                               |
-| 9       | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
-| 10      | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
+| #    | Step                                                                                   | Status    | PR                            |
+| ---- | -------------------------------------------------------------------------------------- | --------- | ----------------------------- |
+| 0    | Plan and code standards                                                                | ✅ merged | danimagb/fut-academy-stats#32 |
+| 1    | Tooling skeleton (Vite, TypeScript, `package.json`)                                    | ✅ merged | danimagb/fut-academy-stats#33 |
+| 2    | CI: oxlint, tsc, Vitest, build                                                         | ✅ merged | danimagb/fut-academy-stats#35 |
+| 3    | Supabase and config as modules (drop `vendor/`)                                        | ✅ merged | danimagb/fut-academy-stats#36 |
+| 4    | Service worker via vite-plugin-pwa (drop `sw.js`)                                      | ✅ merged | danimagb/fut-academy-stats#37 |
+| 5.1  | Shared basics and types: I18N, format helpers, data types, formats                     | ✅ merged | danimagb/fut-academy-stats#38 |
+| 5.2  | Game logic: clock, pitch, game state, titles, stats + tests                            | ✅ merged | danimagb/fut-academy-stats#39 |
+| 5.3  | Storage, change tracking, validating data that comes in                                | ✅ merged | danimagb/fut-academy-stats#40 |
+| 5.4  | Supabase client, sync and sign-in logic                                                | ✅ merged | danimagb/fut-academy-stats#41 |
+| 5.5  | Database checks on what is stored (new migration)                                      | ✅ merged | danimagb/fut-academy-stats#42 |
+| 7    | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged | danimagb/fut-academy-stats#43 |
+| 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged | danimagb/fut-academy-stats#44 |
+| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged | danimagb/fut-academy-stats#45 |
+| 6.2b | Team and account screens                                                               | ✅ merged | danimagb/fut-academy-stats#46 |
+| 6.3  | Game screens                                                                           | ✅ merged | danimagb/fut-academy-stats#47 |
+| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
+| 8.1  | Strict on; `data/` season, report sheet, session typed                                 | ✅ merged | danimagb/fut-academy-stats#52 |
+| 8.2  | Sync engine typed                                                                      | ✅ merged | danimagb/fut-academy-stats#53 |
+| 8.3  | Features typed                                                                         | ✅ merged | danimagb/fut-academy-stats#56 |
+| 8.4  | Pages: report, stats, profile, admin, team                                             | ✅ merged | danimagb/fut-academy-stats#57 |
+| 8.5  | Game pages: game-edit, game, drag                                                      | ✅ merged | danimagb/fut-academy-stats#58 |
+| 8.6  | `app/`; drop `allowJs`; stricter compiler and lint rules                               | ✅ merged | danimagb/fut-academy-stats#60 |
+| 8.7  | `noUncheckedIndexedAccess`                                                             | ✅ merged | danimagb/fut-academy-stats#61 |
+| 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
+| 10   | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
 
 **Where things stand (update this with every PR):**
 
@@ -462,6 +464,37 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     delete, upload or leave a team, the PDF buttons) would throw if it were missing. They
     now stop quietly instead. No screen can send them a missing id, so nothing visible
     changes.
+- Done in step 8.5: `pages/game-edit`, `pages/game/game` and `pages/game/drag` are `.ts` and
+  pass `strict`, so every page is typed.
+  - `game-edit` has a `Draft` type for the form. Its number fields hold the typed text until
+    the game is saved (as before).
+  - `drag` has a `DragState`; `game` types the Fix times choices (`fix`).
+  - The game actions stop when there is no current game, or when their id is missing or isn't
+    a goal (editing a goal). Before, these would have thrown. The toast's Undo still hides
+    the toast first.
+  - Next: 8.6, the `app/` files. Then remove `allowJs` and turn on oxlint's `typescript`
+    plugin.
+- Done in step 8.6: **step 8 is finished.** No `.js` file is left in `src/`.
+  - `app/redraw`, `tabbar`, `read-only` and `boot` are typed. `boot` casts event targets once
+    per listener (`e.target as HTMLInputElement` / `HTMLFormElement`), because those listeners
+    only handle inputs, selects and forms.
+  - `tsconfig.json`: `allowJs` and `checkJs` are gone. `noImplicitOverride`,
+    `noFallthroughCasesInSwitch` and `exactOptionalPropertyTypes` are on (two small fixes:
+    `download()` no longer passes `type: undefined`, and `AdminFailure` says its fields may
+    be `undefined`).
+  - oxlint's `typescript` plugin was already on. Two of its rules are now errors:
+    `typescript/no-explicit-any` and `typescript/ban-ts-comment`, so `any` and `@ts-nocheck`
+    can't come back.
+  - Left for later: `noUncheckedIndexedAccess`, which reports 46 places. It goes in its own
+    PR, because each place needs a decision (a check or a default).
+- Done in step 8.7: `noUncheckedIndexedAccess` is on, so every option the TypeScript standard
+  asks for is now set.
+  - Almost all 46 places were two lookups by a squad id: a player's names in the game
+    (`g.names[id]`) and their stats (`d.stats[id]`). They now go through two small domain
+    helpers with tests: `squadName(g, id)` in `domain/players` (placeholders, like `pname`'s
+    "?") and `statsOf(d, id)` in `domain/game-state` (zeros: not played).
+  - The ids always come from the game's own squad, so nothing visible changes. The game
+    report and player sheet PDFs are byte-identical to `main`'s.
 
 ## Why
 

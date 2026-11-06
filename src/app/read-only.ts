@@ -1,4 +1,3 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
 // Which actions and forms are allowed on a read-only (coach) screen.
 import { draft } from '@/pages/game-edit/game-edit';
 import { readOnlyGame, readOnlyTeam } from '@/data/access';
@@ -12,7 +11,7 @@ import { route } from '@/shared/lib/route';
 // read-only.
 
 // Is the screen being shown (and its sheets) about a read-only team or game?
-export function viewReadOnly() {
+export function viewReadOnly(): boolean {
   const { view, id } = route();
   if (view === 'team') return readOnlyTeam(id);
   if (view === 'game' || view === 'report' || view === 'edit') return readOnlyGame(getGame(id));
@@ -26,7 +25,7 @@ export function viewReadOnly() {
 // set-formation, opp-goal, fix-open, fix-end, fix-started, fix-apply, edit-goal, set-scorer,
 // delete-goal, undo-toast, undo, edit-info, delete-game (and any action added later, until it is
 // listed here). The admin-* actions are only on the Admin page, which is never read-only.
-export const READ_ONLY_OK = new Set([
+export const READ_ONLY_OK: ReadonlySet<string> = new Set([
   'close-sheet',
   'menu-toggle',
   'games-team',
@@ -54,7 +53,7 @@ export const READ_ONLY_OK = new Set([
   'new-team', // creates a team of their own
 ]);
 // Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
-export const READ_ONLY_FORMS = new Set([
+export const READ_ONLY_FORMS: ReadonlySet<string> = new Set([
   'signin-email',
   'signin-code',
   'signin-password',

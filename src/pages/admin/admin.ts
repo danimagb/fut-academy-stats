@@ -35,7 +35,7 @@ type AdminState = {
   members: AdminMember[];
 };
 /** An error from the admin function or a query, with its code and HTTP status. */
-type AdminFailure = Error & { code?: string; status?: number };
+type AdminFailure = Error & { code?: string | undefined; status?: number | undefined };
 
 /** This page's state (kept in `remote`, which the route change resets). */
 const adminState = (): AdminState | null => remote.admin as AdminState | null;

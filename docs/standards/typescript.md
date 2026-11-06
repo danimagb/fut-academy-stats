@@ -2,9 +2,14 @@
 
 ## Compiler
 
-- The goal is `strict: true`, plus `noUncheckedIndexedAccess`, `noImplicitOverride`,
-  `noFallthroughCasesInSwitch` and `exactOptionalPropertyTypes`. Until step 8 the config is
-  looser, but **new code is written as if strict were already on**.
+- `tsconfig.json` has `strict: true`, plus `noUncheckedIndexedAccess`, `noImplicitOverride`,
+  `noFallthroughCasesInSwitch` and `exactOptionalPropertyTypes`. Every file in `src/` is `.ts`
+  (`allowJs` is off).
+- With `noUncheckedIndexedAccess`, `array[i]` and `record[key]` may be `undefined`: check
+  them, or use the helper that gives a sensible default (`squadName(g, id)`,
+  `statsOf(d, id)`).
+- oxlint fails on `any` (`typescript/no-explicit-any`) and on `@ts-nocheck` / `@ts-ignore`
+  (`typescript/ban-ts-comment`).
 - Target modern browsers (`ES2022`). Don't add polyfills: the app is for current phone
   browsers.
 
