@@ -22,6 +22,8 @@ import { $ } from '@/shared/lib/dom';
 import { loadPeople, peopleHtml, remote, showPeople, staffSummary } from '@/features/team-people/team-people';
 import { canManageTeam, readOnlyTeam } from '@/data/access';
 import { teamGroups, teamShortLabel } from '@/data/clubs';
+import { logoSrc, teamLogoSrc } from '@/data/logos';
+import { clubLogo } from '@/features/club-logo/club-logo';
 import { readOnlyPill } from '@/features/team-access/read-only';
 import { getTeam, teamPlayers } from '@/data/queries';
 import { canSync, canUpload, cloud } from '@/data/session';
@@ -66,7 +68,7 @@ export function viewTeams(): void {
             (g) => `
       <h2 class="team-group">${
         g.clubId
-          ? `<span class="grow">${esc(g.name)}${g.shortName ? ` <span class="muted small">(${esc(g.shortName)})</span>` : ''}</span>
+          ? `${clubLogo(logoSrc(g.clubId))}<span class="grow">${esc(g.name)}${g.shortName ? ` <span class="muted small">(${esc(g.shortName)})</span>` : ''}</span>
         ${managed.has(g.clubId) ? `<a class="btn small ghost" href="#/club/${esc(g.clubId)}">${t('manageClub')}</a>` : ''}`
           : `<span class="grow">${t('onThisPhone')}</span>`
       }</h2>
@@ -126,7 +128,7 @@ export function viewTeam(teamId: string | undefined): void {
       : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
   main.innerHTML = `
     ${bar(esc(teamShortLabel(tm)), '#/teams', teamMenu(id, !manage), ro ? readOnlyPill() : '')}
-    ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
+    ${teamBadge(tm) ? `<div class="team-kind">${clubLogo(teamLogoSrc(id))}${teamBadge(tm)}</div>` : ''}
     ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
     ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
     <div class="form">

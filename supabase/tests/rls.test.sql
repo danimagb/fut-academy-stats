@@ -19,7 +19,7 @@
 -- admin's counts are compared with what is really there.
 
 begin;
-select plan(202);
+select plan(218);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@example.com'),
@@ -502,6 +502,49 @@ reset role;
 select is((select club_id || '/' || name from public.teams where id = 't1'), 'c1/Sub-7A', 'after K: t1 unchanged');
 select is((select team_id from public.games where id = 'g1'), 't1', 'after K: g1 still in t1');
 select is((select count(*)::int from public.team_members where team_id = 't1'), 2, 'after K: staff of t1 unchanged');
+
+-- =============================================================================================
+-- Club logos (20261108000000_club_logos.sql): written by the club's managers and the admin
+-- =============================================================================================
+select is((select public::text || '/' || file_size_limit from storage.buckets where id = 'club-logos'),
+  'true/524288', 'logos: the club-logos bucket is public, 512 KB at most');
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('club-logos', 'c1/logo')$$,
+  '42501', null, 'anon: cannot upload a logo');
+select throws_ok($$select public.set_club_logo('c1', true)$$, '42501', null, 'anon: cannot execute set_club_logo');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+select lives_ok($$insert into storage.objects (bucket_id, name) values ('club-logos', 'c1/logo')$$,
+  'A: a club manager can upload their club''s logo');
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('club-logos', 'c2/logo')$$,
+  '42501', null, 'A: cannot upload another club''s logo');
+with u as (update storage.objects set metadata = '{}' where name = 'c1/logo' returning 1)
+select is(count(*)::int, 1, 'A: can replace their club''s logo') from u;
+select is(public.set_club_logo('c1', true), 1, 'A: set_club_logo gives the first logo version 1');
+select is(public.set_club_logo('c1', true), 2, 'A: a new logo bumps the version');
+select throws_ok($$select public.set_club_logo('c2', true)$$, '42501', null, 'A: cannot set another club''s logo');
+
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
+select throws_ok($$insert into storage.objects (bucket_id, name) values ('club-logos', 'c1/other')$$,
+  '42501', null, 'M (team manager): cannot upload the club''s logo');
+with d as (delete from storage.objects where name = 'c1/logo' returning 1)
+select is(count(*)::int, 0, 'M: cannot delete the club''s logo') from d;
+select throws_ok($$select public.set_club_logo('c1', false)$$, '42501', null, 'M: cannot remove the club''s logo');
+select is((select logo_version from public.clubs where id = 'c1'), 2, 'M: sees the club''s logo version');
+
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000f","role":"authenticated"}';
+with d as (delete from storage.objects where name = 'c1/logo' returning 1)
+select is(count(*)::int, 0, 'K (another club): cannot delete c1''s logo') from d;
+
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+with d as (delete from storage.objects where name = 'c1/logo' returning 1)
+select is(count(*)::int, 1, 'A: can delete their club''s logo') from d;
+select is(public.set_club_logo('c1', false), null::int, 'A: removing the logo clears the version');
+
+reset role;
 
 -- =============================================================================================
 -- Admin D: clubs and people; sees all teams and staff (not players or games)

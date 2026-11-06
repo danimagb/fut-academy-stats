@@ -4,6 +4,7 @@ import { SHEET_NAVY, statsSheet } from '@/data/report-sheet';
 import { getTeam } from '@/data/queries';
 import { download } from '@/shared/lib/device';
 import { db } from '@/data/store';
+import { LOGO_PX, teamLogoJpeg } from '@/data/logos';
 import { pct } from '@/shared/lib/format';
 import { gameLength, playerStats } from '@/domain/stats';
 import { teamFull } from '@/domain/titles';
@@ -106,12 +107,15 @@ export type PdfDoc = {
   line(x1: number, y1: number, x2: number, y2: number, color: string, lw: number): void;
   /** Draws text at baseline y; returns its width. */
   text(s: unknown, x: number, y: number, opts?: TextOptions): number;
+  /** Draws a JPEG (its bytes, `pw` × `ph` pixels) in the box x, y (bottom left), w × h. */
+  image(jpeg: Uint8Array, pw: number, ph: number, x: number, y: number, w: number, h: number): void;
   bytes(): Uint8Array<ArrayBuffer>;
 };
 
 export function pdfDoc({ W = 842, H = 595 } = {}): PdfDoc {
   // A4 landscape by default, in points
   const pages: string[][] = [];
+  const images: { jpeg: Uint8Array; pw: number; ph: number }[] = [];
   let ops: string[] = [];
   const rgb = (hex: string): string =>
     [1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
@@ -149,7 +153,12 @@ export function pdfDoc({ W = 842, H = 595 } = {}): PdfDoc {
       ops.push(`BT /${bold ? 'F2' : 'F1'} ${size} Tf ${rgb(color)} rg ${n(x0)} ${n(y)} Td (${body}) Tj ET`);
       return w;
     },
-    // The finished file as bytes.
+    image(jpeg, pw, ph, x, y, w, h): void {
+      images.push({ jpeg, pw, ph });
+      ops.push(`q ${n(w)} 0 0 ${n(h)} ${n(x)} ${n(y)} cm /Im${images.length - 1} Do Q`);
+    },
+    // The finished file as bytes. Objects: catalog, pages, 2 fonts, each page and its content,
+    // then the images (JPEG, kept as they are: /DCTDecode).
     bytes(): Uint8Array<ArrayBuffer> {
       const objs = [
         '<< /Type /Catalog /Pages 2 0 R >>',
@@ -157,13 +166,25 @@ export function pdfDoc({ W = 842, H = 595 } = {}): PdfDoc {
         '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
         '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
       ];
+      const firstImage = 5 + 2 * pages.length;
+      const xobjects = images.length
+        ? ` /XObject << ${images.map((_, k) => `/Im${k} ${firstImage + k} 0 R`).join(' ')} >>`
+        : '';
       pages.forEach((p, i) => {
         const stream = p.join('\n');
         objs.push(
-          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`,
+          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>${xobjects} >> /Contents ${6 + 2 * i} 0 R >>`,
         );
         objs.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
       });
+      for (const im of images) {
+        let bin = '';
+        for (let i = 0; i < im.jpeg.length; i += 8192)
+          bin += String.fromCharCode(...im.jpeg.subarray(i, i + 8192));
+        objs.push(
+          `<< /Type /XObject /Subtype /Image /Width ${im.pw} /Height ${im.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bin.length} >>\nstream\n${bin}\nendstream`,
+        );
+      }
       let out = '%PDF-1.4\n%\xe2\xe3\xcf\xd3\n';
       const offsets = objs.map((body, i) => {
         const at = out.length;
@@ -231,7 +252,16 @@ export function buildPdf(g: Game): Uint8Array<ArrayBuffer> {
   };
 
   newPage();
-  pdf.text(sh.title, M, y - 14, { size: 15, bold: true, color: SHEET_NAVY, maxW: tableW });
+  // The club's logo, top right, when this phone has it.
+  const logo = teamLogoJpeg(g.teamId);
+  const LOGO = 44;
+  if (logo) pdf.image(logo, LOGO_PX, LOGO_PX, M + tableW - LOGO, y - LOGO + 6, LOGO, LOGO);
+  pdf.text(sh.title, M, y - 14, {
+    size: 15,
+    bold: true,
+    color: SHEET_NAVY,
+    maxW: tableW - (logo ? LOGO + 10 : 0),
+  });
   y -= 36;
   for (const [k, v, col] of sh.meta) {
     const x = colX[col] ?? M;
@@ -307,14 +337,21 @@ export function buildPlayerPdf(playerId: string): Uint8Array<ArrayBuffer> {
   // Header band
   const HB = 118;
   pdf.rect(0, pdf.H - HB, pdf.W, HB, PDF_GREEN);
+  const logo = teamLogoJpeg(p.teamId);
+  if (logo) {
+    // On a white tile, so a logo on a transparent background still reads on the green band.
+    pdf.rect(pdf.W - M - 74, pdf.H - HB + 22, 74, 74, '#ffffff');
+    pdf.image(logo, LOGO_PX, LOGO_PX, pdf.W - M - 70, pdf.H - HB + 26, 66, 66);
+  }
+  const headW = logo ? W - 84 : W; // the header's text stops before the logo
   y = pdf.H - 36;
   pdf.text((tm ? teamFull(tm.club, tm.name) : '').toUpperCase(), M, y, {
     size: 10,
     color: '#cfe3d8',
-    maxW: W,
+    maxW: headW,
   });
   y -= 32;
-  pdf.text(playerFullName(p).toUpperCase(), M, y, { size: 24, bold: true, color: '#ffffff', maxW: W });
+  pdf.text(playerFullName(p).toUpperCase(), M, y, { size: 24, bold: true, color: '#ffffff', maxW: headW });
   y -= 22;
   const first = st.games[0]?.g;
   const last = st.games[st.games.length - 1]?.g;
@@ -322,7 +359,7 @@ export function buildPlayerPdf(playerId: string): Uint8Array<ArrayBuffer> {
   pdf.text([season && `${t('pdfSeason')} ${season}`, range].filter(Boolean).join(' · '), M, y, {
     size: 11,
     color: '#ffffff',
-    maxW: W,
+    maxW: headW,
   });
 
   y = pdf.H - HB - 30;

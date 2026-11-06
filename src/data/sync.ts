@@ -19,6 +19,7 @@ import type { Game, Player, RecordKind, Role, SyncClub, Team, Tombstone } from '
 import { checkIncoming } from '@/domain/validate';
 import { t } from '@/shared/i18n/i18n';
 import { RECORD_KINDS, db, emptySync, isCloudTeam, recordKey, saveQuiet, teamIdOf } from './store';
+import { clearLogos } from './logos';
 
 type SyncRecord = Team | Player | Game;
 /** The records of one kind, as one list type (the code below treats the kinds alike). */
@@ -232,6 +233,7 @@ export function removeCloudData(): void {
   forceFull.clear();
   removeTeamsLocally(Object.keys(db.sync.teams));
   db.sync = emptySync();
+  clearLogos();
   Object.assign(syncState, { status: 'idle', error: '' });
   saveQuiet();
   hooks.onChange();
@@ -426,15 +428,20 @@ async function pull(epoch: number): Promise<void> {
   // The clubs this user can see (few rows: always all of them).
   const clubRows = await client()
     .from('clubs')
-    .select('id, name, short_name')
+    .select('id, name, short_name, logo_version')
     .order('id')
     .range(0, PAGE - 1);
   checkEpoch(epoch);
   if (clubRows.error) throw new SyncError(clubRows.error, clubRows.status);
   const clubs: Record<string, SyncClub> = {};
-  for (const c of (clubRows.data ?? []) as { id: string; name: string; short_name: string | null }[])
+  type ClubRow = { id: string; name: string; short_name: string | null; logo_version?: number | null };
+  for (const c of (clubRows.data ?? []) as ClubRow[])
     if (typeof c.id === 'string' && typeof c.name === 'string')
-      clubs[c.id] = { name: c.name, shortName: c.short_name ?? '' };
+      clubs[c.id] = {
+        name: c.name,
+        shortName: c.short_name ?? '',
+        logoVersion: typeof c.logo_version === 'number' ? c.logo_version : null,
+      };
   // Teams still being uploaded aren't in the cloud yet: keep them.
   for (const id of db.sync.uploads) if (prev[id] && !teams[id]) teams[id] = prev[id];
   const ids = Object.keys(teams);

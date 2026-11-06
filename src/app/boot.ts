@@ -16,7 +16,7 @@ import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { setClubRole, setTeamRole } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
-import { clubPage } from '@/pages/club/club';
+import { clubPage, uploadClubLogo } from '@/pages/club/club';
 import { $, $$ } from '@/shared/lib/dom';
 import { filterStaff, remote, loadPeople, setStaffRole } from '@/features/team-people/team-people';
 import { canManageTeam } from '@/data/access';
@@ -36,6 +36,7 @@ import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
 import { configureSync, localTeams } from '@/data/sync';
+import { refreshLogos } from '@/data/logos';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -166,6 +167,10 @@ export function boot(): void {
     onChange: () => renderSoon(),
     onRejected: (n) => toast(plural('skippedN', n)),
     afterSync: ({ firstOk }) => {
+      // Club logos whose version changed (downloaded once, then kept on the phone).
+      void refreshLogos().then((changed) => {
+        if (changed) renderSoon();
+      });
       // The team screen was waiting for its upload to show People.
       const ppl = remote.people;
       if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId))
@@ -278,6 +283,12 @@ export function boot(): void {
     const { cid = '' } = el.dataset;
     if (change === 'admin-club-role') return setClubRole(cid, id, el.value);
     if (change === 'admin-role') return setTeamRole(tid, id, el.value);
+    // Club page: a new logo chosen.
+    if (change === 'club-logo') {
+      const file = el.files?.[0];
+      el.value = '';
+      return file ? uploadClubLogo(cid, file) : undefined;
+    }
     // Team screen: a club manager changes someone's role in the team.
     if (change === 'staff-role') {
       const teamId = route().id;

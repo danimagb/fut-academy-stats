@@ -214,7 +214,7 @@ describe('roles and clubs', () => {
     cloud({ clubs: [{ id: 'c1', name: 'Padroense FC', short_name: 'PFC' }] }, { T: 'club_manager' });
     await runSync();
     expect(fake.db.teams![0]).toMatchObject({ id: 'T', club_id: 'c1' });
-    expect(db.sync.clubs).toEqual({ c1: { name: 'Padroense FC', shortName: 'PFC' } });
+    expect(db.sync.clubs).toEqual({ c1: { name: 'Padroense FC', shortName: 'PFC', logoVersion: null } });
   });
 
   it('a role change from the cloud is taken, and the team downloaded again', async () => {
