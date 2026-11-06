@@ -23,16 +23,16 @@ test('a coordinator adds the club logo, and it shows next to the club', async ({
   const errors = watchErrors(page);
   const rows = await signInAs(page, ME, { is_admin: false }, club('manager'));
   await page.goto('#/club/c1');
-  await expect(page.locator('.club-logo-empty')).toBeVisible();
+  await expect(page.locator('.club-crest-blank')).toBeVisible();
   await page
-    .locator('input[data-change="club-logo"]')
+    .locator('input.club-logo-file')
     .setInputFiles({ name: 'crest.png', mimeType: 'image/png', buffer: PNG });
   await expect(page.locator('#toast')).toContainText('Logo saved');
-  await expect(page.locator('.club-logo-edit img.club-logo')).toBeVisible();
+  await expect(page.locator('.club-crest img.club-logo')).toBeVisible();
   expect(rows.clubs?.[0]?.logo_version).toBe(1);
   // The kept logo is a square.
   const size = await page
-    .locator('.club-logo-edit img')
+    .locator('.club-crest img')
     .evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight]);
   expect(size).toEqual([256, 256]);
   await page.goto('#/teams');
@@ -41,9 +41,11 @@ test('a coordinator adds the club logo, and it shows next to the club', async ({
   await expect(page.locator('.team-kind img.club-logo')).toBeVisible();
 
   await page.goto('#/club/c1');
+  await expect(page.locator('.club-crest-badge')).toHaveText('✎');
+  await page.getByRole('button', { name: 'Club details' }).click();
   await page.getByRole('button', { name: 'Remove logo' }).click();
   await page.locator('.dialog').getByRole('button', { name: 'Remove logo' }).click();
-  await expect(page.locator('.club-logo-empty')).toBeVisible();
+  await expect(page.locator('.club-crest-blank')).toBeVisible();
   expect(rows.clubs?.[0]?.logo_version).toBeNull();
   expect(errors).toEqual([]);
 });

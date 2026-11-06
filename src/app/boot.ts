@@ -16,7 +16,7 @@ import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { setClubRole, setTeamRole } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
-import { clubPage, uploadClubLogo } from '@/pages/club/club';
+import { clubPage } from '@/pages/club/club';
 import { $, $$ } from '@/shared/lib/dom';
 import { filterStaff, remote, loadPeople, setStaffRole } from '@/features/team-people/team-people';
 import { canManageTeam } from '@/data/access';
@@ -283,12 +283,6 @@ export function boot(): void {
     const { cid = '' } = el.dataset;
     if (change === 'admin-club-role') return setClubRole(cid, id, el.value);
     if (change === 'admin-role') return setTeamRole(tid, id, el.value);
-    // Club page: a new logo chosen.
-    if (change === 'club-logo') {
-      const file = el.files?.[0];
-      el.value = '';
-      return file ? uploadClubLogo(cid, file) : undefined;
-    }
     // Team screen: a club manager changes someone's role in the team.
     if (change === 'staff-role') {
       const teamId = route().id;

@@ -28,22 +28,76 @@
   align-items: center;
   gap: 8px;
 }
-.club-logo-edit {
+/* Club page header: the crest (tap it to add or change the logo), the name and a summary. */
+.club-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 14px;
+  margin: 4px 0 14px;
 }
-.club-logo-edit .club-logo.lg {
+.club-head strong {
+  font-size: 1.1rem;
+}
+.club-crest {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  cursor: pointer;
+}
+.club-crest .club-logo.lg {
   margin: 0;
 }
-.club-logo-empty {
+.club-crest-blank {
   width: 72px;
   height: 72px;
   border-radius: 14px;
-  border: 1px dashed var(--line);
+  border: 1.5px dashed var(--line);
   display: grid;
   place-items: center;
+  font-size: 1.8rem;
+  opacity: 0.6;
+}
+.club-crest-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  font-size: 0.95rem;
+  font-weight: 800;
+  border: 2px solid var(--bg);
+}
+.club-crest:active .club-crest-badge {
+  transform: scale(0.92);
+}
+.club-crest:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 14px;
+}
+.club-team {
+  min-height: 52px;
+  text-decoration: none;
+}
+.club-team .go {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+.club-sections .club-short {
+  align-items: flex-end;
+}
+.club-sections .club-short label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
   color: var(--muted);
-  font-size: 1.6rem;
 }

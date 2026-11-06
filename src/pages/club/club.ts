@@ -20,10 +20,16 @@ import { rerenderSoon } from '@/shared/lib/rerender';
 import { route } from '@/shared/lib/route';
 import { plural, t } from '@/shared/i18n/i18n';
 import { bar } from '@/shared/ui/bar';
+import { accSection } from '@/shared/ui/accordion';
+import { teamPlayers } from '@/data/queries';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { main } from '@/shared/ui/main';
 import { toast } from '@/shared/ui/toast';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+// The page's sections: Details closed, Teams and People open the first time (remembered while
+// the app is open).
+const clubOpen: Record<string, boolean> = { details: false, teams: true, people: true };
 
 type Person = { user_id: string; email: string; role: string; teams: { name: string; role: string }[] };
 type ClubState = { clubId: string; status: 'loading' | 'ok' | 'offline' | 'error'; people: Person[] };
@@ -115,29 +121,66 @@ export function viewClub(clubId: string | undefined): void {
           .join('')}</ul>`
       : `<p class="muted small">${t('noClubPeople')}</p>`;
   const logo = logoSrc(clubId);
-  main.innerHTML = `
-    ${bar(esc(known?.name ?? club.name), '#/teams')}
-    <div class="club-logo-edit">
-      ${logo ? clubLogo(logo, 'lg') : '<span class="club-logo-empty" aria-hidden="true">🛡</span>'}
-      <label class="btn small">${t(logo ? 'logoChange' : 'logoAdd')}<input type="file" accept="image/png,image/jpeg,image/webp" data-change="club-logo" data-cid="${esc(clubId)}" hidden></label>
-      ${logo ? `<button class="btn small ghost danger" data-action="club-logo-remove" data-cid="${esc(clubId)}">${t('logoRemove')}</button>` : ''}
-    </div>
-    <p class="hint">${t('logoHint')}</p>
-    <form class="form row gap club-short" data-form="club-short" data-cid="${esc(clubId)}">
+  const name = known?.name ?? club.name;
+  const cid = esc(clubId);
+  const nPeople = st?.status === 'ok' ? plural('peopleN', st.people.length) : '';
+  // The crest is where you tap to add or change it (＋ when there's none, ✎ when there is).
+  const crest = `<label class="club-crest ${logo ? '' : 'empty'}" aria-label="${t(logo ? 'logoChange' : 'logoAdd')}">
+      ${logo ? clubLogo(logo, 'lg') : '<span class="club-crest-blank" aria-hidden="true">🛡</span>'}
+      <span class="club-crest-badge" aria-hidden="true">${logo ? '✎' : '＋'}</span>
+      <input type="file" accept="image/png,image/jpeg,image/webp" class="club-logo-file" hidden>
+    </label>`;
+  const details = `
+    <form class="row gap club-short" data-form="club-short" data-cid="${cid}">
       <label class="grow">${t('clubShortName')}<input name="short" maxlength="20" value="${esc(shortName)}" placeholder="PFC" autocomplete="off"></label>
-      <button class="btn">${t('save')}</button>
+      <button class="btn small">${t('save')}</button>
     </form>
     <p class="hint">${t('clubShortHint')}</p>
-    <h2>${t('clubTeams')} <span class="muted small">${teams.length}</span></h2>
-    ${
-      teams.length
-        ? `<ul class="list">${teams.map((tm) => `<li><a class="card" href="#/team/${esc(tm.id)}"><strong class="grow">${esc(tm.name) || t('unnamedTeam')}</strong></a></li>`).join('')}</ul>`
-        : `<p class="muted small">${t('noClubTeamsYet')}</p>`
-    }
-    <button class="btn block" data-action="new-team">${t('newTeam')}</button>
-    <h2>${t('clubPeople')}${st?.status === 'ok' ? ` <span class="muted small">${plural('peopleN', st.people.length)}</span>` : ''}</h2>
-    ${people}
-    <p class="hint">${t('clubPeopleHint')}</p>`;
+    <p class="hint">${t('logoHint')}</p>
+    ${logo ? `<button class="btn small ghost danger" data-action="club-logo-remove" data-cid="${cid}">${t('logoRemove')}</button>` : ''}`;
+  const teamList = teams.length
+    ? `<ul class="list">${teams
+        .map(
+          (tm) => `<li><a class="item club-team" href="#/team/${esc(tm.id)}">
+        <strong class="grow">${esc(tm.name) || t('unnamedTeam')}</strong>
+        <span class="muted small">${plural('playersCount', teamPlayers(tm.id).length)}</span>
+        <svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></li>`,
+        )
+        .join('')}</ul>`
+    : `<p class="empty">${t('noClubTeamsYet')}</p>`;
+  const section = (id: string, title: string, summary: string, body: string, add = ''): string =>
+    accSection({
+      id,
+      title,
+      summary,
+      body,
+      add,
+      addData: add ? `data-cid="${cid}"` : '',
+      open: !!clubOpen[id],
+      toggle: 'club-section',
+    });
+  main.innerHTML = `
+    ${bar(esc(name), '#/teams')}
+    <div class="club-head">
+      ${crest}
+      <div class="grow">
+        ${shortName ? `<strong>${esc(shortName)}</strong>` : ''}
+        <div class="muted small">${[plural('teamsN', teams.length), nPeople].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>
+    <div class="accordion club-sections">
+      ${section('details', t('clubDetails'), [shortName || t('noShortName'), t(logo ? 'withLogo' : 'noLogo')].join(' · '), details)}
+      ${section('teams', t('clubTeams'), plural('teamsN', teams.length), teamList, 'new-team')}
+      ${section('people', t('clubPeople'), nPeople, `${people}<p class="hint">${t('clubPeopleHint')}</p>`)}
+    </div>`;
+  // Listen on the input itself: if the page is redrawn while the file picker is open, the old
+  // input is no longer in the page, but it still gets the chosen file.
+  main.querySelector<HTMLInputElement>('.club-logo-file')?.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) void uploadClubLogo(clubId, file);
+  });
   if (!st) void loadClub(clubId);
 }
 
@@ -174,6 +217,10 @@ export async function uploadClubLogo(clubId: string, file: File): Promise<void> 
 export const clubPage = {
   views: { club: viewClub },
   actions: {
+    'club-section': ({ v = '' }: DOMStringMap) => {
+      clubOpen[v] = !clubOpen[v];
+      rerenderSoon();
+    },
     'club-reload': () => {
       const id = route().id;
       if (id) void loadClub(id);
