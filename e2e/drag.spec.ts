@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { createGame, createTeam, watchErrors } from './helpers';
 
 // Tall enough to have the pitch and the bench on screen together (the mouse can't drag off-screen).

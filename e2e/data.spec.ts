@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { createGame, createTeam, playGame } from './helpers';
 
 const STORE = 'fut-academy-stats.v1';

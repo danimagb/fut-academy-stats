@@ -380,6 +380,7 @@ const en = {
   memberAdded: 'Added',
   teamsN: '{n} teams',
   teamsN1: '1 team',
+  welcomeTagline: 'Games, minutes and stats for your teams.',
   takeOver: 'Continue on this phone',
   takeOverConfirm:
     "{email} is logging this game on another phone. Carry on here? What that phone hasn't synced yet is lost.",
@@ -825,6 +826,7 @@ const pt: Record<MessageKey, string> = {
   memberAdded: 'Adicionado',
   teamsN: '{n} equipas',
   teamsN1: '1 equipa',
+  welcomeTagline: 'Jogos, minutos e estatísticas das tuas equipas.',
   takeOver: 'Continuar neste telemóvel',
   takeOverConfirm:
     '{email} está a registar este jogo noutro telemóvel. Continuar aqui? O que esse telemóvel ainda não sincronizou perde-se.',
