@@ -1,3 +1,5 @@
+import { getTheme, initTheme, setTheme } from '@/features/theme-switch/theme';
+import { initLanguage, switchLanguage } from '@/features/language-switch/language';
 import {
   watchAuth,
   sendCode,
@@ -86,42 +88,20 @@ import {
   teamStats as teamSeason,
 } from '@/domain/stats';
 import { gameTeam, matchTitle, periodName, seasonOf, teamFull, teamLabel } from '@/domain/titles';
-import { getLang, locale, setLang, t } from '@/shared/i18n/i18n';
+import { getLang, locale, t } from '@/shared/i18n/i18n';
 
 // ---------- Config ----------
 
-const LANG_KEY = 'fut-academy-stats.lang';
-const THEME_KEY = 'fut-academy-stats.theme'; // 'light' | 'dark' | 'auto' (follow the device)
 const STATS_TEAM_KEY = 'fut-academy-stats.statsTeam'; // team picked on the stats page
 const STATS_SEASON_KEY = 'fut-academy-stats.statsSeason'; // season picked on the stats page (e.g. '2026/2027')
 
 // ---------- Language ----------
 
-const savedLang = localStorage.getItem(LANG_KEY);
-setLang(
-  savedLang === 'pt' || savedLang === 'en'
-    ? savedLang
-    : (navigator.language || '').toLowerCase().startsWith('pt')
-      ? 'pt'
-      : 'en',
-);
-document.documentElement.lang = getLang();
+initLanguage();
 
 // ---------- Theme ----------
 
-let theme = localStorage.getItem(THEME_KEY) || 'auto';
-const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
-
-function applyTheme() {
-  const resolved = theme === 'auto' ? (darkMq.matches ? 'dark' : 'light') : theme;
-  document.documentElement.dataset.theme = resolved;
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = resolved === 'light' ? '#eef0f3' : '#0e0f12';
-}
-applyTheme();
-darkMq.addEventListener?.('change', () => {
-  if (theme === 'auto') applyTheme();
-});
+initTheme();
 
 // ---------- Storage ----------
 
@@ -515,7 +495,7 @@ function viewProfile() {
           .filter(Boolean)
           .join(' · ')
     : t('notSignedIn');
-  const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[theme];
+  const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[getTheme()];
   const section = (id, title, summary, body) => `
     <section class="acc ${open === id ? 'open' : ''}">
       <button class="acc-head" data-action="profile-section" data-v="${id}" aria-expanded="${open === id}" aria-controls="acc-${id}">
@@ -540,7 +520,7 @@ function viewProfile() {
             ['pt', 'Português'],
           ])}</li>
         <li class="item wrap"><span class="grow">${t('theme')}</span>
-          ${seg('theme', theme, [
+          ${seg('theme', getTheme(), [
             ['light', `☀️ ${t('themeLight')}`],
             ['dark', `🌙 ${t('themeDark')}`],
             ['auto', t('themeAuto')],
@@ -2016,16 +1996,12 @@ const actions = {
   },
 
   theme: ({ v }) => {
-    theme = v;
-    localStorage.setItem(THEME_KEY, v);
-    applyTheme();
+    setTheme(v);
     render();
   },
 
   lang: ({ v }) => {
-    setLang(v);
-    localStorage.setItem(LANG_KEY, v);
-    document.documentElement.lang = v;
+    switchLanguage(v);
     render();
   },
 
