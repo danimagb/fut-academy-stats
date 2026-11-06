@@ -12,14 +12,14 @@ the club uses:
 | In code / database                             | UI (pt) / UI (en)         |
 | ---------------------------------------------- | ------------------------- |
 | club manager (`club_members.role = 'manager'`) | Coordenador / Coordinator |
-| club member (`club_members.role = 'member'`)   | (no label)                |
+| club staff (`club_members.role = 'staff'`)     | Staff / Staff             |
 | team manager (`team_members.role = 'manager'`) | Diretor / Director        |
 | team coach (`team_members.role = 'coach'`)     | Treinador / Coach         |
 
-Two levels per person: **in the club** they are a `manager` (all its teams) or a `member`
-(can be picked as staff), and **in each team** they are a `manager` or a `coach`. Team managers
-and team coaches are always club members; there is no club-wide "coach" role, because the
-same person can be team manager of Sub-7A and team coach of Sub-8 (e.g. João: club `member`,
+Two levels per person: **in the club** they are a `manager` (all its teams) or `staff`
+(can be picked for teams), and **in each team** they are a `manager` or a `coach`. Team managers
+and team coaches are always club staff; there is no club-wide "coach" role, because the
+same person can be team manager of Sub-7A and team coach of Sub-8 (e.g. João: club `staff`,
 `manager` in Sub-7A, `coach` in Sub-8).
 
 Identifiers follow it: `is_club_manager()`, `is_team_manager()`, `is_team_coach()`, `Role = 'club_manager' |
@@ -64,7 +64,7 @@ New tables:
 | table          | columns                                                                                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clubs`        | `id` (text), `name` (set by the admin), `short_name` (e.g. "PFC", set by a club manager or the admin), `created_at`, `created_by`, `updated_at`, `deleted_at` |
-| `club_members` | `club_id`, `user_id` (→ `accounts`, cascade), `role` (`manager` / `member`), `invited_by`, `created_at`; PK (club, user)                                      |
+| `club_members` | `club_id`, `user_id` (→ `accounts`, cascade), `role` (`manager` / `staff`), `invited_by`, `created_at`; PK (club, user)                                       |
 
 Changes:
 
@@ -135,7 +135,7 @@ Today there is one cloud team (the maintainer's, club "Padroense FC"). The migra
 2. Makes `teams.club_id` not null, drops `accounts.kind`, the last-director trigger and
    `add_team_coach`.
 3. Existing team memberships stay as they are, and everyone who is a member of a Padroense FC
-   team becomes a `member` of the club, except **admins, who become its `manager`**. Today
+   team becomes `staff` of the club, except **admins, who become its `manager`**. Today
    that makes the maintainer's account (admin + director of the team) **admin and club manager
    of Padroense FC**, ready for testing. No email is written in the migration.
 
@@ -146,7 +146,7 @@ without a club) is refused by the server and stays local, as for any refused upl
 ## Admin Edge Function
 
 - `create_account { email, club_id, role }` (no kind any more; `role` = `manager` /
-  `member`): creates the account if needed (reuses an existing one), then the `club_members`
+  `staff`): creates the account if needed (reuses an existing one), then the `club_members`
   row. Adding an existing account to another club, making someone club manager or removing them
   from a club is a plain table write (RLS: admin), so only the account creation needs the
   service role.
@@ -178,7 +178,7 @@ The central guard in the click/submit handlers learns the new action lists the s
 ### Screens
 
 - **Admin tab**: new **Clubs** section — create clubs (name, optional short name), change the
-  name; per club: its people (invite by email as club manager or member, make / unmake
+  name; per club: its people (invite by email as club manager or staff, make / unmake
   club manager, remove from the club) and its teams. Accounts list shows each person's clubs.
 - **Teams list**: grouped by club (cloud teams), then "On this phone" (local teams). A
   club manager sees "+ New team" under each of their clubs; the club name is fixed by the club.
