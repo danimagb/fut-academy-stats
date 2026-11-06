@@ -45,6 +45,23 @@ const clubIdOfTeam = (teamId: string | null | undefined): string | undefined =>
 /** The logo of a team's club, for an <img> (null: local team, no logo, or not downloaded). */
 export const teamLogoSrc = (teamId: string | null | undefined): string | null =>
   logoSrc(clubIdOfTeam(teamId));
+/**
+ * What a team's crest shows: the club's logo if the phone has it, else initials from the club's
+ * short name or name. `fallbackName`: the club name kept in a game (its team may be gone).
+ */
+export function teamCrest(
+  teamId: string | null | undefined,
+  fallbackName = '',
+): { name: string; shortName: string; src: string | null } {
+  const tm = db.teams.find((x) => x.id === teamId);
+  const club = tm?.clubId ? db.sync.clubs[tm.clubId] : undefined;
+  return {
+    name: club?.name || tm?.club || fallbackName || tm?.name || '',
+    shortName: club?.shortName ?? '',
+    src: logoSrc(tm?.clubId),
+  };
+}
+
 /** The logo of a team's club as JPEG bytes, for the PDFs. */
 export const teamLogoJpeg = (teamId: string | null | undefined): Uint8Array | null =>
   logoJpeg(clubIdOfTeam(teamId));

@@ -21,6 +21,15 @@
   --draw: #9a9fa8;
   --cloud: #6cb4ff;
   --stat-head: #1d5c3f;
+  /* Default crests (white initials on top): one per team, chosen from its name. */
+  --crest-1: #2e7d55;
+  --crest-2: #2f6db5;
+  --crest-3: #b23a48;
+  --crest-4: #7b52b8;
+  --crest-5: #b8641c;
+  --crest-6: #1f8a82;
+  --crest-7: #56677a;
+  --crest-8: #94700f;
   --radius: 14px;
   color-scheme: dark;
 }
@@ -49,6 +58,14 @@
   --draw: #6b727c;
   --cloud: #1559b0;
   --stat-head: #17603d;
+  --crest-1: #1d6b47;
+  --crest-2: #1f5a9e;
+  --crest-3: #a02a3a;
+  --crest-4: #6a3fa8;
+  --crest-5: #a5560f;
+  --crest-6: #12726b;
+  --crest-7: #46566a;
+  --crest-8: #7d5e00;
   color-scheme: light;
 }
 

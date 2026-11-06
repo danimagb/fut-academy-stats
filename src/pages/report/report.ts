@@ -12,7 +12,8 @@ import { scoreHtml } from '@/features/score/score';
 import { bar } from '@/shared/ui/bar';
 import { esc } from '@/shared/lib/html';
 import { teamLogoSrc } from '@/data/logos';
-import { clubLogo } from '@/features/club-logo/club-logo';
+import { crest } from '@/features/club-logo/club-logo';
+import { teamCrest } from '@/data/logos';
 import { matchTitle } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
@@ -42,6 +43,14 @@ export function sheetPreview(sh: Sheet, logo: string | null = null): string {
   </div></div>`;
 }
 
+/** Our crest and the opponent's, home team first. */
+function crestPair(g: Game): string {
+  const us = crest(teamCrest(g.teamId, g.club), 'lg');
+  const them = crest({ name: g.opponent || '?' }, 'lg');
+  const [a, b] = g.home === false ? [them, us] : [us, them];
+  return `<div class="crest-pair">${a}<span class="vs">vs</span>${b}</div>`;
+}
+
 export function viewReport(id: string | undefined): void {
   const g = getGame(id);
   if (!g) return notFound();
@@ -50,7 +59,7 @@ export function viewReport(id: string | undefined): void {
   main.innerHTML = `
     ${bar(t('gameReport'), `#/game/${g.id}`, '', readOnlyGame(g) ? readOnlyPill() : '')}
     <section class="scoreboard">
-      ${clubLogo(teamLogoSrc(g.teamId), 'lg')}
+      ${crestPair(g)}
       <strong>${esc(matchTitle(g))}</strong>
       <div class="muted small">${formatLine(g)}</div>
       <div class="score big">${scoreHtml(g, d, ' – ', true)}</div>

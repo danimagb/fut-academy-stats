@@ -4,6 +4,8 @@ import { gamesTeam, setGamesTeam } from '@/data/prefs';
 import { derive } from '@/data/queries';
 import { db } from '@/data/store';
 import { teamShortLabel } from '@/data/clubs';
+import { teamCrest } from '@/data/logos';
+import { crest } from '@/features/club-logo/club-logo';
 import { fmtDate, matchTitle } from '@/domain/titles';
 import type { Game } from '@/domain/types';
 import { scoreHtml } from '@/features/score/score';
@@ -22,7 +24,10 @@ function gameCard(g: Game): string {
   const score = scoreHtml(g, d, '–', true);
   // Only what helps pick a game out of the list (the title already names the team): date and round.
   const meta = [esc(fmtDate(g)), g.round ? t('roundN', { n: esc(g.round) }) : ''].filter(Boolean).join(' · ');
+  const crests = [crest(teamCrest(g.teamId, g.club)), crest({ name: g.opponent || '?' })];
+  if (g.home === false) crests.reverse();
   return `<li><a class="card game ${res}" href="${href}">
+    <span class="game-crests" aria-hidden="true">${crests.join('')}</span>
     <div class="grow">
       <strong>${esc(matchTitle(g))}</strong>
       <div class="muted small">${meta}</div>
