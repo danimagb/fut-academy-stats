@@ -20,6 +20,16 @@ import { clubPage } from '@/pages/club/club';
 import { $, $$ } from '@/shared/lib/dom';
 import { filterStaff, remote, loadPeople, setStaffRole } from '@/features/team-people/team-people';
 import { canManageTeam } from '@/data/access';
+import {
+  ONLINE_ACTIONS,
+  ONLINE_FORMS,
+  needsInternet,
+  refuseOffline,
+  teamEditableNow,
+} from '@/app/online-only';
+import { offlineNow } from '@/data/online';
+
+let wasOffline = false;
 import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
@@ -169,7 +179,15 @@ export function boot(): void {
     canSync,
     userId: () => cloud.session?.user?.id ?? null,
     request: () => syncNow(),
-    onStatus: () => showSyncStatus(),
+    onStatus: () => {
+      showSyncStatus();
+      // Reaching (or losing) the server changes what can be edited: redraw when that flips.
+      const off = offlineNow();
+      if (off !== wasOffline) {
+        wasOffline = off;
+        renderSoon();
+      }
+    },
     onChange: () => renderSoon(),
     onRejected: (n) => toast(plural('skippedN', n)),
     afterSync: ({ firstOk }) => {
@@ -195,7 +213,12 @@ export function boot(): void {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void syncNow();
   });
-  window.addEventListener('online', () => void syncNow());
+  // Going on- or offline changes what can be edited (online-only.ts): redraw, then sync.
+  window.addEventListener('online', () => {
+    renderSoon();
+    void syncNow();
+  });
+  window.addEventListener('offline', () => renderSoon());
   setInterval(() => {
     if (document.hidden || !canSync()) return;
     void syncNow();
@@ -220,6 +243,10 @@ export function boot(): void {
   installActionListener({
     ignore: () => drag.suppressClick, // the click that ends a drag
     allow: (name) => {
+      if (ONLINE_ACTIONS.has(name) && needsInternet(name)) {
+        refuseOffline();
+        return false;
+      }
       if (READ_ONLY_OK.has(name) || !viewReadOnly()) return true;
       refuseReadOnly();
       return false;
@@ -250,6 +277,7 @@ export function boot(): void {
       if (!tm) return;
       // Only whoever manages the team changes it; a cloud team's club comes from its club.
       if (!canManageTeam(tm.id) || (teamKey === 'club' && isCloudTeam(tm.id))) return refuseReadOnly();
+      if (!teamEditableNow(tm.id)) return refuseOffline();
       tm[teamKey] = el.value.trim();
       syncGameTeams(db, tm.id);
       save();
@@ -342,6 +370,7 @@ export function boot(): void {
     if (!form) return;
     e.preventDefault();
     if (!READ_ONLY_FORMS.has(form) && viewReadOnly()) return refuseReadOnly();
+    if (ONLINE_FORMS.has(form) && needsInternet(form)) return refuseOffline();
     const data = new FormData(formEl);
     const handler = formHandler(form);
     if (handler) return void handler(data, formEl);

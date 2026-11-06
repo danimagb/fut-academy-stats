@@ -21,6 +21,7 @@ import { teamBadge } from '@/features/sync-status/sync-status';
 import { $ } from '@/shared/lib/dom';
 import { loadPeople, peopleHtml, remote, showPeople, staffSummary } from '@/features/team-people/team-people';
 import { canManageTeam, readOnlyTeam } from '@/data/access';
+import { teamEditableNow } from '@/data/online';
 import { teamGroups, teamShortLabel } from '@/data/clubs';
 import { logoSrc, teamCrest } from '@/data/logos';
 import { crest } from '@/features/club-logo/club-logo';
@@ -123,8 +124,10 @@ export function viewTeam(teamId: string | undefined): void {
   // The team itself (its name, and the club of a team on this phone): whoever manages it. A cloud
   // team's club is its club's name, set by the server.
   const manage = canManageTeam(id) && !ro;
+  // Offline, a cloud team's name is read-only (changing the team needs the internet).
+  const editable = manage && teamEditableNow(id);
   const field = (key: 'club' | 'name', label: string, ph: string): string =>
-    !manage || (key === 'club' && cloudTeam)
+    !editable || (key === 'club' && cloudTeam)
       ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
       : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
   main.innerHTML = `

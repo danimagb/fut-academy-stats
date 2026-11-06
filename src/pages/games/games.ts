@@ -49,7 +49,7 @@ export function viewGames(): void {
     .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
   main.innerHTML = `
     ${bar(t('tabMatches'))}
-    <a class="btn primary block" href="#/new">${t('newGame')}</a>
+    <button class="btn primary block" data-action="new-game">${t('newGame')}</button>
     ${db.teams.length > 1 ? `<div class="pickers">${teamPicker({ action: 'games-team', value: team, all: true, crestHtml: team ? crest(teamCrest(team)) : '' })}</div>` : ''}
     ${
       games.length
@@ -62,6 +62,10 @@ export function viewGames(): void {
 export const gamesPage = {
   views: { games: viewGames },
   actions: {
+    // A button (not a link) so that offline it can say "needs internet" instead (app/online-only).
+    'new-game': () => {
+      location.hash = '#/new';
+    },
     'games-team': ({ id }: DOMStringMap) => {
       setGamesTeam(id ?? '');
       rerender();
