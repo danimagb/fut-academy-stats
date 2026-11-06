@@ -1,3 +1,5 @@
+import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
+import { teamBadge, syncStatusText, showSyncStatus } from '@/features/sync-status/sync-status';
 import { adminDo } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
 import { $, $$ } from '@/shared/lib/dom';
@@ -43,7 +45,7 @@ import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
 import { storeAccount } from '@/data/auth';
-import { configureSync, localTeams, pendingCount, removeCloudData, roleOf, syncState } from '@/data/sync';
+import { configureSync, localTeams, pendingCount, removeCloudData, roleOf } from '@/data/sync';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -53,7 +55,6 @@ import {
   isCloudTeam,
   loadRejected,
   normalize,
-  saveQuiet,
   setDb,
   syncGameTeams,
   teamIdOf,
@@ -574,75 +575,6 @@ configureSync({
     if (firstOk && canUpload() && localTeams().length) offerUpload();
   },
 });
-
-// Upload teams from this phone: they become cloud teams with this user as director.
-function uploadTeams(ids) {
-  syncState.error = ''; // a previous upload's error (it stays until the next upload)
-  for (const id of ids) {
-    if (!getTeam(id) || isCloudTeam(id)) continue;
-    db.sync.teams[id] = 'director';
-    if (!db.sync.uploads.includes(id)) db.sync.uploads.push(id);
-    for (const kind of RECORD_KINDS) for (const r of db[kind]) if (teamIdOf(kind, r) === id) r.dirty = true;
-  }
-  saveQuiet();
-  toast(t('uploading'));
-  render();
-  syncNow();
-}
-
-// After the first sign-in on this phone (director accounts): which local teams to upload?
-function offerUpload() {
-  if (!$('#sheet').hidden || document.querySelector('.dialog')) return;
-  openSheet(`
-    <h3>${t('uploadTitle')}</h3>
-    <p class="hint">${t('uploadHint')}</p>
-    <form class="form" data-form="upload-teams">
-      <div class="check-list">${localTeams()
-        .map(
-          (tm) => `
-        <label class="check"><input type="checkbox" name="team" value="${esc(tm.id)}" checked>
-          <span class="grow"><strong>${esc(teamLabel(tm))}</strong>
-          <span class="muted small sub-line">${t('playersCount', { n: teamPlayers(tm.id).length })}</span></span></label>`,
-        )
-        .join('')}
-      </div>
-      <button class="btn primary block">${t('uploadSelected')}</button>
-      <button type="button" class="btn ghost block" data-action="close-sheet">${t('notNow')}</button>
-    </form>`);
-}
-
-// "Synced" / "On this phone" pill for a team ("On this phone" only matters when signed in).
-function teamBadge(tm) {
-  if (isCloudTeam(tm.id)) return `<span class="badge cloud">${t('badgeCloud')}</span>`;
-  return canSync() ? `<span class="badge">${t('badgeLocal')}</span>` : '';
-}
-
-function agoText(ms) {
-  const min = Math.floor((Date.now() - ms) / 60000);
-  if (min < 1) return t('agoNow');
-  if (min < 60) return t('agoMin', { n: min });
-  if (min < 24 * 60) return t('agoHour', { n: Math.floor(min / 60) });
-  return new Date(ms).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
-}
-
-function syncStatusText() {
-  const n = pendingCount();
-  const { status, error } = syncState;
-  let s;
-  if (status === 'running') s = t('syncing');
-  else if (status === 'offline') s = n ? plural('syncWaitingOffline', n) : t('syncOffline');
-  else if (status === 'failed') s = t('syncFailed');
-  else if (db.sync.lastSyncAt)
-    s = t('syncedAgo', { ago: agoText(db.sync.lastSyncAt) }) + (n ? ` · ${plural('syncWaiting', n)}` : '');
-  else s = n ? plural('syncWaiting', n) : t('syncNever');
-  return error ? `${s}<br>${esc(error)}` : s;
-}
-
-// Update the status line in place (no re-render, so nothing being typed is disturbed).
-function showSyncStatus() {
-  const el = document.getElementById('sync-status');
-  if (el) el.innerHTML = syncStatusText();
-}
 
 // Re-render after a sync changed the data, but not while the user is in the middle of
 // something (typing, a sheet or dialog open, a ⋯ menu, dragging a player): then later.
