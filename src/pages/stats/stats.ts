@@ -1,5 +1,4 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// The stats page (a team's season) and a player's sheet. Moved from app/legacy.js.
+// The stats page (a team's season) and a player's sheet.
 import { setStatsSeason, setStatsTeam } from '@/data/season';
 import { exportPlayerPdf } from '@/features/share-pdf/share-pdf';
 import { rerender } from '@/shared/lib/rerender';
@@ -24,14 +23,15 @@ import { gameLength, playerStats, resultOf } from '@/domain/stats';
 import { teamFull, teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import type { PlayerSeason } from '@/domain/stats';
 
 // ---------- Views: stats (per player, over a season) ----------
 // Worked out from the finished games of a team, nothing extra is stored. A player counts as
 // called up when they were in the squad, and as having played when they had time on the pitch.
 
 // Team (and season) pickers shared by the stats page and a player's sheet.
-export function statsFilters(teamId, season, withTeams) {
-  const row = (action, items, on) =>
+export function statsFilters(teamId: string, season: string, withTeams: boolean): string {
+  const row = (action: string, items: [string, string][], on: string): string =>
     `<div class="pick-row filter" role="tablist">${items
       .map(
         ([id, label]) =>
@@ -43,21 +43,21 @@ export function statsFilters(teamId, season, withTeams) {
     (withTeams && db.teams.length > 1
       ? row(
           'stats-team',
-          db.teams.map((tm) => [tm.id, esc(teamLabel(tm))]),
+          db.teams.map((tm): [string, string] => [tm.id, esc(teamLabel(tm))]),
           teamId,
         )
       : '') +
     (seasons.length > 1
       ? row(
           'stats-season',
-          seasons.map((s) => [s, `${t('pdfSeason')} ${esc(s)}`]),
+          seasons.map((s): [string, string] => [s, `${t('pdfSeason')} ${esc(s)}`]),
           season,
         )
       : '')
   );
 }
 
-export function viewStats() {
+export function viewStats(): void {
   const teamId = statsTeam();
   if (!teamId) {
     main.innerHTML = `${bar(t('tabStats'))}<p class="empty">${t('statsNoTeams')}</p>
@@ -69,7 +69,8 @@ export function viewStats() {
   const { record: r } = st;
   const head = `<div class="stat-row head" aria-hidden="true"><span></span><span>${t('pdfPlayer')}</span>
     <span>${t('statGames')}</span><span>${t('statMin')}</span><span>${t('statGoals')}</span><span>🟨/🟥</span></div>`;
-  const rowHtml = (ps) => `<li><a class="stat-row" href="#/player/${ps.p.id}">
+  const team = getTeam(teamId);
+  const rowHtml = (ps: PlayerSeason): string => `<li><a class="stat-row" href="#/player/${ps.p.id}">
     <span class="shirt sm">${esc(ps.p.number) || '–'}</span>
     <span class="name">${esc(ps.p.name)}</span>
     <span>${ps.played}<small>/${ps.teamGames}</small></span>
@@ -85,7 +86,7 @@ export function viewStats() {
         ? `
       <section class="card stats-summary">
         <div class="grow">
-          <strong>${esc(teamLabel(getTeam(teamId)))}</strong>
+          <strong>${team ? esc(teamLabel(team)) : ''}</strong>
           <div class="muted small">${t('pdfSeason')} ${esc(season)} · ${plural('statGamesN', st.games.length)}</div>
         </div>
         <div class="right">
@@ -103,21 +104,21 @@ export function viewStats() {
     }`;
 }
 
-export function viewPlayer(id) {
+export function viewPlayer(id: string | undefined): void {
   const p = db.players.find((x) => x.id === id);
   if (!p) return notFound();
   const tm = getTeam(p.teamId);
   const season = statsSeason(p.teamId);
   const st = teamStats(p.teamId, season);
   const ps = st.players.find((x) => x.p.id === id) || playerStats(p, st.games);
-  const tile = (label, value, sub = '') =>
+  const tile = (label: string, value: string | number, sub = ''): string =>
     `<div class="tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
 
   // Minutes in each game: one bar per game, as tall as the share of the game played.
   const top = Math.max(1, ...ps.rows.map((r) => Math.max(gameLength(r.g), r.s ? r.s.played / 60000 : 0)));
   const bars = ps.rows
     .map((r) => {
-      const m = r.played ? Math.floor(r.s.played / 60000) : 0;
+      const m = r.played && r.s ? Math.floor(r.s.played / 60000) : 0;
       const cls = !r.s ? 'out' : !r.played ? 'dnp' : '';
       const h = Math.min(100, (100 * m) / top);
       return `<div class="bar-col ${cls}" title="${esc(gameShort(r.g, r.d))}">
@@ -179,13 +180,15 @@ export function viewPlayer(id) {
 }
 
 export const statsActions = {
-  'player-pdf': ({ id }) => exportPlayerPdf(id),
-  'stats-team': ({ id }) => {
-    setStatsTeam(id);
+  'player-pdf': ({ id }: DOMStringMap) => {
+    if (id) void exportPlayerPdf(id);
+  },
+  'stats-team': ({ id }: DOMStringMap) => {
+    setStatsTeam(id ?? '');
     rerender();
   },
-  'stats-season': ({ id }) => {
-    setStatsSeason(id);
+  'stats-season': ({ id }: DOMStringMap) => {
+    setStatsSeason(id ?? '');
     rerender();
   },
 };
