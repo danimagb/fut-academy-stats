@@ -5,7 +5,7 @@ export const buzz = (): void => {
 
 /** Saves `data` as a file (falls back here where sharing isn't available). */
 export function download(filename: string, data: Blob | string, type?: string): void {
-  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type }));
+  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], type ? { type } : {}));
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;

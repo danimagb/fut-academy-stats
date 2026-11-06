@@ -1,8 +1,8 @@
 # TypeScript + Vite plan
 
 Steps 0–9 happened on the `feature/typescript` branch, as small PRs into that branch, and step
-10 squash-merged it into `main`. `main` now deploys through GitHub Actions. What's left (step 8)
-is done as PRs straight into `main`.
+10 squash-merged it into `main`. `main` deploys through GitHub Actions. Step 8 was done in PRs
+straight into `main`: all code is now `.ts` and passes `strict`.
 
 > **Every PR for this work updates the "Progress" section below**: its status, what was done,
 > and anything the next step needs to know. That's how the next PR, or the next Claude session,
@@ -473,6 +473,19 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     the toast first.
   - Next: 8.6, the `app/` files. Then remove `allowJs` and turn on oxlint's `typescript`
     plugin.
+- Done in step 8.6: **step 8 is finished.** No `.js` file is left in `src/`.
+  - `app/redraw`, `tabbar`, `read-only` and `boot` are typed. `boot` casts event targets once
+    per listener (`e.target as HTMLInputElement` / `HTMLFormElement`), because those listeners
+    only handle inputs, selects and forms.
+  - `tsconfig.json`: `allowJs` and `checkJs` are gone. `noImplicitOverride`,
+    `noFallthroughCasesInSwitch` and `exactOptionalPropertyTypes` are on (two small fixes:
+    `download()` no longer passes `type: undefined`, and `AdminFailure` says its fields may
+    be `undefined`).
+  - oxlint's `typescript` plugin was already on. Two of its rules are now errors:
+    `typescript/no-explicit-any` and `typescript/ban-ts-comment`, so `any` and `@ts-nocheck`
+    can't come back.
+  - Left for later: `noUncheckedIndexedAccess`, which reports 46 places. It goes in its own
+    PR, because each place needs a decision (a check or a default).
 
 ## Why
 

@@ -52,23 +52,44 @@ import { isoDate } from '@/shared/lib/format';
 import { FORMATS } from '@/domain/formats';
 import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
+import type { MessageKey } from '@/shared/i18n/i18n';
+import type { Db, Player, RecordKind } from '@/domain/types';
+import type { Draft } from '@/pages/game-edit/game-edit';
+import type { ActionHandler } from '@/app/actions';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/** The Supabase client (the admin controls only show when there is one). */
+const client = (): SupabaseClient => {
+  if (!sb) throw new Error('offline');
+  return sb;
+};
+
+type AnyRecord = { id: string; teamId?: string };
+/** A store's records of one kind, as one list type (the backup restore treats them alike). */
+const list = (from: Db, kind: RecordKind): AnyRecord[] => from[kind];
 
 // Wiring of the whole app (step 6 moved the screens into pages/ and features/). boot() runs once
 // at startup, from app/main.ts; importing this module does nothing else.
 
-const main = $('#main');
+const main = $('#main') as HTMLElement; // in index.html
 
 // Actions that belong to no single screen.
-const actions = {
+const actions: Record<string, ActionHandler> = {
   'close-sheet': () => closeSheet(),
   soon: ({ v }) =>
-    askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
+    askConfirm({
+      title: t('soonTitle'),
+      message: t('soonMsg', { x: t(v as MessageKey) }),
+      ok: t('ok'),
+      cancel: false,
+    }),
 
   // Signed in with a director (or admin) account: new teams are cloud teams straight away.
 
   // Fix a goal given to the wrong player: pick who was on the pitch at that moment, or remove it.
   'menu-toggle': (_, el) => {
-    const list = el.nextElementSibling;
+    const list = el.nextElementSibling as HTMLElement | null;
+    if (!list) return;
     const open = list.hidden;
     closeMenus();
     list.hidden = !open;
@@ -86,16 +107,16 @@ const actions = {
 
 // ---------- Keep the screen on during a live game ----------
 
-function updateWakeLock() {
+function updateWakeLock(): void {
   const { view, id } = route();
-  const g = view === 'game' && getGame(id);
+  const g = view === 'game' ? getGame(id) : undefined;
   keepScreenOn(!!g && g.status === 'live');
 }
 
 // ---------- Start ----------
 
 /** Draws the first screen (called once by app/main.ts). */
-export function start() {
+export function start(): void {
   render();
   askPersistence();
   if (loadRejected.length) toast(plural('skippedN', loadRejected.length));
@@ -103,7 +124,7 @@ export function start() {
 }
 
 /** Connects everything: screens, actions, listeners, sync and timers (once, at startup). */
-export function boot() {
+export function boot(): void {
   initLanguage();
 
   initTheme();
@@ -152,7 +173,7 @@ export function boot() {
       // The team screen was waiting for its upload to show People.
       const ppl = remote.people;
       if (ppl?.status === 'uploading' && !db.sync.uploads.includes(ppl.teamId) && isCloudTeam(ppl.teamId))
-        loadPeople(ppl.teamId);
+        void loadPeople(ppl.teamId);
       // First sync on this phone (director accounts): offer to upload the teams on this phone.
       if (firstOk && canUpload() && localTeams().length) offerUpload();
     },
@@ -165,12 +186,12 @@ export function boot() {
 
   // When to sync: coming back to the app, the network returning, and every minute while open.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) syncNow();
+    if (!document.hidden) void syncNow();
   });
-  window.addEventListener('online', () => syncNow());
+  window.addEventListener('online', () => void syncNow());
   setInterval(() => {
     if (document.hidden || !canSync()) return;
-    syncNow();
+    void syncNow();
     showSyncStatus();
   }, 60000);
 
@@ -197,53 +218,66 @@ export function boot() {
   });
 
   document.addEventListener('input', (e) => {
-    const { fix: fk, team: tk, field: fd } = e.target.dataset;
+    const el = e.target as HTMLInputElement; // inputs and selects
+    if (!el.dataset) return;
+    const { fix: fk, team: tk, field: fd } = el.dataset;
     if ((fk || tk || fd) && viewReadOnly()) return refuseReadOnly();
-    const fixKey = e.target.dataset.fix;
-    if (fixKey && fix) {
-      const g = currentGame();
-      const v = e.target.value === '' ? null : Number(e.target.value);
+    const fixKey = el.dataset.fix;
+    const g = currentGame();
+    if (fixKey && fix && g) {
+      const v = el.value === '' ? null : Number(el.value);
       if (fixKey === 'end')
         fix.end = v == null ? Math.min(g.periodMin, fixLimits(g).maxMin) : v - periodOffsetMin(g);
       else fix.started = v;
       for (const b of $$(`#sheet .pick[data-action="fix-${fixKey}"]`)) b.classList.remove('on');
-      $('#fix-preview').textContent = fixPreview(g);
+      const preview = $('#fix-preview');
+      if (preview) preview.textContent = fixPreview(g);
       return;
     }
-    const teamKey = e.target.dataset.team;
-    if (teamKey) {
+    const teamKey = el.dataset.team;
+    if (teamKey === 'club' || teamKey === 'name') {
       const tm = getTeam(route().id);
       if (!tm) return;
-      tm[teamKey] = e.target.value.trim();
+      tm[teamKey] = el.value.trim();
       syncGameTeams(db, tm.id);
       save();
-      $('.bar h1').textContent = teamLabel(tm);
+      const title = $('.bar h1');
+      if (title) title.textContent = teamLabel(tm);
       return;
     }
-    const field = e.target.dataset.field;
-    if (!field || !draft) return;
-    draft[field] = e.target.value;
+    const field = el.dataset.field;
+    const d = draft;
+    if (!field || !d) return;
+    // The form's text fields (see data-field in pages/game-edit); the number ones are read on save.
+    (d as Record<string, unknown>)[field] = el.value;
     if (field === 'formatId') {
-      const f = FORMATS.find((x) => x.id === draft.formatId);
+      const f = FORMATS.find((x) => x.id === d.formatId);
       if (f && f.id !== 'Custom')
-        Object.assign(draft, { field: f.field, periods: f.periods, periodMin: f.periodMin });
+        Object.assign(d, {
+          field: f.field,
+          periods: f.periods,
+          periodMin: f.periodMin,
+        } satisfies Partial<Draft>);
       render();
     } else if (field === 'teamId') {
-      draft.sel = {};
-      draft.gkId = null;
+      d.sel = {};
+      d.gkId = null;
       render();
     } else if (field === 'field') {
-      $('#squad-count').innerHTML = squadCount();
+      const count = $('#squad-count');
+      if (count) count.innerHTML = squadCount();
     }
   });
 
   document.addEventListener('change', async (e) => {
-    const { change, id, tid } = e.target.dataset; // (data-tid: data-team is the team screen's inputs)
+    const el = e.target as HTMLInputElement; // selects and the backup file input
+    if (!el.dataset) return;
+    const { change, id = '', tid = '' } = el.dataset; // (data-tid: data-team is the team screen's inputs)
     // Admin page: account type and team roles (RLS lets only the admin change them).
     if (change === 'admin-kind') {
       return adminDo(async () => {
-        const rows = await q(
-          sb.from('accounts').update({ kind: e.target.value }).eq('user_id', id).select('user_id'),
+        const rows = await q<{ user_id: string }[]>(
+          client().from('accounts').update({ kind: el.value }).eq('user_id', id).select('user_id'),
         );
         if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
       }, t('kindChanged'));
@@ -251,10 +285,10 @@ export function boot() {
     if (change === 'admin-role') {
       return adminDo(
         async () => {
-          const rows = await q(
-            sb
+          const rows = await q<{ user_id: string }[]>(
+            client()
               .from('team_members')
-              .update({ role: e.target.value })
+              .update({ role: el.value })
               .eq('team_id', tid)
               .eq('user_id', id)
               .select('user_id'),
@@ -266,10 +300,14 @@ export function boot() {
       );
     }
     if (change !== 'restore') return;
-    const file = e.target.files[0];
+    const file = el.files?.[0];
     if (!file) return;
     try {
-      const data = JSON.parse(await file.text());
+      const data = JSON.parse(await file.text()) as Record<string, unknown> & {
+        players?: unknown;
+        games?: unknown;
+        sync?: unknown;
+      };
       if (!Array.isArray(data.players) || !Array.isArray(data.games)) throw new Error('bad file');
       const ok = await askConfirm({
         title: t('importBackup'),
@@ -286,9 +324,9 @@ export function boot() {
       const restored = normalize(data);
       const cloudIds = new Set(Object.keys(db.sync.teams));
       for (const kind of RECORD_KINDS) {
-        restored[kind] = restored[kind]
+        (restored as Record<RecordKind, AnyRecord[]>)[kind] = list(restored, kind)
           .filter((r) => !cloudIds.has(teamIdOf(kind, r)))
-          .concat(db[kind].filter((r) => cloudIds.has(teamIdOf(kind, r))));
+          .concat(list(db, kind).filter((r) => cloudIds.has(teamIdOf(kind, r))));
       }
       Object.assign(restored, { sync: db.sync, deleted: db.deleted });
       setDb(restored);
@@ -301,26 +339,31 @@ export function boot() {
   });
 
   document.addEventListener('submit', (e) => {
-    const form = e.target.dataset.form;
+    const formEl = e.target as HTMLFormElement;
+    const form = formEl.dataset.form;
     if (!form) return;
     e.preventDefault();
     if (!READ_ONLY_FORMS.has(form) && viewReadOnly()) return refuseReadOnly();
-    const data = new FormData(e.target);
+    const data = new FormData(formEl);
     const handler = formHandler(form);
-    if (handler) return handler(data, e.target);
+    if (handler) return void handler(data, formEl);
     if (form === 'add-coach') {
       // Directors only (the form isn't shown to coaches; the database checks it too).
-      if (roleOf(route().id) !== 'director') return refuseReadOnly();
+      const teamId = route().id;
+      if (!teamId || roleOf(teamId) !== 'director') return refuseReadOnly();
       teamOpen.staff = true; // the result shows in the Staff section
       render();
-      return addCoach(route().id, String(data.get('email')).trim().toLowerCase());
+      return void addCoach(teamId, String(data.get('email')).trim().toLowerCase());
     }
-    if (form === 'signin-email') return sendCode(String(data.get('email')).trim().toLowerCase());
+    if (form === 'signin-email') return void sendCode(String(data.get('email')).trim().toLowerCase());
     if (form === 'signin-password')
-      return signInPassword(String(data.get('email')).trim().toLowerCase(), String(data.get('password')));
+      return void signInPassword(
+        String(data.get('email')).trim().toLowerCase(),
+        String(data.get('password')),
+      );
     if (form === 'set-password')
-      return setPassword(String(data.get('password')), String(data.get('password2')));
-    if (form === 'signin-code') return verifyCode(String(data.get('code')).replace(/\D/g, ''));
+      return void setPassword(String(data.get('password')), String(data.get('password2')));
+    if (form === 'signin-code') return void verifyCode(String(data.get('code')).replace(/\D/g, ''));
     if (form === 'upload-teams') {
       closeSheet();
       const ids = data.getAll('team').map(String);
@@ -329,14 +372,15 @@ export function boot() {
     }
     if (form === 'game-info') {
       const g = currentGame();
-      const tm = getTeam(data.get('teamId'));
-      const round = parseInt(data.get('round'), 10);
+      if (!g) return;
+      const tm = getTeam(String(data.get('teamId') ?? ''));
+      const round = parseInt(String(data.get('round') ?? ''), 10);
       Object.assign(g, {
         opponent: String(data.get('opponent')).trim(),
         home: data.get('home') === '1',
         round: round >= 1 ? String(round) : '',
-        date: data.get('date') || g.date,
-        time: data.get('time'),
+        date: String(data.get('date') ?? '') || g.date,
+        time: String(data.get('time') ?? ''),
       });
       if (tm) Object.assign(g, { teamId: tm.id, club: tm.club, team: tm.name });
       save();
@@ -348,19 +392,19 @@ export function boot() {
     const number = String(data.get('number') || '').trim();
     const full = String(data.get('fullName') || '').trim();
     if (form === 'edit-player') {
-      Object.assign(
-        db.players.find((x) => x.id === e.target.dataset.id),
-        { name, number, fullName: full },
-      );
+      const p = db.players.find((x) => x.id === formEl.dataset.id);
+      if (!p) return;
+      Object.assign(p, { name, number, fullName: full });
       save();
       render();
       return;
     }
-    const teamId = form === 'add-player-draft' ? draft.teamId : route().id;
-    const p = { id: uid(), name, number, fullName: full, teamId };
+    const teamId = form === 'add-player-draft' ? draft?.teamId : route().id;
+    if (!teamId) return;
+    const p: Player = { id: uid(), name, number, fullName: full, teamId };
     db.players.push(p);
     save();
-    if (form === 'add-player-draft') draft.sel[p.id] = 'bench';
+    if (form === 'add-player-draft' && draft) draft.sel[p.id] = 'bench';
     if (form === 'add-player') teamOpen.players = true;
     render();
     if (form === 'add-player') {
@@ -368,7 +412,7 @@ export function boot() {
       openAddPlayer(name);
       return;
     }
-    main.querySelector('[data-form="add-player-draft"] input[name="name"]')?.focus();
+    main.querySelector<HTMLInputElement>('[data-form="add-player-draft"] input[name="name"]')?.focus();
   });
 
   installDrag();

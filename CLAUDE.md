@@ -17,8 +17,8 @@ before changing storage, sync, sign-in or the database. Database changes go in a
 
 The move from one `app.js` to TypeScript modules (Vite, oxlint, Vitest, Playwright) was done on
 `feature/typescript` in steps and is on `main`; **`docs/typescript-plan.md`** lists them and its
-"Progress" section records what was done and what is left (step 8: strict types for the files
-still marked `@ts-nocheck`, as PRs into `main`). Update it in every PR for that work.
+"Progress" section records what was done. All code is `.ts` and passes `strict`; `any` and
+`@ts-nocheck` / `@ts-ignore` fail the lint.
 
 ## Conventions
 
