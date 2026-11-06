@@ -8,14 +8,14 @@ and a new person in charge of a club, the **coordinator**. Builds on the cloud s
 
 ## Progress
 
-| #   | Step                                                     | Status    | PR  |
-| --- | -------------------------------------------------------- | --------- | --- |
-| 1   | Plan (this document)                                     | ✅ agreed |     |
-| 2   | Database: clubs, coordinators, new RLS, migration, tests | ⏳ to do  |     |
-| 3   | Admin: clubs, invite coordinators, assign teams to clubs | ⏳ to do  |     |
-| 4   | Sync + permissions in the app (coordinator role)         | ⏳ to do  |     |
-| 5   | Coordinator screens: club teams, players, staff          | ⏳ to do  |     |
-| 6   | Director limits, README / privacy text, test on 2 phones | ⏳ to do  |     |
+| #   | Step                                                     | Status       | PR        |
+| --- | -------------------------------------------------------- | ------------ | --------- |
+| 1   | Plan (this document)                                     | 🔄 in review | (this PR) |
+| 2   | Database: clubs, coordinators, new RLS, migration, tests | ⏳ to do     |           |
+| 3   | Admin: clubs, their people and coordinators              | ⏳ to do     |           |
+| 4   | Sync + permissions in the app (coordinator role)         | ⏳ to do     |           |
+| 5   | Coordinator screens: club teams, players, staff          | ⏳ to do     |           |
+| 6   | Director limits, README / privacy text, test on 2 phones | ⏳ to do     |           |
 
 **Where things stand:** plan agreed with the maintainer (see "Decisions" at the end); step 2 next.
 
