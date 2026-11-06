@@ -1,8 +1,8 @@
 # TypeScript + Vite plan
 
-This work happens on the `feature/typescript` branch, as small PRs into that branch. The branch
-is merged into `main` only once everything works end to end (step 10). Until then, `main`
-keeps deploying from the branch exactly as it does today.
+Steps 0–9 happened on the `feature/typescript` branch, as small PRs into that branch, and step
+10 squash-merged it into `main`. `main` now deploys through GitHub Actions. What's left (step 8)
+is done as PRs straight into `main`.
 
 > **Every PR for this work updates the "Progress" section below**: its status, what was done,
 > and anything the next step needs to know. That's how the next PR, or the next Claude session,
@@ -30,7 +30,7 @@ keeps deploying from the branch exactly as it does today.
 | 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
 | 8    | Strict TypeScript                                                                      | ⏳ todo   |                               |
 | 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
-| 10   | Merge `feature/typescript` into `main`                                                 | ⏳ todo   |                               |
+| 10   | Merge `feature/typescript` into `main`                                                 | 🔄 review | (this PR)                     |
 
 **Where things stand (update this with every PR):**
 
@@ -405,6 +405,15 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").
+- Step 10: the owner set Pages → Source to **GitHub Actions**, applied
+  `20261106000000_data_checks.sql` to the Supabase project, and made the checks required.
+  - The repository now allows squash merges only. A squash of the step 10 PR into
+    `feature/typescript` would lose its link to `main`'s history, so the release PR goes from
+    the branch that already merged `main` (`claude/ts-merge-main`) straight into `main` as one
+    squashed commit. The steps stay readable in danimagb/fut-academy-stats#32 to #50.
+  - After the merge, the `Deploy to GitHub Pages` workflow publishes `dist/`, and installed
+    apps move to the new service worker at the same `sw.js` address (see step 4).
+  - Step 8 goes on in PRs into `main`. `feature/typescript` is no longer used.
 
 ## Why
 
