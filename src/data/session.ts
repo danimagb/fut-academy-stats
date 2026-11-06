@@ -3,10 +3,11 @@
 // the first time and for a forgotten password, then the user chooses a password. Invite-only:
 // the email gets a code only if the admin gave it an account. Everything else in the app keeps
 // working without signing in.
-// @ts-nocheck -- moved as is (the sign-in form state lives here too, for now); typed in step 8.
+import type { Session } from '@supabase/supabase-js';
 import { route } from '@/shared/lib/route';
 import { rerender, rerenderTabbar } from '@/shared/lib/rerender';
 import { fetchAccount, storeAccount, storedAccount } from './auth';
+import type { Account } from './auth';
 import { getSupabase } from './supabase';
 import { runSync } from './sync';
 
@@ -18,7 +19,24 @@ export const sb = getSupabase();
 // (`needsPassword`, kept across reloads so closing the app doesn't skip it; SETPW_KEY holds the
 // mode for the step title).
 export const SETPW_KEY = 'fut-academy-stats.setPassword';
-export const cloud = {
+
+export type SignInMode = 'signin' | 'signup' | 'reset';
+
+export type CloudState = {
+  session: Session | null;
+  account: Account | null;
+  mode: SignInMode;
+  step: 'email' | 'code';
+  email: string;
+  busy: boolean;
+  error: string;
+  needsPassword: boolean;
+  /** Which flow the "choose a password" step finishes (for its title). */
+  pwMode: string;
+  changingPassword: boolean;
+};
+
+export const cloud: CloudState = {
   session: null,
   account: storedAccount(),
   mode: 'signin',
@@ -32,13 +50,13 @@ export const cloud = {
 };
 
 /** Re-render account screens; elsewhere just refresh the tab bar (the Admin tab follows the account). */
-export const renderIfProfile = () => {
+export const renderIfProfile = (): void => {
   if (['profile', 'admin'].includes(route().view)) rerender();
   else rerenderTabbar();
 };
 
 /** Fetch this user's accounts row (kind, admin). Kept locally so Profile shows it offline. */
-export async function refreshAccount() {
+export async function refreshAccount(): Promise<void> {
   const userId = cloud.session?.user?.id;
   if (!sb || !userId) return;
   const account = await fetchAccount(sb, userId);
@@ -48,15 +66,21 @@ export async function refreshAccount() {
   renderIfProfile();
 }
 
-export const canSync = () =>
-  !!(sb && cloud.session && cloud.account && !cloud.account.none && !cloud.needsPassword);
-export const canUpload = () => canSync() && (cloud.account.kind === 'director' || cloud.account.isAdmin);
+/** The account, when it is a real one (not "signed in, but no account"). */
+const realAccount = (): Exclude<Account, { none: true }> | null =>
+  cloud.account && !('none' in cloud.account) ? cloud.account : null;
+
+export const canSync = (): boolean => !!(sb && cloud.session && realAccount() && !cloud.needsPassword);
+export const canUpload = (): boolean => {
+  const account = realAccount();
+  return canSync() && !!account && (account.kind === 'director' || account.isAdmin);
+};
 
 /**
  * Starts a sync (see data/sync.ts). Signed in but the account row couldn't be loaded yet
  * (offline at start): load it first.
  */
-export function syncNow() {
+export function syncNow(): Promise<void> {
   if (sb && cloud.session && !cloud.account)
     return refreshAccount().then(() => (cloud.account ? syncNow() : undefined));
   return runSync();
