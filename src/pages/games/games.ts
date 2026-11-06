@@ -3,9 +3,9 @@
 import { gamesTeam, setGamesTeam } from '@/data/prefs';
 import { derive } from '@/data/queries';
 import { db } from '@/data/store';
-import { teamShortLabel } from '@/data/clubs';
 import { teamCrest } from '@/data/logos';
 import { crest } from '@/features/club-logo/club-logo';
+import { teamPicker } from '@/features/team-filter/team-filter';
 import { fmtDate, matchTitle } from '@/domain/titles';
 import type { Game } from '@/domain/types';
 import { scoreHtml } from '@/features/score/score';
@@ -49,18 +49,7 @@ export function viewGames(): void {
   main.innerHTML = `
     ${bar(t('tabMatches'))}
     <a class="btn primary block" href="#/new">${t('newGame')}</a>
-    ${
-      db.teams.length > 1
-        ? `<div class="pick-row filter" role="tablist">
-      ${[['', t('allTeams')], ...db.teams.map((tm) => [tm.id, esc(teamShortLabel(tm))])]
-        .map(
-          ([id, label]) =>
-            `<button class="pick ${id === team ? 'on' : ''}" role="tab" aria-selected="${id === team}" data-action="games-team" data-id="${id}">${label}</button>`,
-        )
-        .join('')}
-    </div>`
-        : ''
-    }
+    ${db.teams.length > 1 ? `<div class="pickers">${teamPicker({ action: 'games-team', value: team, all: true, crestHtml: team ? crest(teamCrest(team)) : '' })}</div>` : ''}
     ${
       games.length
         ? `<ul class="list">${games.map(gameCard).join('')}</ul>`

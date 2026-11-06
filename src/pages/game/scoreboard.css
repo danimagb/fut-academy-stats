@@ -66,13 +66,10 @@
 .score-row .side {
   font-weight: 600;
   font-size: 0.95rem;
-  overflow-wrap: anywhere;
-}
-.score-row .side:first-child {
-  text-align: right;
-}
-.score-row .side:last-child {
-  text-align: left;
+  /* Centred under the team's crest, every line of the name too. */
+  text-align: center;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 .score.big {
   font-size: 3.2rem;

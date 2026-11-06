@@ -23,6 +23,9 @@ import { gameLength, playerStats, resultOf } from '@/domain/stats';
 import { teamFull, teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import { seasonPicker, teamPicker } from '@/features/team-filter/team-filter';
+import { crest } from '@/features/club-logo/club-logo';
+import { teamCrest } from '@/data/logos';
 import type { PlayerSeason } from '@/domain/stats';
 
 // ---------- Views: stats (per player, over a season) ----------
@@ -31,30 +34,14 @@ import type { PlayerSeason } from '@/domain/stats';
 
 // Team (and season) pickers shared by the stats page and a player's sheet.
 export function statsFilters(teamId: string, season: string, withTeams: boolean): string {
-  const row = (action: string, items: [string, string][], on: string): string =>
-    `<div class="pick-row filter" role="tablist">${items
-      .map(
-        ([id, label]) =>
-          `<button class="pick ${id === on ? 'on' : ''}" role="tab" aria-selected="${id === on}" data-action="${action}" data-id="${esc(id)}">${label}</button>`,
-      )
-      .join('')}</div>`;
   const seasons = statsSeasons(teamId);
-  return (
-    (withTeams && db.teams.length > 1
-      ? row(
-          'stats-team',
-          db.teams.map((tm): [string, string] => [tm.id, esc(teamLabel(tm))]),
-          teamId,
-        )
-      : '') +
-    (seasons.length > 1
-      ? row(
-          'stats-season',
-          seasons.map((s): [string, string] => [s, `${t('pdfSeason')} ${esc(s)}`]),
-          season,
-        )
-      : '')
-  );
+  const pickers = [
+    withTeams && db.teams.length > 1
+      ? teamPicker({ action: 'stats-team', value: teamId, crestHtml: crest(teamCrest(teamId)) })
+      : '',
+    seasons.length > 1 ? seasonPicker('stats-season', seasons, season) : '',
+  ].filter(Boolean);
+  return pickers.length ? `<div class="pickers">${pickers.join('')}</div>` : '';
 }
 
 export function viewStats(): void {
