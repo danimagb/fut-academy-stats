@@ -71,9 +71,12 @@ the phone and can be shared with other coaches.
   the PDF, but can't change anything.
 - **Club logo.** Shown next to the club on the teams list, team, game and report screens and
   on the PDFs. Each phone downloads it once and keeps it for offline use.
-- **Local first.** The app saves on the phone first and syncs in the background (on start, a
-  few seconds after a change, when the signal comes back, every minute, or with _Sync now_).
-  Offline at the pitch, changes simply wait. Two phones logging the _same live game_ at the
+- **Games work offline.** Running a game (kick-off, subs, goals, cards, the clock, fixing
+  times, full time) is saved on the phone and syncs in the background (on start, a few seconds
+  after a change, when the signal comes back, every minute, or with _Sync now_): with weak or no
+  signal at the pitch, it simply waits. Changing a synced team (its players, its name, new or
+  deleted teams) and creating, editing or deleting games **need the internet**; offline the app
+  says so. Teams that are only on the phone work offline for everything. Two phones logging the _same live game_ at the
   same time isn't supported: the last one to sync wins.
 - **Signing out** removes the synced teams from that phone (they stay in the cloud); teams that
   were only on the phone stay.

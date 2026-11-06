@@ -1,3 +1,5 @@
+import { teamEditableNow } from '@/data/online';
+import { isCloudTeam } from '@/data/store';
 // The new-game / edit-game screen: team, opponent, format, and who starts.
 import { defaultTeamId } from '@/data/prefs';
 import { rerender } from '@/shared/lib/rerender';
@@ -120,8 +122,11 @@ export function viewEdit(id: string | undefined): void {
     return;
   }
   const ps = teamPlayers(d.teamId).sort(byNumber);
+  // Creating or editing a game of a cloud team needs the internet (running it doesn't).
+  const offline = !!d.teamId && isCloudTeam(d.teamId) && !teamEditableNow(d.teamId);
   main.innerHTML = `
     ${bar(title, back)}
+    ${offline ? `<p class="hint warn" role="status">${t('needsInternet')}</p>` : ''}
     <div class="form">
       <label>${t('team')}
         <select data-field="teamId">${writableTeams()

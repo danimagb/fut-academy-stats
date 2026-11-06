@@ -140,9 +140,13 @@ export async function signInAs(
     if (method === 'POST') {
       const input = body(req);
       result = (Array.isArray(input) ? input : [input]) as Row[];
+      // An upsert (on_conflict=…) replaces the row with the same key; a plain insert adds one.
+      const keys = (url.searchParams.get('on_conflict') ?? '').split(',').filter(Boolean);
       for (const r of result) {
         if (table === 'clubs' && !r.id) r.id = crypto.randomUUID();
-        list.push(r);
+        const i = keys.length ? list.findIndex((x) => keys.every((k) => x[k] === r[k])) : -1;
+        if (i >= 0) list[i] = { ...list[i], ...r };
+        else list.push(r);
       }
     } else if (method === 'PATCH') {
       result = list.filter((r) => matches(r, url));
