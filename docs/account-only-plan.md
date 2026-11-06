@@ -81,12 +81,12 @@ cases. New tests: the sign-in gate, the first start with local teams, sign-out b
 5. **Tests and finishing**: e2e moved to accounts, docs, privacy text; test on two phones;
    merge into `main` (no database change: nothing is applied to Supabase).
 
-## Open questions (decide before step 2)
+## Decisions (with the maintainer)
 
-1. **Local teams of people who aren't coordinators**: export a copy and remove them, or keep
-   them read-only on the phone until the club has the team in the cloud?
-2. **Backup in Profile**: keep only **Export** (a copy of your teams and games as a file), or
-   remove backup altogether? **Import** (restore) would go: data comes from the cloud.
-3. **The admin**: also needs to be in a club to create teams (as now), or should the admin be
-   able to create a team in any club directly?
-4. **Demo / trying the app**: no way to try it without an account any more. Fine?
+1. **Local teams**: nobody else uses the app, so there is no migration for other people. Step 3
+   is only a safeguard: a local team still on a phone is offered once for upload into the
+   coordinator's club.
+2. **Backup**: Import goes. Export: _to decide_ (recommended: keep it as "Export a copy of the
+   data", because the Supabase free plan has no backups).
+3. **The admin** creates teams only in clubs they coordinate (as now).
+4. **No demo**: without a session the app shows the sign-in / activate account screen.
