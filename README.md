@@ -76,8 +76,10 @@ the phone and can be shared with other coaches.
   after a change, when the signal comes back, every minute, or with _Sync now_): with weak or no
   signal at the pitch, it simply waits. Changing a synced team (its players, its name, new or
   deleted teams) and creating, editing or deleting games **need the internet**; offline the app
-  says so. Teams that are only on the phone work offline for everything. Two phones logging the _same live game_ at the
-  same time isn't supported: the last one to sync wins.
+  says so. Teams that are only on the phone work offline for everything. - **One phone per game.** The phone that kicks off a synced team's game logs it until full
+  time; on other phones it's read-only ("… is logging this game on another phone"), and the
+  database ignores their changes to it. If that phone stops (battery, lost), a director or the
+  club's coordinator uses ⋯ → _Continue on this phone_ (online) to carry on there.
 - **Signing out** removes the synced teams from that phone (they stay in the cloud); teams that
   were only on the phone stay.
 - **Your data**: Profile → Account → _How your data is handled_.

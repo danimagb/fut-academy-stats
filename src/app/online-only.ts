@@ -27,6 +27,7 @@ export const ONLINE_ACTIONS: ReadonlySet<string> = new Set([
   'save-game',
   'edit-info',
   'delete-game',
+  'take-over', // offline, two phones would log the same game
 ]);
 /** Forms that do the same. */
 export const ONLINE_FORMS: ReadonlySet<string> = new Set([

@@ -51,6 +51,7 @@ export const READ_ONLY_OK: ReadonlySet<string> = new Set([
   'people-reload',
   'leave-team', // team screen sections (anyone may leave a team)
   'new-team', // creates a team of their own
+  'take-over', // carry on logging a live game here (checked by canTakeOver)
 ]);
 // Forms allowed on a read-only screen (others: add-player, edit-player, add-player-draft, game-info).
 export const READ_ONLY_FORMS: ReadonlySet<string> = new Set([

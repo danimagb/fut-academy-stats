@@ -121,7 +121,15 @@ export type Game = Tracked & {
   alerted: Record<string, number>;
   /** Period that was stopped automatically (shows a notice), or null. */
   autoStopped?: number | null;
+  /** Cloud teams: the phone that logs the game while it's live (set at kick-off). */
+  owner?: GameOwner;
 };
+
+/**
+ * Who logs a live game: the user and the phone (a random id per installation) that kicked it
+ * off, or took it over (`from`: the device it took over from, which the server checks).
+ */
+export type GameOwner = { userId: string; email: string; deviceId: string; at: number; from?: string };
 
 export type RecordKind = 'teams' | 'players' | 'games';
 

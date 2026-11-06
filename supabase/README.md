@@ -11,6 +11,9 @@ Database schema and security rules for cloud sync. The design is in
   `20261107000000_clubs.sql` adds clubs (`clubs`, `club_members`, `teams.club_id`), the
   `manager` / `coach` team roles and `my_teams()`, and rewrites the policies for them
   (design: [`docs/clubs-plan.md`](../docs/clubs-plan.md)).
+  `20261108000000_club_logos.sql` adds club logos (Storage bucket `club-logos`).
+  `20261109000000_live_game_owner.sql`: a live game is only changed by the phone that
+  kicked it off (`data.owner`), or by one taking it over on purpose (`owner.from`).
 - `tests/rls.test.sql`: pgTAP tests that act as anonymous, admin, club manager, team manager,
   team coach, club staff, another club's manager and no-account users, and check what each
   can read and change. `tests/clubs_migration.test.sql` checks what the clubs migration made
