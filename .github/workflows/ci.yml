@@ -1,5 +1,7 @@
 # Checks every PR and every push to main and the feature branches: lint + formatting, types,
-# unit tests, the production build and end-to-end tests. All must pass before a PR is merged.
+# unit tests, the production build, end-to-end tests, and the database (migrations + RLS tests)
+# and Edge Function tests. All must pass before a PR is merged: merging into main also deploys
+# new migrations and the Edge Functions to the Supabase project (GitHub integration).
 name: CI
 
 on:
@@ -72,6 +74,20 @@ jobs:
           name: dist
           path: dist/
           retention-days: 7
+
+  database:
+    name: Database and functions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      # Postgres 16 is on the runner image; pgTAP is not.
+      - run: sudo apt-get update -q && sudo apt-get install -y -q postgresql-16 postgresql-16-pgtap
+      - run: bash supabase/tests/local/run.sh
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno test --allow-env --no-lock --permit-no-files supabase/functions/
 
   e2e:
     name: End to end
