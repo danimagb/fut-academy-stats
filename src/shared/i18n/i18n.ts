@@ -7,17 +7,9 @@ const en = {
   newGame: '+ New game',
   teamsBtn: 'Teams ({n})',
   noGames: 'No games yet.<br>Create your team and its players, then create a game.',
-  exportBackup: 'Export backup',
-  importBackup: 'Import backup',
-  backupTitle: 'Backup',
-  storageKept: "This browser keeps the app's data stored (it won't clear it on its own).",
-  storageNotKept:
-    "This browser may clear the app's data if it runs short of space or the app isn't used for a while. Export a backup regularly; adding the app to the home screen helps.",
-  backupHint: 'Save a copy of your teams and games to a file, or restore one.',
   privacyLink: 'How your data is handled',
   privacyTitle: 'Your data',
   privacyBody:
-    '<p><b>Without an account</b>, everything stays on this device. Nothing is sent anywhere.</p>' +
     "<p><b>Synced teams</b> are stored in the app's cloud database (Supabase, in the EU): the club (its name, short name and logo), the team, players' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to in that club can see it: the club's coordinators see all its teams, and the others only the teams they have a role in. The admin can see which clubs and teams exist and who is in them. The club logo can be opened by anyone with its link. Nothing else is collected: no photos, birth dates or contact details of players.</p>" +
     "<p><b>Your account</b> is your email and a password. The password is stored only as a one-way hash (it can't be read back, not even by the admin); the email is also used to send you codes the first time and if you forget your password.</p>" +
     "<p><b>Deleting</b>: the club's coordinators can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>" +
@@ -137,7 +129,6 @@ const en = {
   allTeams: 'All teams',
   noGamesTeam: 'No games for this team yet.',
   removePlayerTitle: 'Remove player?',
-  restoreBtn: 'Restore',
   password: 'Password',
   signInPw: 'Sign in',
   tabSignIn: 'Sign in',
@@ -167,7 +158,6 @@ const en = {
   authBadPassword: 'Wrong email or password. First time here? Use "Activate account".',
   tabAdmin: 'Admin',
   notSignedIn: 'Not signed in',
-  backupSummary: 'Export or import a copy of your data',
   account: 'Account',
   accountHint: 'Only for people the admin gave access to.',
   email: 'Email',
@@ -202,15 +192,6 @@ const en = {
   syncUploadFailed: "Couldn't sync a team (not allowed).",
   syncNever: 'Not synced yet',
   syncNow: 'Sync now',
-  badgeCloud: 'Synced',
-  badgeLocal: 'Local',
-  uploadTeam: 'Sync this team',
-  uploadTeamHint:
-    "It goes into your club: you and the club's other coordinators manage it and choose its staff.",
-  uploadTitle: 'Sync your teams?',
-  uploadHint: 'Choose the teams to sync. They go into your club, which you coordinate.',
-  uploadSelected: 'Sync selected',
-  notNow: 'Not now',
   uploading: 'Syncing…',
   signOutLose: '{n} changes not uploaded yet will be lost.',
   signOutLose1: '1 change not uploaded yet will be lost.',
@@ -301,9 +282,6 @@ const en = {
   confirmDeleteGame: 'Delete this game and all its stats?',
   gkSentOff: '🟥 GK sent off: tap a player › To goal',
   inGoalToast: '🧤 {p} in goal',
-  confirmRestore: 'Replace all data with this backup ({p} players, {g} games)?',
-  restored: 'Backup restored',
-  badBackup: 'That file is not a valid backup.',
   skippedN: '{n} records left out because they look damaged',
   skippedN1: '1 record left out because it looks damaged',
   p1: '1st half',
@@ -336,7 +314,6 @@ const en = {
     "You're a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors and the club's coordinators can change them.",
   newGameCoachOnly:
     "You're a coach on these teams, so only their directors and the club's coordinators create games. To log your own games, create a local team.",
-  newTeamCloud: 'Synced team. You can add coaches under People.',
   people: 'Staff',
   loading: 'Loading…',
   needsInternet: 'Needs internet. Try again when you have signal.',
@@ -380,6 +357,7 @@ const en = {
   memberAdded: 'Added',
   teamsN: '{n} teams',
   teamsN1: '1 team',
+  noTeamsYet: "You're not in a team yet. The club's coordinator adds you.",
   welcomeTagline: 'Games, minutes and stats for your teams.',
   takeOver: 'Continue on this phone',
   takeOverConfirm:
@@ -401,10 +379,7 @@ const en = {
   logoBadImage: "This image couldn't be read. Try a PNG or JPEG.",
   logoRemoveConfirm: "Remove the club's logo for everyone?",
   manageClub: '⚙ Club',
-  onThisPhone: 'On this phone',
   newTeamWhere: 'Where does the new team go?',
-  uploadWhere: 'Which club does it go into?',
-  onThisPhoneOnly: 'Only on this phone (not synced)',
   addStaff: 'Add to the staff',
   staffSearch: 'Search by email',
   staffRoleHint: 'Choose the role, then tap someone of the club.',
@@ -452,17 +427,9 @@ const pt: Record<MessageKey, string> = {
   newGame: '+ Novo jogo',
   teamsBtn: 'Equipas ({n})',
   noGames: 'Ainda não há jogos.<br>Cria a tua equipa com os jogadores e depois um jogo.',
-  exportBackup: 'Exportar cópia',
-  importBackup: 'Importar cópia',
-  backupTitle: 'Cópia de segurança',
-  storageKept: 'Este navegador mantém os dados da app guardados (não os apaga por iniciativa própria).',
-  storageNotKept:
-    'Este navegador pode apagar os dados da app se ficar sem espaço ou se a app não for usada durante algum tempo. Exporta uma cópia com regularidade; adicionar a app ao ecrã principal ajuda.',
-  backupHint: 'Guarda uma cópia das equipas e jogos num ficheiro, ou restaura uma.',
   privacyLink: 'Como são tratados os dados',
   privacyTitle: 'Os teus dados',
   privacyBody:
-    '<p><b>Sem conta</b>, fica tudo neste dispositivo. Nada é enviado para lado nenhum.</p>' +
     '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o clube (nome, abreviatura e logótipo), a equipa, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso nesse clube as podem ver: os coordenadores do clube veem todas as equipas do clube, e os outros só as equipas em que têm um papel. O administrador vê que clubes e equipas existem e quem pertence a cada um. O logótipo do clube pode ser aberto por quem tiver o link. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>' +
     '<p><b>A tua conta</b> é o teu email e uma palavra-passe. A palavra-passe só é guardada como um código irreversível (hash) e não pode ser lida, nem pelo administrador; o email serve também para te enviar códigos na primeira vez e se te esqueceres da palavra-passe.</p>' +
     '<p><b>Apagar</b>: os coordenadores do clube podem apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>' +
@@ -582,7 +549,6 @@ const pt: Record<MessageKey, string> = {
   allTeams: 'Todas as equipas',
   noGamesTeam: 'Ainda não há jogos desta equipa.',
   removePlayerTitle: 'Remover jogador?',
-  restoreBtn: 'Restaurar',
   password: 'Palavra-passe',
   signInPw: 'Entrar',
   tabSignIn: 'Entrar',
@@ -612,7 +578,6 @@ const pt: Record<MessageKey, string> = {
   authBadPassword: 'Email ou palavra-passe errados. É a primeira vez? Usa "Ativar conta".',
   tabAdmin: 'Admin',
   notSignedIn: 'Sessão não iniciada',
-  backupSummary: 'Exportar ou importar uma cópia dos dados',
   account: 'Conta',
   accountHint: 'Só para quem recebeu acesso do administrador.',
   email: 'Email',
@@ -647,15 +612,6 @@ const pt: Record<MessageKey, string> = {
   syncUploadFailed: 'Não foi possível sincronizar uma equipa (sem permissão).',
   syncNever: 'Ainda não sincronizado',
   syncNow: 'Sincronizar agora',
-  badgeCloud: 'Sincronizada',
-  badgeLocal: 'Local',
-  uploadTeam: 'Sincronizar esta equipa',
-  uploadTeamHint:
-    'Vai para o teu clube: tu e os outros coordenadores do clube gerem-na e escolhem a equipa técnica.',
-  uploadTitle: 'Sincronizar as tuas equipas?',
-  uploadHint: 'Escolhe as equipas a sincronizar. Vão para o clube que coordenas.',
-  uploadSelected: 'Sincronizar selecionadas',
-  notNow: 'Agora não',
   uploading: 'A sincronizar…',
   signOutLose: '{n} alterações ainda não enviadas vão perder-se.',
   signOutLose1: '1 alteração ainda não enviada vai perder-se.',
@@ -746,9 +702,6 @@ const pt: Record<MessageKey, string> = {
   confirmDeleteGame: 'Apagar este jogo e todas as estatísticas?',
   gkSentOff: '🟥 GR expulso: toca num jogador › Para a baliza',
   inGoalToast: '🧤 {p} na baliza',
-  confirmRestore: 'Substituir todos os dados por esta cópia ({p} jogadores, {g} jogos)?',
-  restored: 'Cópia restaurada',
-  badBackup: 'Esse ficheiro não é uma cópia válida.',
   skippedN: '{n} registos ignorados por parecerem danificados',
   skippedN1: '1 registo ignorado por parecer danificado',
   p1: '1ª parte',
@@ -782,7 +735,6 @@ const pt: Record<MessageKey, string> = {
     'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores e os coordenadores do clube os podem alterar.',
   newGameCoachOnly:
     'És treinador nestas equipas, por isso só os diretores e os coordenadores do clube criam jogos. Para registares jogos teus, cria uma equipa local.',
-  newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
   people: 'Staff',
   loading: 'A carregar…',
   needsInternet: 'Precisa de internet. Tenta outra vez quando tiveres rede.',
@@ -826,6 +778,7 @@ const pt: Record<MessageKey, string> = {
   memberAdded: 'Adicionado',
   teamsN: '{n} equipas',
   teamsN1: '1 equipa',
+  noTeamsYet: 'Ainda não estás numa equipa. O coordenador do clube adiciona-te.',
   welcomeTagline: 'Jogos, minutos e estatísticas das tuas equipas.',
   takeOver: 'Continuar neste telemóvel',
   takeOverConfirm:
@@ -847,10 +800,7 @@ const pt: Record<MessageKey, string> = {
   logoBadImage: 'Não foi possível ler esta imagem. Experimenta um PNG ou JPEG.',
   logoRemoveConfirm: 'Remover o logótipo do clube para todos?',
   manageClub: '⚙ Clube',
-  onThisPhone: 'Neste telemóvel',
   newTeamWhere: 'Onde fica a nova equipa?',
-  uploadWhere: 'Para que clube vai?',
-  onThisPhoneOnly: 'Só neste telemóvel (sem sincronizar)',
   addStaff: 'Adicionar ao staff',
   staffSearch: 'Procurar por email',
   staffRoleHint: 'Escolhe o papel e toca numa pessoa do clube.',

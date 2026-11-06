@@ -2,7 +2,7 @@
 // and named with them.
 import type { SyncClub, Team } from '@/domain/types';
 import { teamFull, teamLabel } from '@/domain/titles';
-import { db, isCloudTeam } from './store';
+import { db } from './store';
 
 /** The club of a cloud team, if the phone knows it. */
 export const clubOfTeam = (tm: Pick<Team, 'clubId'>): SyncClub | null =>
@@ -16,31 +16,23 @@ export const teamShortLabel = (tm: Pick<Team, 'club' | 'name' | 'clubId'>): stri
 
 export type TeamGroup = { clubId: string | null; name: string; shortName: string; teams: Team[] };
 
-/**
- * The teams on this phone for the teams list: cloud teams by club (clubs in name order), then
- * the teams that are only on this phone (clubId null). Each group's teams in name order.
- */
+/** The teams for the teams list, by club (clubs in name order), each group's teams in name order. */
 export function teamGroups(): TeamGroup[] {
   const byClub = new Map<string, TeamGroup>();
-  const local: Team[] = [];
   for (const tm of db.teams) {
-    if (!isCloudTeam(tm.id) || !tm.clubId) {
-      local.push(tm);
-      continue;
-    }
-    const club = db.sync.clubs[tm.clubId];
-    const group = byClub.get(tm.clubId) ?? {
-      clubId: tm.clubId,
+    const id = tm.clubId ?? '';
+    const club = db.sync.clubs[id];
+    const group = byClub.get(id) ?? {
+      clubId: id || null,
       name: club?.name ?? tm.club,
       shortName: club?.shortName ?? '',
       teams: [],
     };
     group.teams.push(tm);
-    byClub.set(tm.clubId, group);
+    byClub.set(id, group);
   }
   const byName = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
   const groups = [...byClub.values()].sort(byName);
   for (const g of groups) g.teams.sort(byName);
-  if (local.length) groups.push({ clubId: null, name: '', shortName: '', teams: local });
   return groups;
 }

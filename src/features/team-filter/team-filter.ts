@@ -2,26 +2,19 @@
 // (the phone's own picker), teams grouped by club. A <select data-pick="action"> runs that
 // action with the chosen value as `id` (see app/boot).
 import { teamGroups } from '@/data/clubs';
-import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { esc } from '@/shared/lib/html';
 
 const option = (value: string, label: string, on: string): string =>
   `<option value="${esc(value)}" ${value === on ? 'selected' : ''}>${esc(label)}</option>`;
 
-/** Options for every team, grouped by club (the age group only), then those on this phone. */
+/** Options for every team, grouped by club (the age group only). */
 function teamOptions(on: string): string {
-  const groups = teamGroups();
-  if (!groups.some((g) => g.clubId))
-    return groups
-      .flatMap((g) => g.teams)
-      .map((tm) => option(tm.id, teamLabel(tm), on))
-      .join('');
-  return groups
+  return teamGroups()
     .map(
       (g) =>
-        `<optgroup label="${esc(g.clubId ? g.name : t('onThisPhone'))}">${g.teams
-          .map((tm) => option(tm.id, g.clubId ? tm.name || t('unnamedTeam') : teamLabel(tm), on))
+        `<optgroup label="${esc(g.name)}">${g.teams
+          .map((tm) => option(tm.id, tm.name || t('unnamedTeam'), on))
           .join('')}</optgroup>`,
     )
     .join('');

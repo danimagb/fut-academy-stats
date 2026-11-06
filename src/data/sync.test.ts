@@ -86,7 +86,7 @@ describe('push', () => {
     expect(pendingCount()).toBe(0);
   });
 
-  it("never uploads a team coach's or a local team's changes; a coach's edit is replaced by the cloud", async () => {
+  it("never uploads a team coach's changes or a team the cloud doesn't list; a coach's edit is replaced by the cloud", async () => {
     phone(
       {
         teams: [makeTeam({ id: 'C' }), makeTeam({ id: 'L', dirty: true })],
@@ -101,7 +101,7 @@ describe('push', () => {
     await runSync();
     expect(fake.calls.filter((c) => c.op === 'upsert')).toEqual([]);
     expect(db.players.find((p) => p.id === 'p1')!.name).toBe('From the cloud');
-    expect(db.teams.map((tm) => tm.id).sort()).toEqual(['C', 'L']); // the local team stays
+    expect(db.teams.map((tm) => tm.id).sort()).toEqual(['C', 'L']); // L: unsent changes, kept for now
   });
 
   it('sends deletions as soft deletes and forgets the tombstone', async () => {
@@ -128,7 +128,7 @@ describe('push', () => {
     expect(db.players[0]).toMatchObject({ name: 'Changed meanwhile', dirty: true });
   });
 
-  it('a new team the server refuses goes back to being a team on this phone', async () => {
+  it('a new team the server refuses stays on the phone (not uploaded), with an error', async () => {
     phone({ teams: [makeTeam({ id: 'T', dirty: true })] }, { T: 'club_manager' });
     db.sync.uploads = ['T'];
     cloud({}, {});
@@ -238,7 +238,7 @@ describe('roles and clubs', () => {
 });
 
 describe('sessions', () => {
-  it("another person signing in on the same phone removes the previous person's cloud teams first", async () => {
+  it("another person signing in on the same phone removes the previous person's teams first", async () => {
     phone(
       { teams: [makeTeam({ id: 'OLD' }), makeTeam({ id: 'L' })] },
       { OLD: 'club_manager' },
@@ -246,7 +246,7 @@ describe('sessions', () => {
     );
     cloud({}, {});
     await runSync();
-    expect(db.teams.map((tm) => tm.id)).toEqual(['L']);
+    expect(db.teams.map((tm) => tm.id)).toEqual([]); // account-only: L (not in the cloud) leaves too
     expect(db.sync.userId).toBe('u1');
   });
 
