@@ -39,8 +39,8 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 | 3   | Admin: clubs, their people and club managers                 | ✅ merged    | danimagb/fut-academy-stats#64 |
 | 4   | Sync + permissions in the app (club manager role)            | ✅ merged    | danimagb/fut-academy-stats#66 |
 | 5   | Club manager screens: club teams, players, staff             | ✅ merged    | danimagb/fut-academy-stats#67 |
-| 6   | Club logo (storage, upload, screens, PDFs)                   | 🔄 in review | (this PR)                     |
-| 7   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |                               |
+| 6   | Club logo (storage, upload, screens, PDFs)                   | ✅ merged    | danimagb/fut-academy-stats#68 |
+| 7   | Team manager limits, README / privacy text, test on 2 phones | 🔄 in review | (this PR)                     |
 
 **Where things stand:**
 
@@ -136,6 +136,34 @@ shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an acco
   - Tests: unit tests for the PDF images and the logo cache; e2e `club-logo.spec.ts` (upload,
     show, remove; another phone downloads it once). The e2e stub fakes Storage. PDFs checked by
     rendering them.
+- Done in step 7: README ("Cloud sync": clubs, roles, logo), "How your data is handled" (en +
+  pt), CLAUDE.md, a note at the top of `docs/cloud-sync-plan.md`.
+
+### Merging `feature/clubs` into `main` (what happens, in order)
+
+1. CI runs on the PR, including the Database and functions job (all migrations from scratch).
+2. On merge, the **Supabase GitHub integration** applies the two new migrations to the project
+   (`20261107000000_clubs.sql`, `20261108000000_club_logos.sql`) and deploys the new `admin`
+   function. The clubs migration turns today's data into **Padroense FC** with the maintainer
+   as its coordinator, drops `accounts.kind` and renames `director` → `manager`. It can't be
+   undone by hand easily: check the project's backup first (Database → Backups; on the free
+   plan, download one if offered, or run `supabase db dump --data-only`).
+3. GitHub Pages deploys the new app a few minutes later; installed apps update on next open.
+   In between, the old app can't load the Admin page (it asks for `kind`) and its sync gets
+   errors (`add_team_coach`, `team_members` roles); nothing is lost: changes wait on the phone.
+4. Check: the Supabase check on the merge commit is green; in the SQL editor,
+   `select * from public.clubs` shows Padroense FC and
+   `select role from public.club_members` shows `manager` for the maintainer.
+
+### Test on two phones (after the merge)
+
+- Phone 1 (maintainer, admin + coordinator): Admin → the club shows the team; Give access to a
+  second email as **staff** of Padroense FC; ⚙ Club → add the logo.
+- Phone 2: activate the account with the code → no teams yet. Phone 1: team → Staff → ＋ →
+  pick the second account as **Coach** → phone 2 gets the team, read-only, with the logo.
+- Phone 1 changes the role to **Director** → phone 2 can add a player and run a game; phone 1
+  sees the game and its events after a sync; phone 2 can't rename or delete the team.
+- Offline on phone 2 during a game, then back online: the game reaches phone 1.
 
 ## What changes, in one table
 
