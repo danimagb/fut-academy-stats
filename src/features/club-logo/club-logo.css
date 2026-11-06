@@ -32,13 +32,15 @@
 .club-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin: 4px 0 14px;
+  gap: 16px;
+  /* Room below for the crest's badge, which sticks out 6px. */
+  margin: 8px 0 24px;
 }
 .club-head strong {
   font-size: 1.1rem;
 }
 .club-crest {
+  display: block;
   position: relative;
   flex: none;
   width: 72px;
