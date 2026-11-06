@@ -11,6 +11,16 @@ const views: Record<string, View> = {};
 let fallback: View = () => {};
 let before: () => void = () => {};
 let after: (route: Route) => void = () => {};
+/** A screen shown instead of every other one while it returns a view (e.g. signing in). */
+let gate: () => View | null = () => null;
+
+/** Sets the gate: when it returns a view, that view is drawn whatever the hash says. */
+export function setGate(fn: () => View | null): void {
+  gate = fn;
+}
+
+/** Whether the gate is showing now (the app hides the tab bar then). */
+export const gated = (): boolean => !!gate();
 
 /** Adds screens by view name (a name added twice is an error). */
 export function addViews(next: Record<string, View>): void {
@@ -34,6 +44,6 @@ export function onRender(hooks: { before?: () => void; after?: (route: Route) =>
 export function render(): void {
   before();
   const r = route();
-  (views[r.view] ?? fallback)(r.id);
+  (gate() ?? views[r.view] ?? fallback)(r.id);
   after(r);
 }

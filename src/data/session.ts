@@ -34,6 +34,8 @@ export type CloudState = {
   /** Which flow the "choose a password" step finishes (for its title). */
   pwMode: string;
   changingPassword: boolean;
+  /** The saved session (if any) has been read: until then, don't show the sign-in screen. */
+  authReady: boolean;
 };
 
 export const cloud: CloudState = {
@@ -47,11 +49,42 @@ export const cloud: CloudState = {
   needsPassword: !!localStorage.getItem(SETPW_KEY),
   pwMode: localStorage.getItem(SETPW_KEY) || 'signup',
   changingPassword: false,
+  authReady: false,
 };
+
+/** Where supabase-js keeps the session on the phone (see data/supabase). */
+export const AUTH_KEY = 'fut-academy-stats.auth';
+const hasSavedSession = (): boolean => {
+  try {
+    return !!localStorage.getItem(AUTH_KEY);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The app needs an account. What to show instead of the app, or null when signed in with access:
+ * 'loading' (a saved session is being read, or the account isn't known yet), 'signin' (sign in /
+ * activate account / choose a password), 'noaccess' (signed in, but the admin gave this email no
+ * access).
+ */
+export type Gate = 'loading' | 'signin' | 'noaccess' | null;
+export function signInGate(): Gate {
+  if (!sb) return 'signin';
+  if (!cloud.authReady) return hasSavedSession() ? 'loading' : 'signin';
+  if (!cloud.session || cloud.needsPassword) return 'signin';
+  if (!cloud.account) return 'loading';
+  if ('none' in cloud.account) return 'noaccess';
+  return null;
+}
+let lastGate: Gate = null;
 
 /** Re-render account screens; elsewhere just refresh the tab bar (the Admin tab follows the account). */
 export const renderIfProfile = (): void => {
-  if (['profile', 'admin'].includes(route().view)) rerender();
+  const gate = signInGate();
+  const changed = gate !== lastGate;
+  lastGate = gate;
+  if (gate || changed || ['profile', 'admin'].includes(route().view)) rerender();
   else rerenderTabbar();
 };
 

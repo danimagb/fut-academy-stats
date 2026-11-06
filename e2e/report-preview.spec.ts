@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { createGame, createTeam, playGame, watchErrors } from './helpers';
 
 test('a finished game opens on the game screen; its report preview fits and opens full screen', async ({

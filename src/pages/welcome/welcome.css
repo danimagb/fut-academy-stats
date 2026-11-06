@@ -1,0 +1,38 @@
+/* Welcome screen (not signed in): the app's name, then sign-in, centred in a narrow column. */
+.welcome {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 24px) 0 32px;
+}
+.welcome-brand {
+  text-align: center;
+  margin-bottom: 22px;
+}
+.welcome-brand img {
+  border-radius: 18px;
+}
+.welcome-brand h1 {
+  font-size: 1.6rem;
+  margin: 12px 0 4px;
+}
+.welcome-brand p {
+  margin: 0;
+}
+.welcome-account {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.welcome-wait {
+  text-align: center;
+  margin: 8px 0;
+}
+.welcome-privacy {
+  text-align: center;
+  margin-top: 16px;
+}
+/* No tab bar while signing in. */
+body.gated #tabbar {
+  display: none;
+}

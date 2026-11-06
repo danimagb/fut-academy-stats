@@ -33,7 +33,7 @@ let wasOffline = false;
 import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
-import { canSync, canUpload, cloud, sb, syncNow } from '@/data/session';
+import { canSync, canUpload, cloud, sb, signInGate, syncNow } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
 import {
@@ -43,7 +43,8 @@ import {
   registerActions,
   registerForms,
 } from '@/app/actions';
-import { addViews, onRender, render, route, setFallbackView } from '@/app/router';
+import { addViews, gated, onRender, render, route, setFallbackView, setGate } from '@/app/router';
+import { viewWelcome } from '@/pages/welcome/welcome';
 import { gamesPage, viewGames } from '@/pages/games/games';
 import { keepScreenOn } from '@/app/wake-lock';
 import { download } from '@/shared/lib/device';
@@ -136,6 +137,13 @@ export function start(): void {
 }
 
 /** Connects everything: screens, actions, listeners, sync and timers (once, at startup). */
+/** The tab bar, except while the welcome screen (sign-in) is shown. */
+function showTabbar(view: string): void {
+  const signingIn = gated();
+  document.body.classList.toggle('gated', signingIn);
+  if (!signingIn) renderTabbar(view);
+}
+
 export function boot(): void {
   initLanguage();
 
@@ -154,13 +162,15 @@ export function boot(): void {
   addViews(reportPage.views);
   addViews(statsPage.views);
   setFallbackView(viewGames);
+  // The app needs an account: until signed in with access, every route shows the welcome screen.
+  setGate(() => (signInGate() ? viewWelcome : null));
   onRender({
     before: () => {
       markRendered();
       closeSheet();
     },
     after: ({ view }) => {
-      renderTabbar(view);
+      showTabbar(view);
       updateWakeLock();
     },
   });
@@ -207,7 +217,7 @@ export function boot(): void {
   setInterval(() => {
     if (renderPending && canRenderNow()) render();
   }, 1500);
-  setRerender({ now: () => render(), soon: () => renderSoon(), tabbar: () => renderTabbar(route().view) });
+  setRerender({ now: () => render(), soon: () => renderSoon(), tabbar: () => showTabbar(route().view) });
 
   // When to sync: coming back to the app, the network returning, and every minute while open.
   document.addEventListener('visibilitychange', () => {

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { createTeam, watchErrors } from './helpers';
 
 test('expanded sections close again when the screen is left (team screen, profile)', async ({ page }) => {
