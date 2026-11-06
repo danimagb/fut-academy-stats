@@ -87,6 +87,9 @@ In **Authentication → URL Configuration**:
 1. Open **SQL Editor → New query**.
 2. Paste the whole content of `supabase/migrations/20261102000000_cloud_sync_schema.sql`
    from this repo and click **Run**. It should finish with "Success. No rows returned".
+   Then do the same with each later file in `supabase/migrations/`, in name order (for example
+   `20261106000000_data_checks.sql`, the checks on what can be stored). Each file can be run
+   again safely.
 3. Check in **Table Editor** that `accounts`, `teams`, `team_members`, `players`, `games` and `ping`
    exist and each shows RLS as enabled.
 
@@ -121,7 +124,7 @@ In **Project Settings → API Keys** (or **Settings → API**), copy:
 - the **Project URL** (`https://<something>.supabase.co`);
 - the **publishable key** (`sb_publishable_…`), or, on older projects, the **anon public** key.
 
-Both are **meant to be public**: they go into the app's `config.js` and anyone can see them.
+Both are **meant to be public**: they go into the app's `src/shared/config.ts` and anyone can see them.
 Access is protected by the database's Row Level Security rules.
 
 **Never share or commit the `secret` / `service_role` key** or the database password. Those
@@ -148,7 +151,7 @@ In the dashboard:
    your signed-in session (a JWT) with every call, so the check passes, and calls without a
    session are rejected before the function runs. The function also checks the session itself
    and that your account is the admin.
-   - If the Admin page says *"The admin function refused your sign-in (Invalid JWT)"* even
+   - If the Admin page says _"The admin function refused your sign-in (Invalid JWT)"_ even
      after signing out and in again, the project signs sessions with the newer JWT signing keys,
      which that legacy check doesn't understand. Then turn **Verify JWT off** for this function
      and save: it is still safe, because the function verifies the session and the admin flag on

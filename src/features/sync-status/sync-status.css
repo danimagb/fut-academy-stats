@@ -1,0 +1,40 @@
+/* Cloud sync: team kind, upload */
+.team-kind {
+  margin: -4px 0 10px;
+}
+.upload-team {
+  margin-top: 12px;
+}
+.upload-team .hint {
+  margin-top: 6px;
+}
+.check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.check,
+.form .check {
+  display: flex;
+  font-size: 1rem;
+  color: var(--text);
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.check input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+  flex: none;
+}
+.check .sub-line {
+  display: block;
+}

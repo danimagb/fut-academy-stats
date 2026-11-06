@@ -1,0 +1,85 @@
+/* Lists */
+.list {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.list > *,
+.admin-team .members li {
+  min-width: 0;
+} /* grid items: let long text (emails) shrink and ellipsize */
+.card,
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.item.start {
+  border-color: var(--accent);
+}
+.item.bench {
+  border-color: var(--bench-line);
+}
+.score {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.score.big {
+  font-size: 2.6rem;
+  line-height: 1.1;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.badge.live {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.badge.break {
+  background: var(--warn);
+  color: #2b1a00;
+}
+.badge.cloud {
+  color: var(--cloud);
+  background: color-mix(in srgb, var(--cloud) 15%, transparent);
+  white-space: nowrap;
+}
+
+.shirt {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: var(--panel-2);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.shirt.sm {
+  min-width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+.tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--gk);
+  color: #2b2200;
+  vertical-align: middle;
+}

@@ -3,7 +3,7 @@
 # the run fails and GitHub emails the repository owner. Can also be run by hand:
 # Actions -> Supabase keep-alive -> Run workflow.
 #
-# The URL and key are the app's public ones (same as config.js); they only allow reading the
+# The URL and key are the app's public ones (same as src/shared/config.ts); they only allow reading the
 # one-row `ping` table without signing in.
 name: Supabase keep-alive
 

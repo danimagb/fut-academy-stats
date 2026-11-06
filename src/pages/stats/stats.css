@@ -1,0 +1,214 @@
+/* Stats: team table, player sheet (tiles, minutes chart) */
+.stats-summary {
+  margin-top: 12px;
+}
+.stats-summary .record {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.record .w {
+  color: var(--win);
+}
+.record .d {
+  color: var(--draw);
+}
+.record .l {
+  color: var(--loss);
+}
+.stat-table {
+  gap: 6px;
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 46px 46px 40px 44px;
+  gap: 6px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.stat-row .name {
+  text-align: left;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stat-row small {
+  color: var(--muted);
+}
+.stat-row.head {
+  background: transparent;
+  border-color: transparent;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.stat-row.head span:nth-child(2) {
+  text-align: left;
+}
+.player-head {
+  background: var(--stat-head);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.player-head h2 {
+  margin: 2px 0 4px;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.player-head .muted {
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.tile {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-width: 0;
+}
+.tile > span {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tile b {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tile small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.tile .yc,
+.tile .rc {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 4px;
+  border-radius: 4px;
+  text-align: center;
+  color: #1b1300;
+  background: #f5c518;
+}
+.tile .rc {
+  color: #fff;
+  background: #d63a3a;
+}
+.minutes-chart {
+  --plot-h: 120px;
+  --plot-top: 18px; /* room above the plot for a full bar's value */
+  display: flex;
+  padding: 10px 8px 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.y-axis {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: var(--plot-h);
+  margin-top: var(--plot-top);
+}
+.y-axis span {
+  position: absolute;
+  right: 5px;
+  transform: translateY(50%);
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chart-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+.chart-inner {
+  position: relative;
+  display: inline-flex;
+  gap: 4px;
+  min-width: 100%;
+}
+.chart-inner .grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--plot-top);
+  height: var(--plot-h);
+  pointer-events: none;
+}
+.chart-inner .grid i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid var(--line);
+}
+.chart-inner .grid i:not(:first-child) {
+  opacity: 0.6;
+}
+.bar-col {
+  flex: 1 0 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 26px;
+}
+.bar-area {
+  position: relative;
+  width: 60%;
+  max-width: 26px;
+  height: var(--plot-h);
+  margin-top: var(--plot-top);
+}
+.bar-col .v {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bar-col .x {
+  margin-top: 4px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bar-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+.bar-col.out .v,
+.bar-col.dnp .v {
+  color: var(--muted);
+}

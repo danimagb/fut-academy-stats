@@ -16,7 +16,7 @@
 --   N     00000000-0000-0000-0000-000000000009  (no account)        auth user without cloud access
 
 begin;
-select plan(181);
+select plan(194);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@example.com'),
@@ -656,6 +656,42 @@ select lives_ok($$delete from auth.users where id = '00000000-0000-0000-0000-000
 select is((select count(*)::int from public.team_members
            where user_id = '00000000-0000-0000-0000-00000000000f'), 0,
   'user delete: memberships removed');
+
+-- =============================================================================================
+-- Data checks (migration *_data_checks.sql): what can be stored, whoever writes it
+-- =============================================================================================
+reset role;
+select is((select count(*)::int from pg_constraint
+           where conname like any (array['teams\_%', 'players\_%', 'games\_%', 'accounts\_email\_length'])
+             and contype = 'c' and not convalidated), 0,
+  'checks: all data checks are validated on the existing rows');
+select lives_ok($$insert into public.games (id, team_id, date, status, data) values
+  ('gx', 't1', '2026-11-05', 'finished', '{"id":"gx","status":"finished","clock":{"running":false,"startedAt":null,"elapsedMs":4933,"period":2},"events":[{"id":"8fd5bc8d-3be5-4815-9e91-6a68654098b2","t":2167,"wall":1793918599972,"type":"goal","playerId":"643e009f-7634-4ccb-b6f0-9762103f0b5a"},{"id":"c593de1e-cc24-4a0c-b1da-af06fcc8e009","t":2501,"wall":1793918600306,"type":"oppgoal"}],"marks":[{"type":"start","period":1,"t":0,"wall":1793918597805},{"type":"end","period":1,"t":3466,"wall":1793918601271},{"type":"start","period":2,"t":3466,"wall":1793918605604},{"type":"end","period":2,"t":4933,"wall":1793918607071}],"alerted":{},"date":"2026-11-05","time":"22:00","opponent":"Rival","formatId":"U7","field":3,"periods":2,"periodMin":20,"maxExtra":10,"squad":["643e009f-7634-4ccb-b6f0-9762103f0b5a","c2501cd8-cb4e-4991-aba1-277e4b89c2a8","20779df4-6453-4308-ad29-15b8ca99944b","76bcd9e5-6733-4b32-8a2e-fc2cbc1eb7e8"],"starters":["643e009f-7634-4ccb-b6f0-9762103f0b5a","c2501cd8-cb4e-4991-aba1-277e4b89c2a8","20779df4-6453-4308-ad29-15b8ca99944b","76bcd9e5-6733-4b32-8a2e-fc2cbc1eb7e8"],"gkId":"643e009f-7634-4ccb-b6f0-9762103f0b5a","names":{"643e009f-7634-4ccb-b6f0-9762103f0b5a":{"name":"P1","number":"1","fullName":""},"c2501cd8-cb4e-4991-aba1-277e4b89c2a8":{"name":"P2","number":"2","fullName":""},"20779df4-6453-4308-ad29-15b8ca99944b":{"name":"P3","number":"3","fullName":""},"76bcd9e5-6733-4b32-8a2e-fc2cbc1eb7e8":{"name":"P4","number":"4","fullName":""}},"teamId":"t1","club":"Test FC","team":"U8","home":true,"round":"","formation":"2-1","lineup":["643e009f-7634-4ccb-b6f0-9762103f0b5a","c2501cd8-cb4e-4991-aba1-277e4b89c2a8","20779df4-6453-4308-ad29-15b8ca99944b","76bcd9e5-6733-4b32-8a2e-fc2cbc1eb7e8"],"autoStopped":null}')$$,
+  'checks: a real game written by the app is accepted');
+select throws_ok($$insert into public.games (id, team_id, status, data) values ('gy', 't1', 'hacked', '{}')$$,
+  '23514', null, 'checks: unknown game status is refused');
+select throws_ok($$insert into public.games (id, team_id, data) values ('gy', 't1', '[1, 2]')$$,
+  '23514', null, 'checks: game data that is not an object is refused');
+select throws_ok($$insert into public.games (id, team_id, data) values ('gy', 't1', '{"id":"other"}')$$,
+  '23514', null, 'checks: game data with another id is refused');
+select throws_ok($$insert into public.games (id, team_id, data) values ('gy', 't1', '{"teamId":"t3"}')$$,
+  '23514', null, 'checks: game data with another team is refused');
+select throws_ok($$insert into public.games (id, team_id, data) values ('gy', 't1', '{"events":"x"}')$$,
+  '23514', null, 'checks: events that are not a list are refused');
+select throws_ok($$insert into public.games (id, team_id, status, data) values ('gy', 't1', 'live', '{"status":"finished"}')$$,
+  '23514', null, 'checks: a status that differs from the one in the data is refused');
+select throws_ok($$insert into public.games (id, team_id, data)
+  select 'gy', 't1', jsonb_build_object('events', jsonb_agg(jsonb_build_object('id', i))) from generate_series(1, 5001) i$$,
+  '23514', null, 'checks: more than 5000 events are refused');
+select throws_ok($$insert into public.games (id, team_id, data)
+  select 'gy', 't1', jsonb_build_object('junk', string_agg(md5(i::text), '')) from generate_series(1, 40000) i$$,
+  '23514', null, 'checks: a game document over 256 KB is refused');
+select throws_ok($$insert into public.teams (id, club) values ('tx', repeat('x', 501))$$,
+  '23514', null, 'checks: a 501-character club name is refused');
+select throws_ok($$insert into public.players (id, team_id, name) values ('px', 't1', repeat('x', 501))$$,
+  '23514', null, 'checks: a 501-character player name is refused');
+select throws_ok($$insert into public.teams (id) values (repeat('x', 101))$$,
+  '23514', null, 'checks: a 101-character id is refused');
 
 -- service_role (Edge Functions) bypasses RLS.
 set local role service_role;

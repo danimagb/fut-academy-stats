@@ -2,7 +2,7 @@
 
 A phone web app for running youth football games: lineups, live substitutions, goals, cards and minutes played, with a report at full time.
 
-It's plain HTML/CSS/JS with no build step and no server of its own. Data is saved on the phone (browser `localStorage`); signing in adds optional, invite-only [cloud sync](#cloud-sync-optional). Once opened over HTTPS it can be added to the home screen and works offline.
+It's a TypeScript web app (built with Vite) with no server of its own. Data is saved on the phone (browser `localStorage`); signing in adds optional, invite-only [cloud sync](#cloud-sync-optional). Once opened over HTTPS it can be added to the home screen and works offline.
 
 ## Using it
 
@@ -52,26 +52,26 @@ adds cloud sync through [Supabase](https://supabase.com) (EU region), so a team 
 the phone and can be shared with other coaches.
 
 - **Invite-only.** Nobody can create an account. The **admin** gives people access on the
-  in-app **Admin** page (the *Admin* tab, only visible to the admin), as a **director** or
+  in-app **Admin** page (the _Admin_ tab, only visible to the admin), as a **director** or
   **coach** account.
   Profile → Account has two tabs. **Activate account** (first time): the email the admin
   registered → a code sent to that email → choose a password. **Sign in**: email + password
-  (the app keeps you signed in). *Forgot your password?* uses the same code steps.
+  (the app keeps you signed in). _Forgot your password?_ uses the same code steps.
   Passwords are stored by Supabase Auth only as bcrypt hashes.
-- **Synced or local.** Every team is either *Synced* or *Local*. Director
+- **Synced or local.** Every team is either _Synced_ or _Local_. Director
   accounts can upload a team (or create new teams as synced); coach accounts keep their own
   teams on the phone.
-- **Roles in a synced team.** *Directors* can do everything and add or remove coaches (Staff section
-  on the team screen, by email, only people who already have access). *Coaches* are
+- **Roles in a synced team.** _Directors_ can do everything and add or remove coaches (Staff section
+  on the team screen, by email, only people who already have access). _Coaches_ are
   read-only: they see the team, games and reports and can share the PDF, but can't change
   anything.
 - **Local first.** The app saves on the phone first and syncs in the background (on start, a
-  few seconds after a change, when the signal comes back, every minute, or with *Sync now*).
-  Offline at the pitch, changes simply wait. Two phones logging the *same live game* at the
+  few seconds after a change, when the signal comes back, every minute, or with _Sync now_).
+  Offline at the pitch, changes simply wait. Two phones logging the _same live game_ at the
   same time isn't supported: the last one to sync wins.
 - **Signing out** removes the synced teams from that phone (they stay in the cloud); teams that
   were only on the phone stay.
-- **Your data**: Profile → Account → *How your data is handled*.
+- **Your data**: Profile → Account → _How your data is handled_.
 
 Setting it up (once, by the maintainer) is described in
 [`docs/supabase-setup.md`](docs/supabase-setup.md); how it's built is in
@@ -81,35 +81,49 @@ doesn't pause; if it fails, GitHub emails the repository owner.
 
 ## Running it
 
-### On your computer (to try it)
+### On your computer
+
+It's a TypeScript app built with [Vite](https://vite.dev). You need Node 22 (see `.nvmrc`).
 
 ```bash
-cd fut_academy_stats
-python3 -m http.server 8765
+npm ci          # install the exact dependency versions
+npm run dev     # local server with live reload
 ```
 
-Open http://localhost:8765 in Chrome. Press F12 and toggle the device toolbar for a phone-sized view.
+Open the address it prints in Chrome. Press F12 and toggle the device toolbar for a phone-sized view.
+
+Before sending a change, run the same checks as CI:
+
+```bash
+npm run lint && npm run typecheck && npm test && npm run format:check
+npm run e2e     # builds the app and runs the end-to-end tests (Playwright)
+```
 
 ### On your phone
 
-The phone needs the app served over **HTTPS** to install it and use it offline. The easiest free option is GitHub Pages:
+The phone needs the app served over **HTTPS** to install it and use it offline. It's published with GitHub Pages:
 
-1. Create a GitHub repo and push these files.
-2. Repo **Settings → Pages → Deploy from branch → `main` / root**.
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions** (once).
+2. Every push to `main` builds the app and publishes it (`.github/workflows/deploy.yml`).
 3. Open `https://<your-user>.github.io/<repo>/` on the phone, then:
    - Android/Chrome: menu ⋮ → **Add to Home screen**
    - iPhone/Safari: Share → **Add to Home Screen**
 
-When you change the code, bump `CACHE` in `sw.js` so phones pick up the new version.
+Installed apps update on their own: each build gives the service worker a new list of files.
 
 ## Files
 
-- `index.html`: app shell
-- `app.js`: all logic: storage, views, clock, events, report, sign-in, sync, admin
-- `styles.css`: mobile-first styles, light and dark themes
-- `config.js`: the Supabase project URL and public (publishable) key
-- `vendor/`: pinned third-party code (supabase-js)
-- `supabase/`: database migration, Row Level Security tests, the `admin` Edge Function
-- `docs/`: Supabase setup guide and the cloud sync plan
-- `.github/workflows/keep-alive.yml`: keeps the Supabase project from pausing
-- `sw.js`, `manifest.webmanifest`, `icons/`: offline + install support
+- `index.html`: app shell; `src/app/main.ts` starts the app
+- `src/`: the app, in layers (see `docs/standards/code-organisation.md`)
+  - `app/`: startup and wiring (router, the action listener, tab bar, styles list)
+  - `pages/`: one folder per screen (games, teams, team, game-edit, game, report, stats, profile, admin)
+  - `features/`: things screens share (sign-in, team people, PDF, live-game actions, …)
+  - `data/`: the store, saving, sync with Supabase, queries
+  - `domain/`: the game rules and numbers (clock, minutes, lineups, stats, validation), with unit tests
+  - `shared/`: building blocks (translations, HTML escaping, sheets, dialogs, base styles)
+  - `sw.ts`: the service worker (offline + install)
+- `public/`: icons, manifest
+- `e2e/`: end-to-end tests (Playwright)
+- `supabase/`: database migrations, Row Level Security tests, the `admin` Edge Function
+- `docs/`: Supabase setup guide, the cloud sync plan, the TypeScript plan and the code standards
+- `.github/workflows/`: CI checks, deploy to Pages, and the Supabase keep-alive

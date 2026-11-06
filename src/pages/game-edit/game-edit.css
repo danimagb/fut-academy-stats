@@ -1,0 +1,68 @@
+/* Squad picker (new game): two lines per player, the same for every row: number, full name
+   and the goalkeeper glove on top, then Out / Bench / Start across the whole row. */
+.squad-pick .item {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+.squad-pick .pname {
+  overflow-wrap: anywhere;
+}
+.squad-pick .seg {
+  flex: 1 0 100%;
+}
+.squad-pick .seg button {
+  flex: 1;
+  min-height: 40px;
+  font-size: 0.9rem;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  flex: none;
+}
+.seg button {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  padding: 0 9px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.seg button + button {
+  border-left: 1px solid var(--line);
+}
+.seg.big button {
+  min-height: 46px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+}
+.seg button.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+.gkbtn {
+  flex: none;
+  width: 40px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  background: transparent;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.gkbtn.on {
+  filter: none;
+  opacity: 1;
+  background: var(--gk);
+  border-color: var(--gk);
+}
+.gkbtn:disabled {
+  opacity: 0.15;
+}

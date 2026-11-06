@@ -1,0 +1,36 @@
+/* Confirmation popup */
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+.dialog-box {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 16px 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  animation: pop 0.15s ease-out;
+}
+.dialog-box h3 {
+  margin-bottom: 6px;
+}
+.dialog-box p {
+  margin: 0 0 16px;
+}
+.btn.danger-fill {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #2a0606;
+}
