@@ -38,8 +38,8 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 | 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged    | danimagb/fut-academy-stats#63 |
 | 3   | Admin: clubs, their people and club managers                 | ✅ merged    | danimagb/fut-academy-stats#64 |
 | 4   | Sync + permissions in the app (club manager role)            | ✅ merged    | danimagb/fut-academy-stats#66 |
-| 5   | Club manager screens: club teams, players, staff             | 🔄 in review | (this PR)                     |
-| 6   | Club logo (storage, upload, screens, PDFs)                   | ⏳ to do     |                               |
+| 5   | Club manager screens: club teams, players, staff             | ✅ merged    | danimagb/fut-academy-stats#67 |
+| 6   | Club logo (storage, upload, screens, PDFs)                   | 🔄 in review | (this PR)                     |
 | 7   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |                               |
 
 **Where things stand:**
@@ -122,6 +122,20 @@ shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an acco
     club's people with their team roles (online).
   - E2E: `club-manager.spec.ts` (5 tests); 27 e2e tests in all. Checked at phone size in both
     themes.
+- Done in step 6 (club logo):
+  - Migration `20261108000000_club_logos.sql`: `clubs.logo_version`, `set_club_logo(club, present)`
+    (club managers / admin; bumps or clears the version), the public bucket `club-logos` (512 KB,
+    PNG / JPEG / WebP) and its write policies on `storage.objects` (first folder = the club). The
+    local test stub has a minimal `storage` schema; 16 new RLS checks (231 in all).
+  - App: Club page "Add / Change / Remove logo": the centre square of the image at 256 px (WebP,
+    PNG on Safari) uploaded to `<club>/logo`, then `set_club_logo`. `src/data/logos.ts` keeps each
+    logo on the phone (`fut-academy-stats.logos`: the image and a JPEG copy on white), downloads
+    it again when `logo_version` changes (after each sync) and forgets them on sign-out.
+  - Shown on the teams list (club heading), team screen, game scoreboard, report (screen and
+    preview) and both PDFs (the PDF writer now embeds JPEG images, `/DCTDecode`).
+  - Tests: unit tests for the PDF images and the logo cache; e2e `club-logo.spec.ts` (upload,
+    show, remove; another phone downloads it once). The e2e stub fakes Storage. PDFs checked by
+    rendering them.
 
 ## What changes, in one table
 

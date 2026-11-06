@@ -135,8 +135,11 @@ export type Tombstone = {
   moved?: boolean;
 };
 
-/** A club as the phone keeps it: its name and short name (e.g. "PFC", or ''). */
-export type SyncClub = { name: string; shortName: string };
+/**
+ * A club as the phone keeps it: its name, short name (e.g. "PFC", or '') and the version of its
+ * logo (null or missing: no logo; a new number: download the logo again).
+ */
+export type SyncClub = { name: string; shortName: string; logoVersion?: number | null };
 
 /** Cloud sync bookkeeping, kept out of the records so it doesn't count as a change. */
 export type SyncState = {

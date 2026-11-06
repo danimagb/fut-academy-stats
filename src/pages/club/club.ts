@@ -4,7 +4,9 @@
 import { managedClubs } from '@/data/auth';
 import { cloud, refreshAccount, sb, syncNow } from '@/data/session';
 import { isOffline } from '@/data/sync';
-import { db } from '@/data/store';
+import { db, saveQuiet } from '@/data/store';
+import { LOGO_PX, forgetLogo, keepLogo, logoPath, logoSrc, squareLogo } from '@/data/logos';
+import { clubLogo } from '@/features/club-logo/club-logo';
 import {
   OFFLINE,
   accessError,
@@ -18,7 +20,7 @@ import { rerenderSoon } from '@/shared/lib/rerender';
 import { route } from '@/shared/lib/route';
 import { plural, t } from '@/shared/i18n/i18n';
 import { bar } from '@/shared/ui/bar';
-import { notify } from '@/shared/ui/dialog';
+import { askConfirm, notify } from '@/shared/ui/dialog';
 import { main } from '@/shared/ui/main';
 import { toast } from '@/shared/ui/toast';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -112,8 +114,15 @@ export function viewClub(clubId: string | undefined): void {
           )
           .join('')}</ul>`
       : `<p class="muted small">${t('noClubPeople')}</p>`;
+  const logo = logoSrc(clubId);
   main.innerHTML = `
     ${bar(esc(known?.name ?? club.name), '#/teams')}
+    <div class="club-logo-edit">
+      ${logo ? clubLogo(logo, 'lg') : '<span class="club-logo-empty" aria-hidden="true">🛡</span>'}
+      <label class="btn small">${t(logo ? 'logoChange' : 'logoAdd')}<input type="file" accept="image/png,image/jpeg,image/webp" data-change="club-logo" data-cid="${esc(clubId)}" hidden></label>
+      ${logo ? `<button class="btn small ghost danger" data-action="club-logo-remove" data-cid="${esc(clubId)}">${t('logoRemove')}</button>` : ''}
+    </div>
+    <p class="hint">${t('logoHint')}</p>
     <form class="form row gap club-short" data-form="club-short" data-cid="${esc(clubId)}">
       <label class="grow">${t('clubShortName')}<input name="short" maxlength="20" value="${esc(shortName)}" placeholder="PFC" autocomplete="off"></label>
       <button class="btn">${t('save')}</button>
@@ -132,6 +141,35 @@ export function viewClub(clubId: string | undefined): void {
   if (!st) void loadClub(clubId);
 }
 
+/** Puts the club's version of the logo on this phone's copy of the club (before the next sync). */
+function setVersion(clubId: string, v: number | null): void {
+  const known = db.sync.clubs[clubId];
+  if (known) known.logoVersion = v;
+  saveQuiet();
+}
+
+/** Uploads a new logo: the centre square of the image, 256 px, then bumps the club's logo version. */
+export async function uploadClubLogo(clubId: string, file: File): Promise<void> {
+  if (!navigator.onLine) return void notify(t('needsInternet'));
+  toast(t('logoUploading'));
+  try {
+    const image = await squareLogo(file, LOGO_PX);
+    const { error } = await client()
+      .storage.from('club-logos')
+      .upload(logoPath(clubId), image, { upsert: true, contentType: image.type, cacheControl: '31536000' });
+    if (error) throw error;
+    const v = await q<number>(client().rpc('set_club_logo', { _club_id: clubId, _present: true }));
+    await keepLogo(clubId, v, image);
+    setVersion(clubId, v);
+    toast(t('logoSaved'));
+  } catch (e) {
+    console.warn('Club logo: upload failed', e);
+    notify(e instanceof Error && /decode|image/i.test(e.message) ? t('logoBadImage') : accessError(e));
+  }
+  rerenderSoon();
+  void syncNow();
+}
+
 /** The club page: its screen, actions and forms (app/ registers them at startup). */
 export const clubPage = {
   views: { club: viewClub },
@@ -139,6 +177,29 @@ export const clubPage = {
     'club-reload': () => {
       const id = route().id;
       if (id) void loadClub(id);
+    },
+    'club-logo-remove': async ({ cid = '' }: DOMStringMap) => {
+      const ok = await askConfirm({
+        title: t('logoRemove'),
+        message: t('logoRemoveConfirm'),
+        ok: t('logoRemove'),
+        danger: true,
+      });
+      if (!ok) return;
+      try {
+        const { error } = await client()
+          .storage.from('club-logos')
+          .remove([logoPath(cid)]);
+        if (error) throw error;
+        await q(client().rpc('set_club_logo', { _club_id: cid, _present: false }));
+        forgetLogo(cid);
+        setVersion(cid, null);
+        toast(t('removed'));
+      } catch (e) {
+        notify(accessError(e));
+      }
+      rerenderSoon();
+      void syncNow();
     },
   },
   forms: {

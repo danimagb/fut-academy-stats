@@ -49,6 +49,8 @@ export async function signInAs(
   account: Row = { is_admin: true },
   tables: Tables = {},
   adminFunction: AdminFunction = fakeAdminFunction,
+  /** Files already in Storage (club-logos), by path. */
+  storage: [string, { body: Buffer; type: string }][] = [],
 ) {
   const now = Math.floor(Date.now() / 1000);
   const session = {
@@ -70,6 +72,7 @@ export async function signInAs(
     team_members: [],
     ...tables,
   };
+  const files = new Map<string, { body: Buffer; type: string }>(storage);
   const body = (req: Request): unknown => {
     try {
       return req.postDataJSON();
@@ -85,6 +88,34 @@ export async function signInAs(
     if (url.pathname === '/functions/v1/admin') {
       const [status, json] = adminFunction((body(req) ?? {}) as Row, rows);
       return route.fulfill({ status, json });
+    }
+    // Storage (club logos): uploads kept in memory, served at the public URL.
+    const object = url.pathname.match(/^\/storage\/v1\/object\/(public\/)?club-logos\/(.+)$/);
+    if (object) {
+      const path = decodeURIComponent(object[2] ?? '');
+      if (object[1]) {
+        const file = files.get(path);
+        return file
+          ? route.fulfill({ body: file.body, contentType: file.type })
+          : route.fulfill({ status: 400, json: { error: 'not_found' } });
+      }
+      files.set(path, {
+        body: req.postDataBuffer() ?? Buffer.alloc(0),
+        type: req.headers()['content-type'] ?? '',
+      });
+      return route.fulfill({ json: { Key: `club-logos/${path}` } });
+    }
+    if (url.pathname === '/storage/v1/object/club-logos' && req.method() === 'DELETE') {
+      const prefixes = ((body(req) as { prefixes?: string[] } | null)?.prefixes ?? []).map(String);
+      for (const p of prefixes) files.delete(p);
+      return route.fulfill({ json: prefixes.map((name) => ({ name })) });
+    }
+    if (url.pathname === '/rest/v1/rpc/set_club_logo') {
+      const { _club_id, _present } = (body(req) ?? {}) as { _club_id?: string; _present?: boolean };
+      const club = (rows.clubs ?? []).find((c) => c.id === _club_id);
+      if (!club) return route.fulfill({ status: 404, json: { message: 'no such club' } });
+      club.logo_version = _present ? Number(club.logo_version ?? 0) + 1 : null;
+      return route.fulfill({ json: club.logo_version });
     }
     // my_teams(): the user's teams and roles, worked out from the tables like the database does.
     if (url.pathname === '/rest/v1/rpc/my_teams') {
