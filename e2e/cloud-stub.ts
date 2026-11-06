@@ -86,6 +86,21 @@ export async function signInAs(
       const [status, json] = adminFunction((body(req) ?? {}) as Row, rows);
       return route.fulfill({ status, json });
     }
+    // my_teams(): the user's teams and roles, worked out from the tables like the database does.
+    if (url.pathname === '/rest/v1/rpc/my_teams') {
+      const managed = new Set(
+        (rows.club_members ?? [])
+          .filter((m) => m.user_id === user.id && m.role === 'manager')
+          .map((m) => m.club_id),
+      );
+      const mine = (rows.teams ?? [])
+        .filter((tm) => managed.has(tm.club_id))
+        .map((tm) => ({ team_id: tm.id, role: 'club_manager' }));
+      for (const m of rows.team_members ?? [])
+        if (m.user_id === user.id && !mine.some((x) => x.team_id === m.team_id))
+          mine.push({ team_id: m.team_id, role: m.role === 'manager' ? 'team_manager' : 'team_coach' });
+      return route.fulfill({ json: mine });
+    }
     const table = url.pathname.match(/^\/rest\/v1\/(\w+)/)?.[1];
     if (!table) return route.fulfill({ status: 404, json: {} });
     const list = (rows[table] ??= []);

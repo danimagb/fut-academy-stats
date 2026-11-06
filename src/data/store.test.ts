@@ -129,7 +129,7 @@ describe('change tracking', () => {
   });
 
   it('a record moved from a cloud team to a team on this phone leaves a "moved" tombstone', () => {
-    db.sync.teams.T = 'director';
+    db.sync.teams.T = 'club_manager';
     db.teams.push(makeTeam({ id: 'L' }));
     saveQuiet();
     db.players[0]!.teamId = 'L';

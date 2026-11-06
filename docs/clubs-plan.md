@@ -36,8 +36,8 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 | --- | ------------------------------------------------------------ | ------------ | ----------------------------- |
 | 1   | Plan (this document)                                         | ✅ approved  | danimagb/fut-academy-stats#59 |
 | 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged    | danimagb/fut-academy-stats#63 |
-| 3   | Admin: clubs, their people and club managers                 | 🔄 in review | (this PR)                     |
-| 4   | Sync + permissions in the app (club manager role)            | ⏳ to do     |                               |
+| 3   | Admin: clubs, their people and club managers                 | ✅ merged    | danimagb/fut-academy-stats#64 |
+| 4   | Sync + permissions in the app (club manager role)            | 🔄 in review | (this PR)                     |
 | 5   | Club manager screens: club teams, players, staff             | ⏳ to do     |                               |
 | 6   | Club logo (storage, upload, screens, PDFs)                   | ⏳ to do     |                               |
 | 7   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |                               |
@@ -78,7 +78,7 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 - Done in step 3 (admin; not deployed yet):
   - `admin` Edge Function: `create_account { email, club_id, role: 'manager' | 'staff' }` (no
     kind). An email that already has access is added to the club (`existed: true`). Unit tests:
-    `npx deno@2 test --allow-env --no-lock supabase/functions/admin/` (6, with a fake service-role client).
+    `npx deno@2 test --allow-env --no-lock --node-modules-dir=none supabase/functions/admin/` (6, with a fake service-role client).
   - Account on the phone (`src/data/auth.ts`): `{ email, isAdmin, clubs: [{ id, name,
 shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an account stored by
     an older version (with `kind`) is read as one with no clubs. `managedClubs(account)`;
@@ -89,8 +89,26 @@ shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an acco
     accounts with their clubs.
   - E2E: `e2e/cloud-stub.ts` now keeps writes (insert / update / delete, `in.` and `is.null`
     filters) and fakes the `admin` function; `e2e/admin.spec.ts` has 3 tests.
-  - The team screen's People section and the sync engine still use `director` /
-    `add_team_coach`: step 4 and 5.
+- Done in step 4 (sync and permissions):
+  - `Role` = `club_manager` / `team_manager` / `team_coach`; roles stored by older versions
+    (`director` / `coach`) are read as team roles until the next pull. `Team.clubId` (cloud
+    teams); `db.sync.clubs` = `{ [clubId]: { name, shortName } }`, pulled in full every sync.
+  - Pull: `rpc('my_teams')` instead of `team_members`. Push: `roleCanWrite(role, kind)`: club
+    managers everything, team managers players and games (not the team row, nor its delete),
+    team coaches nothing; a team record a team manager changed comes back from the cloud.
+    `toRow.teams` sends `club_id`.
+  - Uploads go into a club the user manages (`uploadTeams(ids, clubId)`, the first-sign-in
+    sheet asks which club when there are several); "+ New team" makes a cloud team of the
+    first managed club. `canUpload()` = manages a club. `access.ts`: `readOnlyTeam` =
+    `team_coach`; `canManageTeam` (rename, delete, staff) = local team or club manager.
+  - Staff section: club managers add by email (looked up in `accounts`, then a direct insert;
+    the database refuses people outside the club) and remove anyone. The picker comes in step 5.
+  - Texts that said "director" for managing teams now say the club's coordinators.
+  - Tests: sync unit tests on the new roles and clubs (118 unit tests); e2e
+    `club-roles.spec.ts` (coach read-only, team manager and club manager can edit players;
+    Profile shows the club role); the e2e stub answers `rpc/my_teams`.
+  - Not yet: the team screen still lets a team manager edit the team's name and club (the
+    change comes back from the cloud), and doesn't show the club's short name: step 5.
 
 ## What changes, in one table
 

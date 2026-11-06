@@ -64,6 +64,8 @@ test('the admin changes club and team roles and gives club staff a role in a tea
   const errors = watchErrors(page);
   const rows = await signInAs(page, ADMIN, { is_admin: true }, padroense());
   await page.goto('#/admin');
+  // The admin manages Padroense FC: let the first sync download its team (and redraw) first.
+  await page.waitForLoadState('networkidle');
   const team = page.locator('.admin-team');
   await expect(team).toContainText(M.email);
 

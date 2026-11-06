@@ -3,19 +3,19 @@
 // uploads the changes of cloud teams (push), then downloads what changed in the cloud (pull).
 // Only cloud teams (in db.sync.teams) and their players and games are synced; teams on this
 // phone never leave it. Failures only show in the quiet status line on Profile.
-//  * push (teams where this user is director): upsert `dirty` records, then soft-delete the
+//  * push (what this user may write: see canPush): upsert `dirty` records, then soft-delete the
 //    records in `db.deleted` (deleted_at). `dirty` is cleared only if the record didn't change
 //    while it was being sent.
-//  * pull: memberships first (teams this user was removed from leave the phone), then rows
-//    changed since the last pull (with some overlap). Local changes not uploaded yet win over
-//    the cloud for directors; for coaches the cloud always wins. Rows that fail
-//    checkIncoming() are left out.
+//  * pull: this user's teams and roles first (my_teams(); teams this user lost leave the
+//    phone) and their clubs, then rows changed since the last pull (with some overlap). Local
+//    changes not uploaded yet win over the cloud where this user may write them; elsewhere the
+//    cloud always wins. Rows that fail checkIncoming() are left out.
 //  * Last write wins per record (a live game logged on two phones at once overwrites itself).
 //
 // The engine knows nothing about screens: the app passes in the client and what to do on
 // status changes and new data (configureSync), so this module never imports upwards.
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
-import type { Game, Player, RecordKind, Role, Team, Tombstone } from '@/domain/types';
+import type { Game, Player, RecordKind, Role, SyncClub, Team, Tombstone } from '@/domain/types';
 import { checkIncoming } from '@/domain/validate';
 import { t } from '@/shared/i18n/i18n';
 import { RECORD_KINDS, db, emptySync, isCloudTeam, recordKey, saveQuiet, teamIdOf } from './store';
@@ -29,7 +29,7 @@ const setList = (kind: RecordKind, records: SyncRecord[]): void => {
 
 /** Rows as the database sends them (the columns in COLUMNS). */
 type Deleted = { updated_at: string; deleted_at: string | null };
-type TeamRow = Deleted & { id: string; club: string | null; name: string | null };
+type TeamRow = Deleted & { id: string; club_id: string | null; club: string | null; name: string | null };
 type PlayerRow = Deleted & {
   id: string;
   team_id: string;
@@ -77,7 +77,7 @@ const PAGE = 1000;
 const PUSH_BATCH = 100;
 const PULL_OVERLAP_MS = 10000; // rows can commit with a slightly older updated_at
 const COLUMNS: Record<RecordKind, string> = {
-  teams: 'id, club, name, updated_at, deleted_at',
+  teams: 'id, club_id, club, name, updated_at, deleted_at',
   players: 'id, team_id, number, name, full_name, updated_at, deleted_at',
   games: 'id, team_id, data, updated_at, deleted_at',
 };
@@ -85,7 +85,14 @@ const validDate = (s: unknown): string | null =>
   typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) ? s : null;
 // App record -> database row. deleted_at: null, so uploading a record again undeletes it.
 export const toRow = {
-  teams: (r: Team) => ({ id: r.id, club: r.club || '', name: r.name || '', deleted_at: null }),
+  // club is set by the server from the club's name; club_id is required for a cloud team.
+  teams: (r: Team) => ({
+    id: r.id,
+    club_id: r.clubId ?? null,
+    club: r.club || '',
+    name: r.name || '',
+    deleted_at: null,
+  }),
   players: (r: Player) => ({
     id: r.id,
     team_id: r.teamId,
@@ -105,7 +112,12 @@ export const toRow = {
 };
 // Database row -> app record (the app stores shirt numbers as text too).
 export const fromRow = {
-  teams: (row: TeamRow): Team => ({ id: row.id, club: row.club ?? '', name: row.name ?? '' }),
+  teams: (row: TeamRow): Team => ({
+    id: row.id,
+    club: row.club ?? '',
+    name: row.name ?? '',
+    ...(row.club_id ? { clubId: row.club_id } : {}),
+  }),
   players: (row: PlayerRow): Player => ({
     id: row.id,
     teamId: row.team_id,
@@ -150,15 +162,23 @@ export const sameRecord = (a: object, b: object): boolean =>
 export const roleOf = (teamId: string | null | undefined): Role | null =>
   (teamId && db.sync.teams[teamId]) || null;
 export const localTeams = (): Team[] => db.teams.filter((tm) => !isCloudTeam(tm.id));
-const pushable = (kind: RecordKind, r: SyncRecord): boolean =>
-  !!r.dirty && roleOf(teamIdOf(kind, r)) === 'director';
+const ROLES: readonly Role[] = ['club_manager', 'team_manager', 'team_coach'];
+/**
+ * What a role may write in a cloud team (the database checks it too): club managers everything;
+ * team managers the players and games, not the team itself; team coaches nothing.
+ */
+export const roleCanWrite = (role: Role | null | undefined, kind: RecordKind): boolean =>
+  role === 'club_manager' || (role === 'team_manager' && kind !== 'teams');
+const canPush = (kind: RecordKind, teamId: string | null | undefined): boolean =>
+  roleCanWrite(roleOf(teamId), kind);
+const pushable = (kind: RecordKind, r: SyncRecord): boolean => !!r.dirty && canPush(kind, teamIdOf(kind, r));
 export const hasCloudChanges = (): boolean =>
   RECORD_KINDS.some((kind) => list(kind).some((r) => r.dirty && isCloudTeam(teamIdOf(kind, r)))) ||
   db.deleted.some((d) => isCloudTeam(d.teamId));
 // Changes this phone still has to upload.
 export const pendingCount = (): number =>
   RECORD_KINDS.reduce((n, kind) => n + list(kind).filter((r) => pushable(kind, r)).length, 0) +
-  db.deleted.filter((d) => roleOf(d.teamId) === 'director').length;
+  db.deleted.filter((d) => canPush(d.kind, d.teamId)).length;
 
 export type SyncStatus = 'idle' | 'running' | 'ok' | 'offline' | 'failed';
 export const syncState: { status: SyncStatus; error: string } = { status: 'idle', error: '' };
@@ -261,7 +281,7 @@ async function syncOnce(): Promise<void> {
   hooks.onStatus();
   try {
     const pushed = await push(epoch);
-    await pull(epoch, userId ?? '');
+    await pull(epoch);
     db.sync.lastSyncAt = Date.now();
     syncState.status = pushed ? 'ok' : 'failed';
   } catch (e) {
@@ -320,15 +340,14 @@ async function push(epoch: number): Promise<boolean> {
     }
   }
 
-  // Deletes. Those of teams on this phone (or where this user is a coach) are never sent.
+  // Deletes. Those of teams on this phone (or that this user may not delete) are never sent.
   const toSend: Tombstone[] = [];
   for (const d of db.deleted) {
-    const role = roleOf(d.teamId);
-    if (role === 'director' && !refused.has(d.teamId ?? '')) toSend.push(d);
-    else if (role === 'coach' && d.teamId) forceFull.add(d.teamId); // get the deleted record back
+    if (canPush(d.kind, d.teamId) && !refused.has(d.teamId ?? '')) toSend.push(d);
+    else if (roleOf(d.teamId) && d.teamId) forceFull.add(d.teamId); // get the deleted record back
   }
   db.deleted = db.deleted.filter(
-    (d) => toSend.includes(d) || (refused.has(d.teamId ?? '') && roleOf(d.teamId) === 'director'),
+    (d) => toSend.includes(d) || (refused.has(d.teamId ?? '') && canPush(d.kind, d.teamId)),
   );
   for (const kind of RECORD_KINDS) {
     const ds = toSend.filter((d) => d.kind === kind);
@@ -352,7 +371,7 @@ async function push(epoch: number): Promise<boolean> {
 
 // The server refused an upload for a team (RLS, error 42501). A team being uploaded wasn't
 // allowed (e.g. its id belongs to someone else's team): it goes back to being a local team.
-// Otherwise this user probably isn't a director any more: drop the changes so the cloud wins,
+// Otherwise this user probably lost the right to write: drop the changes so the cloud wins,
 // and download the team in full on the pull that follows (which also refreshes the role).
 function pushRefused(tid: string): void {
   if (db.sync.uploads.includes(tid)) {
@@ -396,31 +415,41 @@ async function fetchRows(
   }
 }
 
-async function pull(epoch: number, userId: string): Promise<void> {
-  const {
-    data: members,
-    error,
-    status,
-  } = await client().from('team_members').select('team_id, role').eq('user_id', userId);
+async function pull(epoch: number): Promise<void> {
+  const mine = await client().rpc('my_teams');
   checkEpoch(epoch);
-  if (error) throw new SyncError(error, status);
+  if (mine.error) throw new SyncError(mine.error, mine.status);
   const prev = db.sync.teams;
-  const teams: Record<string, Role> = Object.fromEntries(
-    ((members ?? []) as { team_id: string; role: Role }[]).map((m) => [m.team_id, m.role]),
-  );
+  const teams: Record<string, Role> = {};
+  for (const m of (mine.data ?? []) as { team_id: string; role: string }[])
+    if ((ROLES as readonly string[]).includes(m.role)) teams[m.team_id] = m.role as Role;
+  // The clubs this user can see (few rows: always all of them).
+  const clubRows = await client()
+    .from('clubs')
+    .select('id, name, short_name')
+    .order('id')
+    .range(0, PAGE - 1);
+  checkEpoch(epoch);
+  if (clubRows.error) throw new SyncError(clubRows.error, clubRows.status);
+  const clubs: Record<string, SyncClub> = {};
+  for (const c of (clubRows.data ?? []) as { id: string; name: string; short_name: string | null }[])
+    if (typeof c.id === 'string' && typeof c.name === 'string')
+      clubs[c.id] = { name: c.name, shortName: c.short_name ?? '' };
   // Teams still being uploaded aren't in the cloud yet: keep them.
   for (const id of db.sync.uploads) if (prev[id] && !teams[id]) teams[id] = prev[id];
   const ids = Object.keys(teams);
-  // Download in full: new teams, teams whose role changed, refused ones, and coach teams with
-  // local edits (so the cloud version comes back).
+  // Download in full: new teams, teams whose role changed, refused ones, and teams with local
+  // edits this user may not upload (so the cloud version comes back).
   const full = new Set(
     ids.filter(
       (id) =>
         !prev[id] ||
         prev[id] !== teams[id] ||
         forceFull.has(id) ||
-        (teams[id] === 'coach' &&
-          RECORD_KINDS.some((kind) => list(kind).some((r) => r.dirty && teamIdOf(kind, r) === id))),
+        RECORD_KINDS.some(
+          (kind) =>
+            !roleCanWrite(teams[id], kind) && list(kind).some((r) => r.dirty && teamIdOf(kind, r) === id),
+        ),
     ),
   );
   const since = db.sync.lastPulledAt
@@ -449,7 +478,9 @@ async function pull(epoch: number, userId: string): Promise<void> {
     changed = true;
   }
   if (ids.some((id) => prev[id] !== teams[id])) changed = true;
+  if (!sameRecord(db.sync.clubs, clubs)) changed = true;
   db.sync.teams = teams;
+  db.sync.clubs = clubs;
   for (const id of full) forceFull.delete(id);
 
   let latest = db.sync.lastPulledAt;
@@ -474,7 +505,7 @@ async function pull(epoch: number, userId: string): Promise<void> {
         if (kind === 'teams') db.players = db.players.filter((p) => p.teamId !== row.id);
         continue;
       }
-      if (local?.dirty && teams[teamIdOf(kind, local)] === 'director') continue; // will be uploaded
+      if (local?.dirty && roleCanWrite(teams[teamIdOf(kind, local)], kind)) continue; // will be uploaded
       const rec = { ...recordFromRow(kind, row), updatedAt: Date.parse(row.updated_at), dirty: false };
       // Never trust what comes from the cloud: a damaged or implausible record is left out.
       const check = checkIncoming(kind, rec);
@@ -494,11 +525,11 @@ async function pull(epoch: number, userId: string): Promise<void> {
       }
       changed = true;
     }
-    // Teams downloaded in full: what the cloud doesn't have isn't theirs (except changes a
-    // director hasn't uploaded yet).
+    // Teams downloaded in full: what the cloud doesn't have isn't theirs (except changes this
+    // user may write and hasn't uploaded yet).
     for (const r of records) {
       const tid = teamIdOf(kind, r);
-      if (full.has(tid) && !seen.has(r.id) && !(r.dirty && teams[tid] === 'director')) drop.add(r.id);
+      if (full.has(tid) && !seen.has(r.id) && !(r.dirty && roleCanWrite(teams[tid], kind))) drop.add(r.id);
     }
     if (drop.size) {
       setList(

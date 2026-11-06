@@ -77,7 +77,7 @@ const actions: Record<string, ActionHandler> = {
       cancel: false,
     }),
 
-  // Signed in with a director (or admin) account: new teams are cloud teams straight away.
+  // Signed in as a club manager: new teams are cloud teams of that club straight away.
 
   // Fix a goal given to the wrong player: pick who was on the pitch at that moment, or remove it.
   'menu-toggle': (_, el) => {
@@ -319,9 +319,9 @@ export function boot(): void {
     const handler = formHandler(form);
     if (handler) return void handler(data, formEl);
     if (form === 'add-coach') {
-      // Directors only (the form isn't shown to coaches; the database checks it too).
+      // Club managers only (the form isn't shown to others; the database checks it too).
       const teamId = route().id;
-      if (!teamId || roleOf(teamId) !== 'director') return refuseReadOnly();
+      if (!teamId || roleOf(teamId) !== 'club_manager') return refuseReadOnly();
       teamOpen.staff = true; // the result shows in the Staff section
       render();
       return void addCoach(teamId, String(data.get('email')).trim().toLowerCase());
@@ -338,7 +338,7 @@ export function boot(): void {
     if (form === 'upload-teams') {
       closeSheet();
       const ids = data.getAll('team').map(String);
-      if (ids.length) uploadTeams(ids);
+      if (ids.length) uploadTeams(ids, String(data.get('club') ?? ''));
       return;
     }
     if (form === 'game-info') {

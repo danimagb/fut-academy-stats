@@ -20,7 +20,7 @@ const en = {
     '<p><b>Without an account</b>, everything stays on this device. Nothing is sent anywhere.</p>' +
     "<p><b>Synced teams</b> are stored in the app's cloud database (Supabase, in the EU): the team and club name, players' shirt numbers, shirt names and full names (if entered), and the games (lineups, minutes, subs, goals and cards). Only people the admin gave access to, and who are members of that team, can see it; the admin can see which teams exist and who is in them. Nothing else is collected: no photos, birth dates or contact details of players.</p>" +
     "<p><b>Your account</b> is your email and a password. The password is stored only as a one-way hash (it can't be read back, not even by the admin); the email is also used to send you codes the first time and if you forget your password.</p>" +
-    '<p><b>Deleting</b>: a director can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>' +
+    "<p><b>Deleting</b>: the club's coordinators can delete a team, which deletes it in the cloud too. To remove your account, ask the admin.</p>" +
     "<p>The club is responsible for agreeing to store players' names, and for parents' consent where needed.</p>",
   opponent: 'Opponent',
   gkPlus: '1 GK + {n}',
@@ -205,9 +205,10 @@ const en = {
   badgeCloud: 'Synced',
   badgeLocal: 'Local',
   uploadTeam: 'Sync this team',
-  uploadTeamHint: "You'll be its director and can add coaches.",
+  uploadTeamHint:
+    "It goes into your club: you and the club's other coordinators manage it and choose its staff.",
   uploadTitle: 'Sync your teams?',
-  uploadHint: "Choose the teams to sync. You'll be their director.",
+  uploadHint: 'Choose the teams to sync. They go into your club, which you coordinate.',
   uploadSelected: 'Sync selected',
   notNow: 'Not now',
   uploading: 'Syncing…',
@@ -334,9 +335,9 @@ const en = {
   readOnlyToast: "Read-only: you're a coach on this team",
   finishedHint: 'Game finished: no new events can be recorded. Tap a goal in the timeline to edit it.',
   readOnlyHint:
-    "You're a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.",
+    "You're a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors and the club's coordinators can change them.",
   newGameCoachOnly:
-    "You're a coach on these teams, so only directors create games. To log your own games, create a local team.",
+    "You're a coach on these teams, so only their directors and the club's coordinators create games. To log your own games, create a local team.",
   newTeamCloud: 'Synced team. You can add coaches under People.',
   people: 'Staff',
   loading: 'Loading…',
@@ -351,7 +352,7 @@ const en = {
     "Only people the admin has given access. Coaches see the team, its games and reports, but can't change anything.",
   coachAdded: '{email} was added as a coach.',
   coachAlready: '{email} is already in this team.',
-  coachNoAccount: "This person doesn't have access yet. Ask the admin.",
+  coachNoAccount: "This person isn't in your club yet (or has no access). Ask the admin.",
   notAllowed: "You're not allowed to do that.",
   actionFailed: "Couldn't do that ({msg}).",
   removeFromTeam: 'Remove from team',
@@ -359,8 +360,7 @@ const en = {
   removed: 'Removed',
   leaveTeam: 'Leave team',
   leftTeam: 'You left the team',
-  leaveTeamConfirm: "Leave this team? You'll only see it again if a director adds you back.",
-  lastDirector: 'A team must keep at least one director.',
+  leaveTeamConfirm: "Leave this team? You'll only see it again if a club coordinator adds you back.",
   admin: 'Admin',
   adminHint: 'Clubs, people and access.',
   adminOnly: 'Only the admin can open this page.',
@@ -438,7 +438,7 @@ const pt: Record<MessageKey, string> = {
     '<p><b>Sem conta</b>, fica tudo neste dispositivo. Nada é enviado para lado nenhum.</p>' +
     '<p><b>As equipas sincronizadas</b> ficam guardadas na base de dados da app na nuvem (Supabase, na UE): o nome da equipa e do clube, os números, nomes na camisola e nomes completos dos jogadores (se indicados) e os jogos (convocados, minutos, substituições, golos e cartões). Só as pessoas a quem o administrador deu acesso e que são membros dessa equipa a podem ver; o administrador vê que equipas existem e quem pertence a cada uma. Não é recolhido mais nada: nem fotografias, nem datas de nascimento, nem contactos dos jogadores.</p>' +
     '<p><b>A tua conta</b> é o teu email e uma palavra-passe. A palavra-passe só é guardada como um código irreversível (hash) e não pode ser lida, nem pelo administrador; o email serve também para te enviar códigos na primeira vez e se te esqueceres da palavra-passe.</p>' +
-    '<p><b>Apagar</b>: um diretor pode apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>' +
+    '<p><b>Apagar</b>: os coordenadores do clube podem apagar uma equipa, o que a apaga também na nuvem. Para remover a tua conta, fala com o administrador.</p>' +
     '<p>Cabe ao clube aceitar que os nomes dos jogadores sejam guardados e obter o consentimento dos pais quando necessário.</p>',
   opponent: 'Adversário',
   gkPlus: '1 GR + {n}',
@@ -623,9 +623,10 @@ const pt: Record<MessageKey, string> = {
   badgeCloud: 'Sincronizada',
   badgeLocal: 'Local',
   uploadTeam: 'Sincronizar esta equipa',
-  uploadTeamHint: 'Ficas como diretor e podes adicionar treinadores.',
+  uploadTeamHint:
+    'Vai para o teu clube: tu e os outros coordenadores do clube gerem-na e escolhem a equipa técnica.',
   uploadTitle: 'Sincronizar as tuas equipas?',
-  uploadHint: 'Escolhe as equipas a sincronizar. Ficas como diretor.',
+  uploadHint: 'Escolhe as equipas a sincronizar. Vão para o clube que coordenas.',
   uploadSelected: 'Sincronizar selecionadas',
   notNow: 'Agora não',
   uploading: 'A sincronizar…',
@@ -753,9 +754,9 @@ const pt: Record<MessageKey, string> = {
   finishedHint:
     'Jogo terminado: não é possível registar novos eventos. Toca num golo na cronologia para o editar.',
   readOnlyHint:
-    'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
+    'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores e os coordenadores do clube os podem alterar.',
   newGameCoachOnly:
-    'És treinador nestas equipas, por isso só os diretores criam jogos. Para registares jogos teus, cria uma equipa local.',
+    'És treinador nestas equipas, por isso só os diretores e os coordenadores do clube criam jogos. Para registares jogos teus, cria uma equipa local.',
   newTeamCloud: 'Equipa sincronizada. Podes adicionar treinadores em Pessoas.',
   people: 'Staff',
   loading: 'A carregar…',
@@ -770,7 +771,7 @@ const pt: Record<MessageKey, string> = {
     'Só pessoas a quem o administrador deu acesso. Os treinadores veem a equipa, os jogos e os relatórios, mas não podem alterar nada.',
   coachAdded: '{email} foi adicionado como treinador.',
   coachAlready: '{email} já está nesta equipa.',
-  coachNoAccount: 'Esta pessoa ainda não tem acesso. Fala com o administrador.',
+  coachNoAccount: 'Esta pessoa ainda não está no teu clube (ou não tem acesso). Fala com o administrador.',
   notAllowed: 'Não tens permissão para fazer isso.',
   actionFailed: 'Não foi possível ({msg}).',
   removeFromTeam: 'Remover da equipa',
@@ -778,8 +779,7 @@ const pt: Record<MessageKey, string> = {
   removed: 'Removido',
   leaveTeam: 'Sair da equipa',
   leftTeam: 'Saíste da equipa',
-  leaveTeamConfirm: 'Sair desta equipa? Só a voltas a ver se um diretor te adicionar outra vez.',
-  lastDirector: 'Uma equipa tem de ter pelo menos um diretor.',
+  leaveTeamConfirm: 'Sair desta equipa? Só a voltas a ver se um coordenador do clube te adicionar outra vez.',
   admin: 'Admin',
   adminHint: 'Clubes, pessoas e acessos.',
   adminOnly: 'Só o administrador pode abrir esta página.',
