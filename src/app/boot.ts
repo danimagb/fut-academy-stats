@@ -26,7 +26,13 @@ import { getGame, getTeam } from '@/data/queries';
 import { canSync, canUpload, cloud, sb, syncNow } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
-import { formHandler, installActionListener, registerActions, registerForms } from '@/app/actions';
+import {
+  actionHandler,
+  formHandler,
+  installActionListener,
+  registerActions,
+  registerForms,
+} from '@/app/actions';
 import { addViews, onRender, render, route, setFallbackView } from '@/app/router';
 import { gamesPage, viewGames } from '@/pages/games/games';
 import { keepScreenOn } from '@/app/wake-lock';
@@ -278,6 +284,9 @@ export function boot(): void {
   document.addEventListener('change', async (e) => {
     const el = e.target as HTMLInputElement; // selects and the backup file input
     if (!el.dataset) return;
+    // Pickers (<select data-pick="action">): run the action with the chosen value.
+    const pick = el.dataset.pick ? actionHandler(el.dataset.pick) : undefined;
+    if (pick) return void pick({ ...el.dataset, id: el.value }, el);
     const { change, id = '', tid = '' } = el.dataset; // (data-tid: data-team is the team screen's inputs)
     // Admin page: club and team roles (RLS lets only the admin change them).
     const { cid = '' } = el.dataset;

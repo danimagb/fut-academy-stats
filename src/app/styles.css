@@ -17,7 +17,6 @@
 @import '../pages/game/pitch.css';
 @import '../pages/game/scoreboard.css';
 @import './tabbar.css';
-@import '../pages/games/filter.css';
 @import '../pages/profile/settings.css';
 @import '../pages/games/games.css';
 @import '../features/sync-status/sync-status.css';
@@ -26,3 +25,4 @@
 @import '../pages/team/team.css';
 @import '../pages/stats/stats.css';
 @import '../features/club-logo/club-logo.css';
+@import '../features/team-filter/team-filter.css';

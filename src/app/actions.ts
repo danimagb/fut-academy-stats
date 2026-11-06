@@ -15,6 +15,9 @@ export function registerActions(map: Record<string, ActionHandler>): void {
   }
 }
 
+/** The handler of an action (also run by pickers: `<select data-pick="action">`, id = the value). */
+export const actionHandler = (name: string): ActionHandler | undefined => handlers[name];
+
 /** A form handler gets the form's data and the form. */
 export type FormHandler = (data: FormData, form: HTMLFormElement) => unknown;
 

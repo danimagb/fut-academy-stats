@@ -9,12 +9,17 @@ test('the games list filters by team when there is more than one', async ({ page
 
   await page.goto('#/games');
   const main = page.locator('#main');
+  const pick = main.locator('select[data-pick="games-team"]');
   await expect(main).toContainText('Test FC - U8 x Rival');
-  await main.getByRole('tab', { name: 'Test FC - U9' }).click();
+  await expect(pick.locator('option')).toHaveText(['All teams', 'Test FC - U8', 'Test FC - U9']);
+  await pick.selectOption({ label: 'Test FC - U9' });
   await expect(main).not.toContainText('Rival');
   await page.reload();
-  await expect(main.getByRole('tab', { name: 'Test FC - U9' })).toHaveAttribute('aria-selected', 'true');
-  await main.getByRole('tab', { name: 'Test FC - U8' }).click();
+  await expect(pick).toHaveValue(/.+/);
+  await expect(pick.locator('option:checked')).toHaveText('Test FC - U9');
+  await pick.selectOption({ label: 'Test FC - U8' });
+  await expect(main).toContainText('Test FC - U8 x Rival');
+  await pick.selectOption({ label: 'All teams' });
   await expect(main).toContainText('Test FC - U8 x Rival');
   expect(errors).toEqual([]);
 });

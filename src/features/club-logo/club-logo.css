@@ -121,7 +121,7 @@
   font-family: inherit;
   letter-spacing: -0.02em;
 }
-/* Two crests side by side (report) or overlapping a little (games list). */
+/* Two crests side by side (report, games list). */
 .crest-pair {
   display: flex;
   align-items: center;
@@ -141,7 +141,5 @@
 .game-crests {
   display: flex;
   flex: none;
-}
-.game-crests .club-logo + .club-logo {
-  margin-left: -8px;
+  gap: 4px;
 }

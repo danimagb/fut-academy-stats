@@ -1,0 +1,33 @@
+/* Team / season pickers above a list: a select (with the team's crest), side by side. */
+.pickers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0 0;
+}
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 160px;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 0 0 10px;
+}
+.picker select {
+  min-width: 0;
+  border: 0;
+  background-color: transparent;
+  min-height: 44px;
+  font-weight: 600;
+  padding-left: 2px;
+}
+.picker:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.season-picker {
+  flex: 0 1 auto;
+}
