@@ -20,7 +20,8 @@ export async function createTeam(page: Page, n = 6, ageGroup = 'U8'): Promise<vo
   await page.waitForLoadState('networkidle'); // the first sync (account, clubs) has run
   await page.getByRole('button', { name: '+ New team' }).click();
   await page.getByPlaceholder('e.g. U7 B').fill(ageGroup);
-  await page.keyboard.press('Tab');
+  await page.locator('form.team-name').getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('#toast')).toContainText('Saved');
   await page.getByRole('button', { name: '＋ Add' }).first().click();
   const sheet = page.locator('#sheet-body');
   for (let i = 1; i <= n; i++) {

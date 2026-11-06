@@ -4,6 +4,7 @@ import type { Db, Role } from '@/domain/types';
 import { fakeSupabase, type FakeSupabase } from '@/test/fake-supabase';
 import { makeGame, makePlayer, makeTeam } from '@/test/factories';
 import { db, initStore, normalize, saveQuiet, setDb } from './store';
+import { cloudChange } from './cloud-change';
 import { configureSync, pendingCount, removeCloudData, runSync, syncState } from './sync';
 
 let fake: FakeSupabase;
@@ -270,5 +271,50 @@ describe('sessions', () => {
     expect(hooks.afterSync).toHaveBeenLastCalledWith({ firstOk: true });
     await runSync();
     expect(hooks.afterSync).toHaveBeenLastCalledWith({ firstOk: false });
+  });
+});
+
+describe('cloudChange (teams, players and games are saved in the cloud at once)', () => {
+  const setup = () => {
+    phone(
+      { teams: [makeTeam({ id: 'T' })], players: [makePlayer({ id: 'p1', teamId: 'T' })] },
+      { T: 'club_manager' },
+    );
+    cloud({ teams: [teamRow('T')], players: [playerRow('p1', 'T')] }, { T: 'club_manager' });
+  };
+
+  it('uploads the change and keeps it', async () => {
+    setup();
+    const r = await cloudChange(() => db.players.push(makePlayer({ id: 'p2', teamId: 'T' })));
+    expect(r).toBe('ok');
+    expect(fake.db.players!.map((x) => x.id).sort()).toEqual(['p1', 'p2']);
+    expect(db.players.find((p) => p.id === 'p2')!.dirty).toBe(false);
+  });
+
+  it('a delete goes to the cloud at once', async () => {
+    setup();
+    const r = await cloudChange(() => (db.players = db.players.filter((p) => p.id !== 'p1')));
+    expect(r).toBe('ok');
+    expect(fake.db.players![0]!.deleted_at).toBeTruthy();
+    expect(db.deleted).toEqual([]);
+  });
+
+  it('refused by the server: nothing changes on the phone', async () => {
+    setup();
+    fake.refuseWith((table) => (table === 'players' ? { message: 'denied', code: '42501' } : null));
+    const r = await cloudChange(() => (db.players[0]!.name = 'Changed'));
+    expect(r).toBe('refused');
+    expect(db.players[0]).toMatchObject({ name: 'Player p1', dirty: false });
+    expect(pendingCount()).toBe(0);
+  });
+
+  it('offline: nothing is changed or sent', async () => {
+    setup();
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    const apply = vi.fn<() => void>();
+    expect(await cloudChange(apply)).toBe('offline');
+    expect(apply).not.toHaveBeenCalled();
+    expect(fake.calls).toEqual([]);
+    online.mockRestore();
   });
 });

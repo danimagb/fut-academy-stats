@@ -101,7 +101,7 @@ test('a team manager edits players but not the team, its club or its staff', asy
   await signInAs(page, ME, { is_admin: false }, club('staff', 'manager'));
   await page.goto('#/team/t1');
   await expect(page.locator('#main')).toContainText('Sub-7B');
-  await expect(page.locator('input[data-team]')).toHaveCount(0);
+  await expect(page.locator('form.team-name')).toHaveCount(0);
   await expect(page.locator('[data-action="add-player"]')).toHaveCount(1);
   await expect(page.locator('[data-action="add-staff-open"]')).toHaveCount(0);
   await expect(page.locator('[data-action="delete-team"]')).toHaveCount(0);

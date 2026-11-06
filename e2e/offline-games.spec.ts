@@ -62,11 +62,11 @@ test('offline, a game can be started and logged, but the team and new games need
     },
   );
   await page.goto('#/team/t1');
-  await expect(page.locator('input[data-team="name"]')).toBeVisible(); // online: the name can be changed
+  await expect(page.locator('form.team-name')).toBeVisible(); // online: the name can be changed
   await page.waitForLoadState('networkidle');
 
   await context.setOffline(true);
-  await expect(page.locator('input[data-team="name"]')).toHaveCount(0); // offline: read-only
+  await expect(page.locator('form.team-name')).toHaveCount(0); // offline: read-only
   await page.locator('[data-action="add-player"]').click();
   await expect(page.locator('#toast')).toContainText('Needs internet');
   await expect(page.locator('#sheet')).toBeHidden();
