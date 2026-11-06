@@ -7,6 +7,7 @@ import {
   matchTimeAt,
   startClock as startClockAt,
 } from '@/domain/clock';
+import { canRecord } from '@/domain/game-state';
 import { formationOf as formationOfGame } from '@/domain/pitch';
 import type { Game, GameEvent } from '@/domain/types';
 import { buzz } from '@/shared/lib/device';
@@ -34,8 +35,12 @@ type NewEvent = GameEvent extends infer E
     : never
   : never;
 
-/** Logs an event now (match time and wall time), saves, and buzzes. Returns its id (for Undo). */
-export function addEvent(g: Game, e: NewEvent): string {
+/**
+ * Logs an event now (match time and wall time), saves, and buzzes. Returns its id (for Undo),
+ * or null when the game is finished and nothing new can be recorded.
+ */
+export function addEvent(g: Game, e: NewEvent): string | null {
+  if (!canRecord(g)) return null;
   const id = uid();
   g.events.push({ id, t: matchTime(g), wall: Date.now(), ...e } as GameEvent);
   save();

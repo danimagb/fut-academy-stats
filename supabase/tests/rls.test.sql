@@ -16,7 +16,7 @@
 --   N     00000000-0000-0000-0000-000000000009  (no account)        auth user without cloud access
 
 begin;
-select plan(186);
+select plan(194);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@example.com'),
@@ -234,6 +234,53 @@ with ins as (insert into public.games (id, team_id, data) values ('g3', 't1', '{
 select is(count(*)::int, 1, 'A: can insert a game') from ins;
 with d as (delete from public.games where id = 'g3' returning 1)
 select is(count(*)::int, 1, 'A: can hard-delete a game') from d;
+
+-- A finished game: existing events can be edited or removed, nothing new is recorded
+-- (20261105000000_lock_finished_games.sql). g4 is removed again at the end.
+select lives_ok($$
+  insert into public.games (id, team_id, status, data) values ('g4', 't1', 'finished',
+    '{"status":"finished","events":[{"id":"e1","type":"goal","playerId":"p1"}]}')
+$$, 'A: can insert a finished game with its events');
+with up as (
+  insert into public.games (id, team_id, status, data) values ('g4', 't1', 'finished',
+    '{"status":"finished","events":[{"id":"e1","type":"goal","playerId":"p1"},{"id":"e2","type":"yellow","playerId":"p1"}]}')
+  on conflict (id) do update set status = excluded.status, data = excluded.data
+  returning data
+)
+select is((select jsonb_path_query_array(data, '$.events[*].id') from up), '["e1"]'::jsonb,
+  'finished game: a new event is dropped');
+with up as (
+  insert into public.games (id, team_id, status, data) values ('g4', 't1', 'finished',
+    '{"status":"finished","events":[{"id":"e1","type":"goal","playerId":"p2"}]}')
+  on conflict (id) do update set status = excluded.status, data = excluded.data
+  returning data
+)
+select is((select data #>> '{events,0,playerId}' from up), 'p2',
+  'finished game: an existing goal can be edited (scorer changed)');
+with up as (
+  insert into public.games (id, team_id, status, data) values ('g4', 't1', 'live',
+    '{"status":"live","events":[{"id":"e9","type":"goal","playerId":"p1"}]}')
+  on conflict (id) do update set status = excluded.status, data = excluded.data
+  returning status, data
+)
+select is((select status || ' ' || (data ->> 'status') || ' ' || (data #>> '{events,0,playerId}') from up),
+  'finished finished p2', 'finished game: cannot go back to live (data and status kept)');
+with before as (select updated_at from public.games where id = 'g4'),
+     u as (update public.games set data = data where id = 'g4' returning updated_at)
+select ok((select updated_at from u) > (select updated_at from before),
+  'finished game: updated_at still moves, so phones download the server version');
+with up as (
+  insert into public.games (id, team_id, status, data) values ('g4', 't1', 'finished',
+    '{"status":"finished","events":[]}')
+  on conflict (id) do update set status = excluded.status, data = excluded.data
+  returning data
+)
+select is((select data -> 'events' from up), '[]'::jsonb,
+  'finished game: an existing event can be removed');
+with u as (update public.games set deleted_at = now() where id = 'g4' returning 1)
+select is(count(*)::int, 1, 'finished game: can still be soft-deleted') from u;
+with d as (delete from public.games where id = 'g4' returning 1)
+select is(count(*)::int, 1, 'A: can hard-delete a finished game') from d;
 
 select throws_ok('truncate public.players', '42501', null, 'authenticated: cannot truncate (TRUNCATE ignores RLS)');
 

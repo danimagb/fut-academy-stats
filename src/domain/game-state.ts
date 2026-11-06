@@ -133,3 +133,10 @@ export function planMove(g: Game, d: Pick<GameState, 'slots'>, id: string, slot:
   }
   return newGk ? { kind: 'gk', playerId: newGk } : { kind: 'pos', playerId: id, slot };
 }
+
+/**
+ * Whether new events (subs, goals, cards, position changes) can be recorded. After full time
+ * nothing new is recorded; existing events can still be edited or removed. The database
+ * enforces the same (guard_finished_game).
+ */
+export const canRecord = (g: Pick<Game, 'status'>): boolean => g.status !== 'finished';

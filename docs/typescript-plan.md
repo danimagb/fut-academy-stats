@@ -378,6 +378,17 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - End-to-end: a player's sheet downloads as a PDF, which makes 15 tests.
   - The `.js` files moved as they were still have `@ts-nocheck`. Step 8 converts them to
     strict TypeScript.
+- `main` merged in (#34, "lock finished games", which landed on `main` after this branch
+  started), so step 10 has nothing left to port:
+  - `canRecord(g)` is in `domain/game-state.ts` (with a test). `data/live.addEvent` returns
+    `null` for a finished game, `doSub` and `movePlayer` do nothing, and the goal, card and
+    opponent-goal actions stop when no event was added.
+  - On a finished game a tap on a player opens the info sheet with the `finishedHint` text, and
+    dragging is off.
+  - `app.js` and `sw.js` stay deleted. The new migration `20261105000000_lock_finished_games.sql`
+    runs before `20261106000000_data_checks.sql`; `rls.test.sql` plans 194 tests, and
+    `bash supabase/tests/local/run.sh` passes.
+  - End-to-end: `finished-game.spec.ts`, which makes 16 tests.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").

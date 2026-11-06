@@ -4,6 +4,7 @@ import { currentGame } from '@/data/queries';
 import { openPlayerSheet } from './game';
 import { doSub, movePlayer } from '@/features/live-game/live-game';
 import { readOnlyGame } from '@/data/access';
+import { canRecord } from '@/domain/game-state';
 import { route } from '@/shared/lib/route';
 import { buzz } from '@/shared/lib/device';
 
@@ -43,7 +44,9 @@ export function dropKind(from, to) {
 }
 
 export function dragStart(chip, x, y) {
-  if (chip.disabled || !chip.dataset.id || route().view !== 'game' || readOnlyGame(currentGame())) return;
+  if (chip.disabled || !chip.dataset.id || route().view !== 'game') return;
+  const g = currentGame();
+  if (!g || readOnlyGame(g) || !canRecord(g)) return;
   Object.assign(drag, { from: chip, x0: x, y0: y, moved: false, target: null });
   drag.timer = setTimeout(() => {
     drag.active = true;

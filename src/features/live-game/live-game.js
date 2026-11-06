@@ -9,7 +9,7 @@ import { buzz } from '@/shared/lib/device';
 import { toast } from '@/shared/ui/toast';
 import { esc } from '@/shared/lib/html';
 import { timeCheck } from '@/domain/clock';
-import { planMove } from '@/domain/game-state';
+import { canRecord, planMove } from '@/domain/game-state';
 import { pname } from '@/domain/players';
 import { periodName } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
@@ -63,6 +63,7 @@ export function checkTime(g) {
 // ---------- Game state (derived from events) ----------
 
 export function doSub(g, out, inn) {
+  if (!canRecord(g)) return;
   const id = addEvent(g, { type: 'sub', playerId: out, inId: inn });
   rerender();
   toast({ html: subLine(esc(pname(g, inn)), esc(pname(g, out))) }, undoBtn(id));
@@ -71,6 +72,7 @@ export function doSub(g, out, inn) {
 // Move a pitch player to a slot (swapping with whoever is there). Moving into or out of
 // goal changes the goalkeeper. Before kick-off this just edits the starting lineup.
 export function movePlayer(g, id, slot) {
+  if (!canRecord(g)) return;
   const plan = planMove(g, derive(g), id, slot);
   if (plan.kind === 'none') return;
   if (plan.kind === 'lineup') {

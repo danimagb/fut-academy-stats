@@ -334,6 +334,7 @@ const en = {
   fileStats: 'Stats',
   readOnly: 'Read-only',
   readOnlyToast: "Read-only: you're a coach on this team",
+  finishedHint: 'Game finished: no new events can be recorded. Tap a goal in the timeline to edit it.',
   readOnlyHint:
     "You're a coach on this team: you can see it, its games and reports (and share the PDF), but only its directors can change them.",
   newGameCoachOnly:
@@ -729,6 +730,8 @@ const pt: Record<MessageKey, string> = {
   fileStats: 'Estatisticas',
   readOnly: 'Só leitura',
   readOnlyToast: 'Só leitura: és treinador nesta equipa',
+  finishedHint:
+    'Jogo terminado: não é possível registar novos eventos. Toca num golo na cronologia para o editar.',
   readOnlyHint:
     'És treinador nesta equipa: podes ver a equipa, os jogos e os relatórios (e partilhar o PDF), mas só os diretores os podem alterar.',
   newGameCoachOnly:

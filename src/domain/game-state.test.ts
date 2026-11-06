@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { at, ev, makeGame, makePlayer } from '@/test/factories';
 import { startClock } from './clock';
-import { deriveState, planMove } from './game-state';
+import { canRecord, deriveState, planMove } from './game-state';
 import type { Game } from './types';
 
 const MIN = 60_000;
@@ -147,5 +147,14 @@ describe('planMove', () => {
     expect(planMove(g, d, 'p2', 1)).toEqual({ kind: 'none' });
     expect(planMove(g, d, 'p5', 1)).toEqual({ kind: 'none' });
     expect(planMove(g, d, 'p1', 3)).toEqual({ kind: 'none' });
+  });
+});
+
+describe('canRecord', () => {
+  it('allows new events until full time', () => {
+    expect(canRecord(makeGame(players))).toBe(true);
+    expect(canRecord(live())).toBe(true);
+    expect(canRecord(live({ status: 'break' }))).toBe(true);
+    expect(canRecord(live({ status: 'finished' }))).toBe(false);
   });
 });

@@ -22,6 +22,7 @@ import { readOnlyGame } from '@/data/access';
 import { readOnlyPill } from '@/features/team-access/read-only';
 import { derive, getGame } from '@/data/queries';
 import { route } from '@/shared/lib/route';
+import { canRecord } from '@/domain/game-state';
 import { scoreHtml } from '@/features/score/score';
 import { bar } from '@/shared/ui/bar';
 import { openSheet } from '@/shared/ui/sheet';
@@ -379,17 +380,22 @@ export const gameActions = {
     save();
     rerender();
   },
-  player: ({ id }) => (readOnlyGame(currentGame()) ? openPlayerInfo : openPlayerSheet)(currentGame(), id),
+  player: ({ id }) => {
+    const g = currentGame();
+    (readOnlyGame(g) || !canRecord(g) ? openPlayerInfo : openPlayerSheet)(g, id);
+  },
   'do-sub': ({ out, in: inn }) => doSub(currentGame(), out, inn),
   goal: ({ id }) => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'goal', playerId: id });
+    if (!eid) return;
     rerender();
     toast(t('evGoal', { p: g.names[id].name }), undoBtn(eid));
   },
   yellow: ({ id }) => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'yellow', playerId: id });
+    if (!eid) return;
     rerender();
     toast(t('evYellow', { p: g.names[id].name }), undoBtn(eid));
   },
@@ -397,6 +403,7 @@ export const gameActions = {
     const g = currentGame();
     const wasGk = derive(g).gk === id;
     const eid = addEvent(g, { type: 'red', playerId: id });
+    if (!eid) return;
     rerender();
     toast(wasGk ? t('gkSentOff') : t('evRed', { p: g.names[id].name }), undoBtn(eid));
   },
@@ -429,6 +436,7 @@ export const gameActions = {
   'opp-goal': () => {
     const g = currentGame();
     const eid = addEvent(g, { type: 'oppgoal' });
+    if (!eid) return;
     rerender();
     toast(t('evOppGoal'), undoBtn(eid));
   },
@@ -567,6 +575,7 @@ export const gameActions = {
 export const gamePage = { views: { game: viewGame }, actions: gameActions };
 
 // Tap on a player in a read-only game: who it is and how they're doing, no actions.
+// Also shown for a finished game, where nothing new can be recorded.
 export function openPlayerInfo(g, id) {
   const d = derive(g);
   const s = d.stats[id];
@@ -579,6 +588,6 @@ export function openPlayerInfo(g, id) {
       <span class="muted small">${d.on.has(id) ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(s.played) })}</span>
     </div>
     ${bits ? `<p>${bits}</p>` : ''}
-    <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
+    <p class="hint">${readOnlyGame(g) ? `${readOnlyPill()} ${t('readOnlyHint')}` : t('finishedHint')}</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
 }
