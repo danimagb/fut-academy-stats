@@ -30,6 +30,7 @@ import { canSync, canUpload, cloud } from '@/data/session';
 import { managedClubs } from '@/data/auth';
 import { plural } from '@/shared/i18n/i18n';
 import { bar } from '@/shared/ui/bar';
+import { accSection } from '@/shared/ui/accordion';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { roleOf } from '@/data/sync';
 import { db, isCloudTeam } from '@/data/store';
@@ -192,20 +193,8 @@ export function viewTeam(teamId: string | undefined): void {
 // (each remembered while the app is open). `add` is the action of the section's ＋ button.
 export const teamOpen: Record<string, boolean> = { players: false, staff: false };
 
-export function teamSection(id: string, title: string, summary: string, add: string, body: string): string {
-  const open = teamOpen[id];
-  return `
-    <section class="acc ${open ? 'open' : ''}">
-      <div class="acc-top">
-        <button class="acc-head" data-action="team-section" data-v="${id}" aria-expanded="${open}" aria-controls="acc-${id}">
-          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-          <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum" id="${id}-sum">${esc(summary)}</span></span>
-        </button>
-        ${add ? `<button class="btn small acc-add" data-action="${add}">＋ ${t('add')}</button>` : ''}
-      </div>
-      <div class="acc-body" id="acc-${id}" ${open ? '' : 'hidden'}>${body}</div>
-    </section>`;
-}
+export const teamSection = (id: string, title: string, summary: string, add: string, body: string): string =>
+  accSection({ id, title, summary, add, body, open: !!teamOpen[id], toggle: 'team-section' });
 
 // The ⋯ menu of the team screen: for now only Delete team (for whoever may change the team).
 export const teamMenu = (_id: string, ro: boolean): string =>
@@ -298,7 +287,9 @@ export const teamActions = {
     await syncNow(); // the team leaves this phone
     if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
   },
-  'new-team': () => {
+  'new-team': ({ cid }: DOMStringMap) => {
+    // From a club page: straight into that club.
+    if (cid && managedClubs(cloud.account).some((c) => c.id === cid)) return createTeam(cid);
     const clubs = canUpload() ? managedClubs(cloud.account) : [];
     if (clubs.length > 1) return openClubPicker('new');
     createTeam(clubs[0]?.id);

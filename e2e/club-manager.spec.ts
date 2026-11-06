@@ -49,6 +49,7 @@ test('a coordinator sets the short name, and the team screen and games filter us
   const errors = watchErrors(page);
   const rows = await signInAs(page, ME, { is_admin: false }, club());
   await page.goto('#/club/c1');
+  await page.getByRole('button', { name: 'Club details' }).click();
   await page.locator('input[name="short"]').fill('PADR');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('#toast')).toContainText('Saved');
