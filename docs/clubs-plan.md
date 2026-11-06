@@ -32,15 +32,15 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 
 ## Progress
 
-| #   | Step                                                         | Status       | PR                            |
-| --- | ------------------------------------------------------------ | ------------ | ----------------------------- |
-| 1   | Plan (this document)                                         | ✅ approved  | danimagb/fut-academy-stats#59 |
-| 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged    | danimagb/fut-academy-stats#63 |
-| 3   | Admin: clubs, their people and club managers                 | ✅ merged    | danimagb/fut-academy-stats#64 |
-| 4   | Sync + permissions in the app (club manager role)            | ✅ merged    | danimagb/fut-academy-stats#66 |
-| 5   | Club manager screens: club teams, players, staff             | ✅ merged    | danimagb/fut-academy-stats#67 |
-| 6   | Club logo (storage, upload, screens, PDFs)                   | ✅ merged    | danimagb/fut-academy-stats#68 |
-| 7   | Team manager limits, README / privacy text, test on 2 phones | 🔄 in review | (this PR)                     |
+| #   | Step                                                         | Status      | PR                                 |
+| --- | ------------------------------------------------------------ | ----------- | ---------------------------------- |
+| 1   | Plan (this document)                                         | ✅ approved | danimagb/fut-academy-stats#59      |
+| 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged   | danimagb/fut-academy-stats#63      |
+| 3   | Admin: clubs, their people and club managers                 | ✅ merged   | danimagb/fut-academy-stats#64      |
+| 4   | Sync + permissions in the app (club manager role)            | ✅ merged   | danimagb/fut-academy-stats#66      |
+| 5   | Club manager screens: club teams, players, staff             | ✅ merged   | danimagb/fut-academy-stats#67      |
+| 6   | Club logo (storage, upload, screens, PDFs)                   | ✅ merged   | danimagb/fut-academy-stats#68      |
+| 7   | Team manager limits, README / privacy text, test on 2 phones | ✅ merged   | danimagb/fut-academy-stats#69, #70 |
 
 **Where things stand:**
 
@@ -136,6 +136,9 @@ shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an acco
   - Tests: unit tests for the PDF images and the logo cache; e2e `club-logo.spec.ts` (upload,
     show, remove; another phone downloads it once). The e2e stub fakes Storage. PDFs checked by
     rendering them.
+- **On `main` and in production** since danimagb/fut-academy-stats#70: the Supabase integration
+  applied both migrations and deployed the `admin` function (check green); the maintainer
+  checked Padroense FC and their coordinator role in the SQL editor, and the app.
 - Done in step 7: README ("Cloud sync": clubs, roles, logo), "How your data is handled" (en +
   pt), CLAUDE.md, a note at the top of `docs/cloud-sync-plan.md`.
 
