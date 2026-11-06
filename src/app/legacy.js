@@ -1,6 +1,8 @@
+import { currentGame } from '@/data/queries';
+import { statsPage } from '@/pages/stats/stats';
+import { reportPage } from '@/pages/report/report';
 import {
   tick,
-  currentGame,
   openPlayerSheet,
   fix,
   periodOffsetMin,
@@ -8,10 +10,8 @@ import {
   fixPreview,
   gamePage,
 } from '@/pages/game/game';
-import { notFound } from '@/shared/ui/not-found';
 import { draft, resetDraft, squadCount, gameEditPage } from '@/pages/game-edit/game-edit';
 import { doSub, movePlayer } from '@/features/live-game/live-game';
-import { fmtNow } from '@/data/live';
 import { teamOpen, openAddPlayer, teamPage } from '@/pages/team/team';
 import { profilePage } from '@/pages/profile/profile';
 import { initTheme } from '@/features/theme-switch/theme';
@@ -24,20 +24,18 @@ import { adminPage } from '@/pages/admin/admin';
 import { $, $$ } from '@/shared/lib/dom';
 import { remote, q, loadPeople, addCoach } from '@/features/team-people/team-people';
 import { readOnlyGame, readOnlyTeam } from '@/data/access';
-import { readOnlyPill, refuseReadOnly } from '@/features/team-access/read-only';
+import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
-import { derive, getGame, getTeam, teamPlayers } from '@/data/queries';
+import { getGame, getTeam } from '@/data/queries';
 import { canSync, canUpload, cloud, sb, syncNow } from '@/data/session';
-import { fmtDate } from '@/domain/titles';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
 import { formHandler, installActionListener, registerActions, registerForms } from '@/app/actions';
 import { addViews, onRender, render, route, setFallbackView } from '@/app/router';
 import { gamesPage, viewGames } from '@/pages/games/games';
-import { scoreHtml } from '@/features/score/score';
 import { keepScreenOn } from '@/app/wake-lock';
 import { buzz, download } from '@/shared/lib/device';
-import { bar, closeMenus } from '@/shared/ui/bar';
+import { closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
@@ -56,24 +54,12 @@ import {
   teamIdOf,
 } from '@/data/store';
 import { checkIncoming } from '@/domain/validate';
-import { fmtMins, isoDate, mmss, pct } from '@/shared/lib/format';
-import { esc } from '@/shared/lib/html';
+import { isoDate } from '@/shared/lib/format';
 import { FORMATS } from '@/domain/formats';
-import { fmtAt } from '@/domain/clock';
-import {
-  gameLength,
-  playerStats,
-  resultOf,
-  statsSeasons as seasonsOfTeam,
-  teamStats as teamSeason,
-} from '@/domain/stats';
-import { gameTeam, matchTitle, seasonOf, teamFull, teamLabel } from '@/domain/titles';
-import { locale, t } from '@/shared/i18n/i18n';
+import { teamLabel } from '@/domain/titles';
+import { t } from '@/shared/i18n/i18n';
 
 // ---------- Config ----------
-
-const STATS_TEAM_KEY = 'fut-academy-stats.statsTeam'; // team picked on the stats page
-const STATS_SEASON_KEY = 'fut-academy-stats.statsSeason'; // season picked on the stats page (e.g. '2026/2027')
 
 // ---------- Language ----------
 
@@ -91,9 +77,6 @@ initStore();
 
 const main = $('#main');
 
-const formatLine = (g) =>
-  `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
-
 // ---------- Clock ----------
 // Match time (e.t, marks, clock) counts only time actually played, so minutes
 // played add up. The clock shown to the coach restarts every period at its
@@ -101,11 +84,7 @@ const formatLine = (g) =>
 
 // ---------- Routing ----------
 
-addViews({
-  report: viewReport,
-  stats: viewStats,
-  player: viewPlayer,
-});
+addViews({});
 // Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
 addViews(gamesPage.views);
 addViews(adminPage.views);
@@ -113,6 +92,8 @@ addViews(profilePage.views);
 addViews(teamPage.views);
 addViews(gameEditPage.views);
 addViews(gamePage.views);
+addViews(reportPage.views);
+addViews(statsPage.views);
 setFallbackView(viewGames);
 onRender({
   before: () => {
@@ -296,708 +277,6 @@ setInterval(tick, 1000);
 
 // ---------- Report ----------
 
-// Stints as game-clock labels: entered (start of the later period on a boundary) – left.
-const stintLabels = (g, s, sep) => s.intervals.map(([a, b]) => `${fmtAt(g, a, true)}${sep}${fmtAt(g, b)}`);
-
-const SHEET_NAVY = '#1f3a5a';
-
-// The stats sheet table, shared by the PDF and its preview on the report screen.
-// Column widths are in PDF points; cells are arrays of lines.
-// Full name for the report: the player's current one (so fixing a name also fixes
-// past games), else the one saved with the game, else the shirt name.
-function fullName(g, id) {
-  return db.players.find((p) => p.id === id)?.fullName || g.names[id].fullName || g.names[id].name;
-}
-
-function statsSheet(g) {
-  const d = derive(g);
-  const cols = [
-    { title: t('pdfNo'), w: 32, fill: SHEET_NAVY },
-    { title: t('pdfPlayer'), w: 170, fill: SHEET_NAVY, left: true },
-    { title: t('pdfShirt'), w: 42, fill: SHEET_NAVY },
-    { title: t('pdfStarter'), w: 62, fill: SHEET_NAVY },
-    { title: t('pdfSub'), w: 62, fill: SHEET_NAVY },
-    { title: t('pdfStints'), w: 154, fill: '#3d8b40' },
-    { title: t('pdfMinutes'), w: 60, fill: SHEET_NAVY },
-    { title: t('pdfGoals'), w: 52, fill: SHEET_NAVY },
-    { title: t('pdfYellow'), w: 62, fill: '#e3b008' },
-    { title: t('pdfRed'), w: 66, fill: '#c0392b' },
-  ];
-
-  // Players who played, then unused subs, then team players not called up;
-  // alphabetical within each group, like the club's sheet.
-  const squad = g.squad.map((id) => ({
-    p: g.names[id],
-    full: fullName(g, id),
-    s: d.stats[id],
-    starter: g.starters.includes(id),
-  }));
-  const notCalled = (g.teamId ? teamPlayers(g.teamId) : [])
-    .filter((p) => !g.squad.includes(p.id))
-    .map((p) => ({ p, full: p.fullName || p.name, s: null }));
-  const group = (r) => (!r.s ? 2 : r.s.intervals.length ? 0 : 1);
-  const players = [...squad, ...notCalled].sort(
-    (a, b) => group(a) - group(b) || a.full.localeCompare(b.full, locale()),
-  );
-  const dash = '—';
-  const rows = players.map((r, i) => {
-    const played = group(r) === 0;
-    return [
-      [String(i + 1)],
-      [r.full],
-      [r.p.number || ''],
-      [r.s && r.starter ? 'X' : ''],
-      [r.s && !r.starter ? 'X' : ''],
-      played ? stintLabels(g, r.s, ' – ') : [r.s ? t('didNotPlay') : t('notCalled')],
-      [played ? mmss(r.s.played) : dash],
-      [played ? String(r.s.goals) : dash],
-      [played ? String(r.s.yellow) : dash],
-      [played ? String(r.s.red) : dash],
-    ];
-  });
-  const sum = (k) => String(squad.reduce((n, r) => n + r.s[k], 0));
-  const [yy, mo, dd] = String(g.date).split('-');
-
-  return {
-    title: [gameTeam(g), t('pdfTitle'), seasonOf(g.date) && `${t('pdfSeason')} ${seasonOf(g.date)}`]
-      .filter(Boolean)
-      .join(' — '),
-    // [label, value, column it lines up with]
-    meta: [
-      [t('pdfGame'), matchTitle(g), 0],
-      dd && [t('pdfDate'), `${dd}/${mo}/${yy}`, 6],
-      g.round && [t('pdfRound'), g.round, 8],
-    ].filter(Boolean),
-    cols,
-    rows,
-    total: [
-      [''],
-      [t('pdfTotal')],
-      [''],
-      [''],
-      [''],
-      [''],
-      [''],
-      [sum('goals')],
-      [sum('yellow')],
-      [sum('red')],
-    ],
-  };
-}
-
-// The PDF page as HTML, scaled up a little for the phone screen.
-function sheetPreview(sh) {
-  const S = 1.3;
-  const x = (i) => Math.round(sh.cols.slice(0, i).reduce((n, c) => n + c.w, 0) * S);
-  const cell = (lines, c) => `<td class="${c.left ? 'l' : ''}">${lines.map(esc).join('<br>')}</td>`;
-  return `<div class="pdf-preview"><div class="pp-page" style="width:${x(sh.cols.length) + 40}px">
-    <div class="pp-title">${esc(sh.title)}</div>
-    <div class="pp-meta">${sh.meta.map(([k, v, col]) => `<span style="left:${x(col)}px"><b>${esc(k)}</b> ${esc(v)}</span>`).join('')}</div>
-    <table class="pp-table" style="width:${x(sh.cols.length)}px">
-      <colgroup>${sh.cols.map((c) => `<col style="width:${Math.round(c.w * S)}px">`).join('')}</colgroup>
-      <thead><tr>${sh.cols.map((c) => `<th style="background:${c.fill}">${esc(c.title)}</th>`).join('')}</tr></thead>
-      <tbody>${sh.rows.map((r) => `<tr>${r.map((lines, i) => cell(lines, sh.cols[i])).join('')}</tr>`).join('')}</tbody>
-      <tfoot><tr>${sh.total.map((lines, i) => cell(lines, sh.cols[i])).join('')}</tr></tfoot>
-    </table>
-  </div></div>`;
-}
-
-function viewReport(id) {
-  const g = getGame(id);
-  if (!g) return notFound();
-  const d = derive(g);
-
-  main.innerHTML = `
-    ${bar(t('gameReport'), `#/game/${g.id}`, '', readOnlyGame(g) ? readOnlyPill() : '')}
-    <section class="scoreboard">
-      <strong>${esc(matchTitle(g))}</strong>
-      <div class="muted small">${formatLine(g)}</div>
-      <div class="score big">${scoreHtml(g, d, ' – ', true)}</div>
-      <div class="muted">${t('gameTime', { t: fmtNow(g) })}${g.status === 'finished' ? '' : ` · <span class="warn">${t('inProgress')}</span>`}</div>
-    </section>
-
-    <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
-    ${readOnlyGame(g) ? '' : `<button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>`}
-    <p class="hint">${t('reportHint')}</p>
-    ${sheetPreview(statsSheet(g))}`;
-}
-
-// ---------- Views: stats (per player, over a season) ----------
-// Worked out from the finished games of a team, nothing extra is stored. A player counts as
-// called up when they were in the squad, and as having played when they had time on the pitch.
-
-function statsTeam() {
-  const id = localStorage.getItem(STATS_TEAM_KEY);
-  return getTeam(id) ? id : getTeam(db.lastTeamId) ? db.lastTeamId : db.teams[0]?.id || '';
-}
-
-const statsSeasons = (teamId) => seasonsOfTeam(db.games, teamId);
-
-function statsSeason(teamId) {
-  const seasons = statsSeasons(teamId);
-  const s = localStorage.getItem(STATS_SEASON_KEY);
-  return seasons.includes(s) ? s : seasons[0] || '';
-}
-
-const teamStats = (teamId, season) => teamSeason(db.games, teamPlayers(teamId), teamId, season, Date.now());
-
-const ddmm = (g) => {
-  const [, m, d] = String(g.date).split('-');
-  return d ? `${d}/${m}` : '';
-};
-const playerFullName = (p) => p.fullName || p.name;
-
-// What a player did in one game, as a short line ("60' · 2 goals · yellow").
-function gameDetail(r) {
-  if (!r.s) return t('notCalled');
-  if (!r.played) return t('didNotPlay');
-  return [
-    fmtMins(r.s.played) + (r.started ? '' : ` (${t('statSubIn')})`),
-    r.s.goals ? plural('statGoalN', r.s.goals) : '',
-    r.s.yellow ? t('statYellowWord') + (r.s.yellow > 1 ? ` ×${r.s.yellow}` : '') : '',
-    r.s.red ? t('statRedWord') : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
-
-// Our score first, then the opponent ("2–0 CD Ribeira").
-const gameShort = (g, d) => `${d.us}–${d.them} ${g.opponent || t('opponent')}`;
-
-// Team (and season) pickers shared by the stats page and a player's sheet.
-function statsFilters(teamId, season, withTeams) {
-  const row = (action, items, on) =>
-    `<div class="pick-row filter" role="tablist">${items
-      .map(
-        ([id, label]) =>
-          `<button class="pick ${id === on ? 'on' : ''}" role="tab" aria-selected="${id === on}" data-action="${action}" data-id="${esc(id)}">${label}</button>`,
-      )
-      .join('')}</div>`;
-  const seasons = statsSeasons(teamId);
-  return (
-    (withTeams && db.teams.length > 1
-      ? row(
-          'stats-team',
-          db.teams.map((tm) => [tm.id, esc(teamLabel(tm))]),
-          teamId,
-        )
-      : '') +
-    (seasons.length > 1
-      ? row(
-          'stats-season',
-          seasons.map((s) => [s, `${t('pdfSeason')} ${esc(s)}`]),
-          season,
-        )
-      : '')
-  );
-}
-
-function viewStats() {
-  const teamId = statsTeam();
-  if (!teamId) {
-    main.innerHTML = `${bar(t('tabStats'))}<p class="empty">${t('statsNoTeams')}</p>
-      <a class="btn primary block" href="#/teams">${t('teamsBtn', { n: 0 })}</a>`;
-    return;
-  }
-  const season = statsSeason(teamId);
-  const st = teamStats(teamId, season);
-  const { record: r } = st;
-  const head = `<div class="stat-row head" aria-hidden="true"><span></span><span>${t('pdfPlayer')}</span>
-    <span>${t('statGames')}</span><span>${t('statMin')}</span><span>${t('statGoals')}</span><span>🟨/🟥</span></div>`;
-  const rowHtml = (ps) => `<li><a class="stat-row" href="#/player/${ps.p.id}">
-    <span class="shirt sm">${esc(ps.p.number) || '–'}</span>
-    <span class="name">${esc(ps.p.name)}</span>
-    <span>${ps.played}<small>/${ps.teamGames}</small></span>
-    <span>${ps.minutes}'</span>
-    <span>${ps.goals}</span>
-    <span>${ps.yellow}/${ps.red}</span>
-  </a></li>`;
-  main.innerHTML = `
-    ${bar(t('tabStats'))}
-    ${statsFilters(teamId, season, true)}
-    ${
-      st.games.length
-        ? `
-      <section class="card stats-summary">
-        <div class="grow">
-          <strong>${esc(teamLabel(getTeam(teamId)))}</strong>
-          <div class="muted small">${t('pdfSeason')} ${esc(season)} · ${plural('statGamesN', st.games.length)}</div>
-        </div>
-        <div class="right">
-          <div class="record"><span class="w">${t('statW', { n: r.w })}</span> <span class="d">${t('statD', { n: r.d })}</span> <span class="l">${t('statL', { n: r.l })}</span></div>
-          <div class="muted small">${t('statGoalsFor', { f: r.gf, a: r.ga })}</div>
-        </div>
-      </section>
-      ${
-        st.players.length
-          ? `<ul class="list stat-table">${head}${st.players.map(rowHtml).join('')}</ul>
-        <p class="hint">${t('statsHint')}</p>`
-          : `<p class="empty">${t('noPlayers')}</p>`
-      }`
-        : `<p class="empty">${t('statsNoGames')}</p>`
-    }`;
-}
-
-function viewPlayer(id) {
-  const p = db.players.find((x) => x.id === id);
-  if (!p) return notFound();
-  const tm = getTeam(p.teamId);
-  const season = statsSeason(p.teamId);
-  const st = teamStats(p.teamId, season);
-  const ps = st.players.find((x) => x.p.id === id) || playerStats(p, st.games);
-  const tile = (label, value, sub = '') =>
-    `<div class="tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
-
-  // Minutes in each game: one bar per game, as tall as the share of the game played.
-  const top = Math.max(1, ...ps.rows.map((r) => Math.max(gameLength(r.g), r.s ? r.s.played / 60000 : 0)));
-  const bars = ps.rows
-    .map((r) => {
-      const m = r.played ? Math.floor(r.s.played / 60000) : 0;
-      const cls = !r.s ? 'out' : !r.played ? 'dnp' : '';
-      const h = Math.min(100, (100 * m) / top);
-      return `<div class="bar-col ${cls}" title="${esc(gameShort(r.g, r.d))}">
-      <div class="bar-area"><div class="bar-fill" style="height:${h}%"></div><span class="v" style="bottom:calc(${h}% + 2px)">${r.s ? `${m}'` : '–'}</span></div>
-      <span class="x">${ddmm(r.g)}</span>
-    </div>`;
-    })
-    .join('');
-  // Y axis like the PDF: 0', a quarter, half, three quarters and the top, with a gridline at each.
-  const ticks = [0, 1, 2, 3, 4];
-  const chart = `<div class="minutes-chart">
-    <div class="y-axis" aria-hidden="true">${ticks.map((k) => `<span style="bottom:${k * 25}%">${Math.round((top * k) / 4)}'</span>`).join('')}</div>
-    <div class="chart-scroll"><div class="chart-inner">
-      <div class="grid" aria-hidden="true">${ticks.map((k) => `<i style="bottom:${k * 25}%"></i>`).join('')}</div>
-      ${bars}
-    </div></div>
-  </div>`;
-
-  const gamesHtml = ps.rows
-    .slice()
-    .reverse()
-    .map(
-      (r) => `<li><a class="card game ${resultOf(r.d)}" href="#/report/${r.g.id}">
-    <div class="grow">
-      <strong>${esc(gameShort(r.g, r.d))}</strong>
-      <div class="muted small">${esc(ddmm(r.g))}${r.g.round ? ` · ${t('roundN', { n: esc(r.g.round) })}` : ''}</div>
-    </div>
-    <div class="right small ${r.played ? '' : 'muted'}">${esc(gameDetail(r))}</div>
-  </a></li>`,
-    )
-    .join('');
-
-  main.innerHTML = `
-    ${bar(esc(p.name), '#/stats')}
-    ${statsFilters(p.teamId, season, false)}
-    <section class="player-head">
-      <div class="muted small">${esc(tm ? teamFull(tm.club, tm.name) : '')}</div>
-      <h2>${esc(playerFullName(p))}</h2>
-      <div class="small">${[p.number ? t('statNumber', { n: esc(p.number) }) : '', season ? `${t('pdfSeason')} ${esc(season)}` : ''].filter(Boolean).join(' · ')}</div>
-    </section>
-    ${
-      st.games.length
-        ? `
-      <div class="tiles">
-        ${tile(t('statCalled'), `${pct(ps.called, ps.teamGames)}%`, `${ps.called} / ${ps.teamGames}`)}
-        ${tile(t('statGames'), `${ps.played} / ${ps.teamGames}`)}
-        ${tile(t('statStarts'), ps.starts)}
-        ${tile(t('statMinutes'), `${ps.minutes}'`)}
-        ${tile(t('statGoals'), ps.goals)}
-        ${tile(t('statCards'), `<span class="yc">${ps.yellow}</span> <span class="rc">${ps.red}</span>`)}
-      </div>
-      <h2>${t('statMinPerGame')}</h2>
-      ${chart}
-      <button class="btn primary block" data-action="player-pdf" data-id="${p.id}">${t('pdf')}</button>
-      <h2>${t('statGamesList')}</h2>
-      <ul class="list">${gamesHtml}</ul>`
-        : `<p class="empty">${t('statsNoGames')}</p>`
-    }`;
-}
-
-// ---------- PDF report ----------
-// A tiny PDF writer: the PDF's built-in Helvetica fonts (WinAnsi encoding, so
-// Portuguese accents work), filled/stroked rectangles, lines and text.
-
-// Glyph widths (per 1000 em) for character codes 32..126.
-const HELV_W = {
-  regular: [
-    278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556,
-    556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278,
-    500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469,
-    556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500,
-    278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
-  ],
-  bold: [
-    278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556,
-    556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278,
-    556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584,
-    556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
-    333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
-  ],
-};
-// Unicode -> WinAnsi for the few characters outside Latin-1 that we use.
-const WIN_ANSI = {
-  0x2014: 0x97,
-  0x2013: 0x96,
-  0x2026: 0x85,
-  0x2018: 0x91,
-  0x2019: 0x92,
-  0x201c: 0x93,
-  0x201d: 0x94,
-  0x2022: 0x95,
-};
-const WIN_W = {
-  0x97: 1000,
-  0x96: 556,
-  0x85: 1000,
-  0x91: 222,
-  0x92: 222,
-  0x93: 333,
-  0x94: 333,
-  0x95: 350,
-  0xaa: 370,
-  0xba: 365,
-  0xb7: 278,
-  0xa0: 278,
-  0xb0: 400,
-};
-
-// Text as a string of WinAnsi byte values; anything else becomes "?".
-function winAnsi(s) {
-  let out = '';
-  for (const ch of String(s)) {
-    const c = ch.codePointAt(0);
-    out += String.fromCharCode((c >= 32 && c < 127) || (c >= 160 && c <= 255) ? c : (WIN_ANSI[c] ?? 63));
-  }
-  return out;
-}
-
-function glyphW(code, bold) {
-  const table = bold ? HELV_W.bold : HELV_W.regular;
-  if (code >= 32 && code < 127) return table[code - 32];
-  if (WIN_W[code]) return WIN_W[code];
-  if (code >= 192) {
-    const base = String.fromCharCode(code).normalize('NFD').charCodeAt(0);
-    if (base === 105) return 278; // accented i is wider than a plain i
-    if (base < 127) return table[base - 32];
-  }
-  return 556;
-}
-
-function textWidth(s, size, bold) {
-  let w = 0;
-  for (const c of winAnsi(s)) w += glyphW(c.charCodeAt(0), bold);
-  return (w * size) / 1000;
-}
-
-function pdfDoc({ W = 842, H = 595 } = {}) {
-  // A4 landscape by default, in points
-  const pages = [];
-  let ops = null;
-  const rgb = (hex) => [1, 3, 5].map((i) => (parseInt(hex.slice(i, i + 2), 16) / 255).toFixed(3)).join(' ');
-  const n = (v) => +v.toFixed(2);
-
-  return {
-    W,
-    H,
-    page() {
-      ops = [];
-      pages.push(ops);
-    },
-    rect(x, y, w, h, fill, stroke, lw = 0.5) {
-      if (fill) ops.push(`${rgb(fill)} rg ${n(x)} ${n(y)} ${n(w)} ${n(h)} re f`);
-      if (stroke) ops.push(`${rgb(stroke)} RG ${lw} w ${n(x)} ${n(y)} ${n(w)} ${n(h)} re S`);
-    },
-    line(x1, y1, x2, y2, color, lw) {
-      ops.push(`${rgb(color)} RG ${lw} w ${n(x1)} ${n(y1)} m ${n(x2)} ${n(y2)} l S`);
-    },
-    // Draws text at baseline y; returns its width. Too-long text gets an ellipsis.
-    text(s, x, y, { size = 10, bold = false, color = '#000000', align = 'left', maxW = Infinity } = {}) {
-      let str = String(s);
-      if (textWidth(str, size, bold) > maxW) {
-        while (str && textWidth(`${str}…`, size, bold) > maxW) str = str.slice(0, -1);
-        str = `${str.trimEnd()}…`;
-      }
-      const w = textWidth(str, size, bold);
-      const x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
-      const body = winAnsi(str).replace(/[\\()]/g, '\\$&');
-      ops.push(`BT /${bold ? 'F2' : 'F1'} ${size} Tf ${rgb(color)} rg ${n(x0)} ${n(y)} Td (${body}) Tj ET`);
-      return w;
-    },
-    // The finished file as bytes.
-    bytes() {
-      const objs = [
-        '<< /Type /Catalog /Pages 2 0 R >>',
-        `<< /Type /Pages /Kids [${pages.map((_, i) => `${5 + 2 * i} 0 R`).join(' ')}] /Count ${pages.length} >>`,
-        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
-        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
-      ];
-      pages.forEach((p, i) => {
-        const stream = p.join('\n');
-        objs.push(
-          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + 2 * i} 0 R >>`,
-        );
-        objs.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
-      });
-      let out = '%PDF-1.4\n%\xe2\xe3\xcf\xd3\n';
-      const offsets = objs.map((body, i) => {
-        const at = out.length;
-        out += `${i + 1} 0 obj\n${body}\nendobj\n`;
-        return at;
-      });
-      const xref = out.length;
-      out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
-      out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
-      return Uint8Array.from(out, (c) => c.charCodeAt(0));
-    },
-  };
-}
-
-function buildPdf(g) {
-  const sh = statsSheet(g);
-  const pdf = pdfDoc();
-  const M = 40;
-  const GRID = '#a9bcb6';
-  const FS = 9.5;
-  const LH = 12;
-  const { cols } = sh;
-  const tableW = cols.reduce((n, c) => n + c.w, 0);
-  const colX = cols.map((_, i) => M + cols.slice(0, i).reduce((n, c) => n + c.w, 0));
-
-  let y;
-  const tableHeader = () => {
-    cols.forEach((c, i) => {
-      pdf.rect(colX[i], y - 20, c.w, 20, c.fill, GRID);
-      pdf.text(c.title, colX[i] + c.w / 2, y - 13.5, {
-        size: 9,
-        bold: true,
-        color: '#ffffff',
-        align: 'center',
-        maxW: c.w - 4,
-      });
-    });
-    y -= 20;
-  };
-  const newPage = () => {
-    pdf.page();
-    y = pdf.H - M;
-  };
-  // One table row: cells is an array of line arrays, one per column.
-  const row = (cells, { fill, bold = false } = {}) => {
-    const h = Math.max(26, Math.max(...cells.map((c) => c.length)) * LH + 14);
-    if (y - h < M) {
-      newPage();
-      tableHeader();
-    }
-    cells.forEach((lines, i) => {
-      const c = cols[i];
-      pdf.rect(colX[i], y - h, c.w, h, fill, GRID);
-      const top = y - (h - lines.length * LH) / 2;
-      lines.forEach((s, k) => {
-        const base = top - k * LH - 9;
-        if (c.left) pdf.text(s, colX[i] + 7, base, { size: FS, bold, maxW: c.w - 12 });
-        else pdf.text(s, colX[i] + c.w / 2, base, { size: FS, bold, align: 'center', maxW: c.w - 6 });
-      });
-    });
-    y -= h;
-  };
-
-  newPage();
-  pdf.text(sh.title, M, y - 14, { size: 15, bold: true, color: SHEET_NAVY, maxW: tableW });
-  y -= 36;
-  for (const [k, v, col] of sh.meta) {
-    const w = pdf.text(k, colX[col], y, { size: 10, bold: true, color: '#333333' });
-    pdf.text(v, colX[col] + w + 4, y, { size: 10, color: '#333333', maxW: 360 });
-  }
-  y -= 14;
-  tableHeader();
-  sh.rows.forEach((cells, i) => row(cells, { fill: i % 2 ? '#dce8e4' : null }));
-  const lineY = y;
-  row(sh.total, { fill: '#eef2f4', bold: true });
-  pdf.line(M, lineY, M + tableW, lineY, SHEET_NAVY, 1.2);
-  return pdf.bytes();
-}
-
-function pdfFileName(g) {
-  const clean = (s) =>
-    String(s || '')
-      .normalize('NFD')
-      .replace(/[^A-Za-z0-9]/g, '');
-  const parts = [
-    clean(g.club),
-    clean(g.team),
-    g.round ? `${t('fileRound')}${g.round}` : g.date,
-    t('fileStats'),
-  ];
-  return `${parts.filter(Boolean).join('_')}.pdf`;
-}
-
-const exportPdf = (g) => shareFile(new File([buildPdf(g)], pdfFileName(g), { type: 'application/pdf' }));
-
-// Share a file (WhatsApp and the like) where the phone can, else download it.
-async function shareFile(file) {
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: file.name });
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
-  }
-  download(file.name, file, file.type);
-}
-
-// A player's stats sheet for the season (A4 portrait), to send to the family.
-const PDF_GREEN = '#1d5c3f';
-
-function buildPlayerPdf(playerId) {
-  const p = db.players.find((x) => x.id === playerId);
-  const tm = getTeam(p.teamId);
-  const season = statsSeason(p.teamId);
-  const st = teamStats(p.teamId, season);
-  const ps = st.players.find((x) => x.p.id === playerId) || playerStats(p, st.games);
-  const pdf = pdfDoc({ W: 595, H: 842 });
-  const M = 40;
-  const W = pdf.W - 2 * M;
-  const INK = '#1b1f23';
-  const MUTED = '#5b636b';
-  const TILE = '#e6ecea';
-  let y;
-
-  pdf.page();
-  // Header band
-  const HB = 118;
-  pdf.rect(0, pdf.H - HB, pdf.W, HB, PDF_GREEN);
-  y = pdf.H - 36;
-  pdf.text((tm ? teamFull(tm.club, tm.name) : '').toUpperCase(), M, y, {
-    size: 10,
-    color: '#cfe3d8',
-    maxW: W,
-  });
-  y -= 32;
-  pdf.text(playerFullName(p).toUpperCase(), M, y, { size: 24, bold: true, color: '#ffffff', maxW: W });
-  y -= 22;
-  const first = st.games[0]?.g;
-  const last = st.games[st.games.length - 1]?.g;
-  const range = first ? t('statRange', { a: ddmm(first), b: ddmm(last) }) : '';
-  pdf.text([season && `${t('pdfSeason')} ${season}`, range].filter(Boolean).join(' · '), M, y, {
-    size: 11,
-    color: '#ffffff',
-    maxW: W,
-  });
-
-  y = pdf.H - HB - 30;
-  if (p.number) {
-    pdf.text(t('statNumber', { n: p.number }), M, y, { size: 11, color: INK });
-    y -= 14;
-  }
-
-  // Stat tiles, three per row
-  const gap = 10;
-  const tw = (W - 2 * gap) / 3;
-  const th = 56;
-  const tiles = [
-    [t('statCalled'), `${pct(ps.called, ps.teamGames)}%`, `${ps.called} / ${ps.teamGames}`],
-    [t('statGames'), `${ps.played} / ${ps.teamGames}`],
-    [t('statStarts'), String(ps.starts)],
-    [t('statMinutes'), `${ps.minutes}'`],
-    [t('statGoals'), String(ps.goals)],
-    [t('statCards'), null],
-  ];
-  tiles.forEach(([label, value, sub], i) => {
-    const x = M + (i % 3) * (tw + gap);
-    const top = y - Math.floor(i / 3) * (th + gap);
-    pdf.rect(x, top - th, tw, th, TILE);
-    pdf.text(label.toUpperCase(), x + 10, top - 16, { size: 8, bold: true, color: PDF_GREEN, maxW: tw - 20 });
-    if (value == null) {
-      // cards: a yellow and a red card, each with its count
-      [
-        [ps.yellow, '#f5c518'],
-        [ps.red, '#d63a3a'],
-      ].forEach(([count, fill], k) => {
-        const cx = x + 10 + k * 54;
-        pdf.rect(cx, top - 46, 13, 18, fill);
-        pdf.text(String(count), cx + 20, top - 42, { size: 22, bold: true, color: INK });
-      });
-      return;
-    }
-    const vw = pdf.text(value, x + 10, top - 42, { size: 22, bold: true, color: INK, maxW: tw - 20 });
-    if (sub) pdf.text(sub, x + 16 + vw, top - 42, { size: 10, color: MUTED });
-  });
-  y -= 2 * th + gap + 30;
-
-  // Minutes in each game
-  pdf.text(t('statMinPerGame').toUpperCase(), M, y, { size: 9, bold: true, color: INK });
-  y -= 18;
-  const CH = 130;
-  const axisW = 24;
-  const top = Math.max(1, ...ps.rows.map((r) => Math.max(gameLength(r.g), r.s ? r.s.played / 60000 : 0)));
-  const base = y - CH;
-  for (let k = 0; k <= 4; k++) {
-    const ly = base + (CH * k) / 4;
-    pdf.line(M + axisW, ly, M + W, ly, '#d5dcd9', 0.5);
-    pdf.text(`${Math.round((top * k) / 4)}'`, M + axisW - 4, ly - 2.5, {
-      size: 7,
-      color: MUTED,
-      align: 'right',
-    });
-  }
-  const n = ps.rows.length;
-  const slot = (W - axisW) / Math.max(n, 1);
-  const bw = Math.min(26, slot * 0.6);
-  const every = Math.ceil(24 / slot); // label every k-th game when they would overlap
-  ps.rows.forEach((r, i) => {
-    const cx = M + axisW + slot * (i + 0.5);
-    const m = r.played ? Math.floor(r.s.played / 60000) : 0;
-    const h = Math.min(CH, (CH * m) / top);
-    if (h > 0) pdf.rect(cx - bw / 2, base, bw, h, PDF_GREEN);
-    if (i % every === 0) {
-      if (slot >= 14)
-        pdf.text(r.s ? `${m}'` : '–', cx, base + h + 4, { size: 7, bold: true, color: INK, align: 'center' });
-      pdf.text(ddmm(r.g), cx, base - 11, { size: 7, color: MUTED, align: 'center' });
-    }
-  });
-  y = base - 40;
-
-  // Games list
-  const heading = () => {
-    pdf.text(t('statGamesList').toUpperCase(), M, y, { size: 12, bold: true, color: INK });
-    pdf.line(M, y - 7, M + 40, y - 7, PDF_GREEN, 2);
-    y -= 24;
-  };
-  heading();
-  for (const r of ps.rows) {
-    if (y < M + 10) {
-      pdf.page();
-      y = pdf.H - M - 10;
-      heading();
-    }
-    const x0 = M;
-    const w1 = pdf.text(ddmm(r.g), x0, y, { size: 10, bold: true, color: INK });
-    const w2 = pdf.text(gameShort(r.g, r.d), x0 + w1 + 10, y, { size: 10, color: INK, maxW: 240 });
-    pdf.text(`·  ${gameDetail(r)}`, x0 + w1 + 18 + w2, y, {
-      size: 10,
-      color: r.played ? INK : MUTED,
-      maxW: W - w1 - w2 - 20,
-    });
-    y -= 18;
-  }
-  return pdf.bytes();
-}
-
-function playerPdfName(playerId) {
-  const p = db.players.find((x) => x.id === playerId);
-  const tm = getTeam(p.teamId);
-  const clean = (s) =>
-    String(s || '')
-      .normalize('NFD')
-      .replace(/[^A-Za-z0-9]/g, '');
-  const season = statsSeason(p.teamId).replace('/', '-');
-  return `${[clean(tm?.club), clean(tm?.name), clean(playerFullName(p)), t('fileStats'), season].filter(Boolean).join('_')}.pdf`;
-}
-
-const exportPlayerPdf = (playerId) =>
-  shareFile(new File([buildPlayerPdf(playerId)], playerPdfName(playerId), { type: 'application/pdf' }));
-
 // ---------- Actions ----------
 
 const actions = {
@@ -1027,18 +306,8 @@ const actions = {
   },
 
   // report
-  pdf: () => exportPdf(currentGame()),
-  'player-pdf': ({ id }) => exportPlayerPdf(id),
 
   // stats
-  'stats-team': ({ id }) => {
-    localStorage.setItem(STATS_TEAM_KEY, id);
-    render();
-  },
-  'stats-season': ({ id }) => {
-    localStorage.setItem(STATS_SEASON_KEY, id);
-    render();
-  },
 
   // backup
   backup: () =>
@@ -1057,6 +326,8 @@ registerActions(profilePage.actions);
 registerActions(teamPage.actions);
 registerActions(gameEditPage.actions);
 registerActions(gamePage.actions);
+registerActions(reportPage.actions);
+registerActions(statsPage.actions);
 installActionListener({
   ignore: () => drag.suppressClick, // the click that ends a drag
   allow: (name) => {
