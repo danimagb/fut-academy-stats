@@ -1,0 +1,110 @@
+/* Live game */
+.scoreboard {
+  text-align: center;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.clock {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.chip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  text-align: left;
+  align-items: center;
+  min-height: 64px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.chip:active {
+  transform: scale(0.97);
+}
+.chip .shirt {
+  grid-row: span 2;
+}
+.chip .pname {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip .meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.chip.on {
+  border-color: var(--accent);
+}
+.chip.on .shirt {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.chip.gk {
+  border-color: var(--gk);
+}
+.chip.gk .shirt {
+  background: var(--gk);
+  color: #2b2200;
+}
+.chip.off {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: grid;
+  gap: 4px;
+}
+.timeline li {
+  display: flex;
+  gap: 10px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+.timeline .t {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  min-width: 48px;
+  white-space: nowrap;
+}
+.timeline li.tap {
+  cursor: pointer;
+}
+.timeline li.tap:active {
+  background: var(--panel);
+}
+.timeline .edit {
+  margin-left: auto;
+  color: var(--muted);
+  padding-left: 8px;
+}
+.opt.current {
+  border-color: var(--accent);
+}

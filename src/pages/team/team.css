@@ -1,0 +1,29 @@
+/* Team screen: Players / Staff sections, with an Add button next to the header */
+.team-sections {
+  margin-top: 18px;
+}
+.acc-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+}
+.acc-top .acc-head {
+  flex: 1;
+  min-width: 0;
+}
+.acc-add {
+  flex: none;
+}
+.acc-body .empty {
+  margin: 12px 0 0;
+}
+.acct-email {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acct-actions {
+  margin-top: 4px;
+}

@@ -1,0 +1,15 @@
+/* Substitution arrows in the timeline / toast */
+.sub-in,
+.sub-out {
+  font-size: 0.8em;
+  margin-right: 3px;
+}
+.sub-in {
+  color: var(--sub-in);
+}
+.sub-out {
+  color: var(--danger);
+}
+.nw {
+  white-space: nowrap;
+}
