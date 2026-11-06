@@ -70,7 +70,6 @@ export function viewReport(id: string | undefined): void {
 
     <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
     ${readOnlyGame(g) ? '' : `<button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>`}
-    <p class="hint">${t('reportHint')}</p>
     <button class="pdf-thumb" data-action="preview-open" aria-label="${t('previewLabel')}: ${t('previewTap')}">
       <div class="pdf-fit">${sheetPreview(statsSheet(g), teamLogoSrc(g.teamId))}</div>
       <span class="pdf-thumb-tag" aria-hidden="true">🔍 ${t('previewTap')}</span>

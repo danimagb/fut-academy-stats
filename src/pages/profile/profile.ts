@@ -1,3 +1,4 @@
+import { onLeave } from '@/shared/lib/route';
 // The Profile page: account, settings (language, theme) and backup.
 import { $ } from '@/shared/lib/dom';
 import { sb, syncNow } from '@/data/session';
@@ -30,6 +31,10 @@ import type { ThemeChoice } from '@/features/theme-switch/theme';
 // default, every time the app starts); each closed header shows a one-line summary. While
 // creating an account / choosing a password, Account stays open.
 export let profileOpen = 'account';
+// Back to the default (Account open) whenever the screen is left.
+onLeave(() => {
+  profileOpen = 'account';
+});
 
 export function viewProfile(): void {
   const seg = (action: string, current: string, options: [string, string][]): string =>

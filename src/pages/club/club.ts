@@ -17,7 +17,7 @@ import {
 } from '@/features/team-people/team-people';
 import { esc } from '@/shared/lib/html';
 import { rerenderSoon } from '@/shared/lib/rerender';
-import { route } from '@/shared/lib/route';
+import { onLeave, route } from '@/shared/lib/route';
 import { plural, t } from '@/shared/i18n/i18n';
 import { bar } from '@/shared/ui/bar';
 import { accSection } from '@/shared/ui/accordion';
@@ -27,9 +27,11 @@ import { main } from '@/shared/ui/main';
 import { toast } from '@/shared/ui/toast';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// The page's sections: Details closed, Teams and People open the first time (remembered while
-// the app is open).
-const clubOpen: Record<string, boolean> = { details: false, teams: true, people: true };
+// The page's sections: all closed when the page opens (and again whenever it is left).
+const clubOpen: Record<string, boolean> = {};
+onLeave(() => {
+  for (const k of Object.keys(clubOpen)) delete clubOpen[k];
+});
 
 type Person = { user_id: string; email: string; role: string; teams: { name: string; role: string }[] };
 type ClubState = { clubId: string; status: 'loading' | 'ok' | 'offline' | 'error'; people: Person[] };
@@ -135,8 +137,7 @@ export function viewClub(clubId: string | undefined): void {
       <label class="grow">${t('clubShortName')}<input name="short" maxlength="20" value="${esc(shortName)}" placeholder="PFC" autocomplete="off"></label>
       <button class="btn small">${t('save')}</button>
     </form>
-    <p class="hint">${t('clubShortHint')}</p>
-    <p class="hint">${t('logoHint')}</p>
+
     ${logo ? `<button class="btn small ghost danger" data-action="club-logo-remove" data-cid="${cid}">${t('logoRemove')}</button>` : ''}`;
   const teamList = teams.length
     ? `<ul class="list">${teams
@@ -163,15 +164,12 @@ export function viewClub(clubId: string | undefined): void {
     ${bar(esc(name), '#/teams')}
     <div class="club-head">
       ${crest}
-      <div class="grow">
-        ${shortName ? `<strong>${esc(shortName)}</strong>` : ''}
-        <div class="muted small">${[plural('teamsN', teams.length), nPeople].filter(Boolean).join(' · ')}</div>
-      </div>
+      ${shortName ? `<strong class="grow">${esc(shortName)}</strong>` : ''}
     </div>
     <div class="accordion club-sections">
       ${section('details', t('clubDetails'), [shortName || t('noShortName'), t(logo ? 'withLogo' : 'noLogo')].join(' · '), details)}
       ${section('teams', t('clubTeams'), plural('teamsN', teams.length), teamList, 'new-team')}
-      ${section('people', t('clubPeople'), nPeople, `${people}<p class="hint">${t('clubPeopleHint')}</p>`)}
+      ${section('people', t('clubPeople'), nPeople, people)}
     </div>`;
   // Listen on the input itself: if the page is redrawn while the file picker is open, the old
   // input is no longer in the page, but it still gets the chosen file.

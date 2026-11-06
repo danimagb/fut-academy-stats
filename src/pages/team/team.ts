@@ -14,7 +14,7 @@ import {
 import { uploadTeams } from '@/features/upload-teams/upload-teams';
 import { uid } from '@/shared/lib/id';
 import { rerender } from '@/shared/lib/rerender';
-import { route } from '@/shared/lib/route';
+import { onLeave, route } from '@/shared/lib/route';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { toast } from '@/shared/ui/toast';
 import { teamBadge } from '@/features/sync-status/sync-status';
@@ -192,6 +192,8 @@ export function viewTeam(teamId: string | undefined): void {
 // Players and Staff on the team screen are collapsible sections, both closed by default
 // (each remembered while the app is open). `add` is the action of the section's ＋ button.
 export const teamOpen: Record<string, boolean> = { players: false, staff: false };
+// Closed again whenever the screen is left.
+onLeave(() => Object.assign(teamOpen, { players: false, staff: false }));
 
 export const teamSection = (id: string, title: string, summary: string, add: string, body: string): string =>
   accSection({ id, title, summary, add, body, open: !!teamOpen[id], toggle: 'team-section' });

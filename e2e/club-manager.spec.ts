@@ -39,9 +39,17 @@ test('the teams list groups cloud teams by club, with the club page for its coor
   await expect(heading).toContainText('(PFC)');
   await heading.getByRole('link', { name: '⚙ Club' }).click();
   await expect(page).toHaveURL(/#\/club\/c1/);
+  // Sections start closed.
+  const staff = page.getByRole('button', { name: /^Staff/ });
+  await expect(staff).toHaveAttribute('aria-expanded', 'false');
+  await staff.click();
   await expect(page.locator('.club-people')).toContainText(ANA.email);
   await expect(page.locator('.club-people')).toContainText('Sub-7B (Director)');
   await expect(page.locator('.club-people')).toContainText(`Staff · no team yet`);
+  // Leaving the page and coming back: closed again.
+  await page.goto('#/teams');
+  await page.goto('#/club/c1');
+  await expect(page.getByRole('button', { name: /^Staff/ })).toHaveAttribute('aria-expanded', 'false');
   expect(errors).toEqual([]);
 });
 
