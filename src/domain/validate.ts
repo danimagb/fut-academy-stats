@@ -105,6 +105,11 @@ export function gameSanity(g: Game): Check {
     if (!isObj(n) || !isText(n.name) || !isText(n.number) || !isText(n.fullName)) p.push(`names.${id}`);
   }
 
+  if (g.owner !== undefined) {
+    const o = g.owner as unknown;
+    if (!isObj(o) || !isId(o.userId) || !isId(o.deviceId) || !isText(o.email)) p.push('owner');
+  }
+
   const maxT = maxMatchTime(g);
   const timeOk = (t: unknown) => isNum(t) && t >= 0 && t <= maxT;
   if (g.events.length > MAX_EVENTS) p.push('too many events');

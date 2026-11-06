@@ -11,13 +11,14 @@ import { defaultTeamId } from '@/data/prefs';
 import { buzz } from '@/shared/lib/device';
 import { rerender } from '@/shared/lib/rerender';
 import { askConfirm, notify } from '@/shared/ui/dialog';
+import { syncNow } from '@/data/session';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
 import { notFound } from '@/shared/ui/not-found';
 import { checkTime, describe } from '@/features/live-game/live-game';
 import { fmtNow, formationOf, matchTime } from '@/data/live';
 import { $ } from '@/shared/lib/dom';
-import { readOnlyGame } from '@/data/access';
+import { canTakeOver, claimGame, loggedElsewhere, readOnlyGame } from '@/data/access';
 import { readOnlyPill } from '@/features/team-access/read-only';
 import { derive, getGame } from '@/data/queries';
 import { route } from '@/shared/lib/route';
@@ -157,9 +158,11 @@ export function viewGame(id: string | undefined): void {
       esc(matchTitle(g)),
       '#/games',
       ro
-        ? g.status !== 'scheduled'
-          ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>`
-          : ''
+        ? `${g.status !== 'scheduled' ? `<a class="menu-item" role="menuitem" href="#/report/${g.id}">📋 ${t('report')}</a>` : ''}${
+            canTakeOver(g)
+              ? `<button class="menu-item" role="menuitem" data-action="take-over">📲 ${t('takeOver')}</button>`
+              : ''
+          }`
         : `
       ${
         canEdit
@@ -171,6 +174,7 @@ export function viewGame(id: string | undefined): void {
       <button class="menu-item danger" role="menuitem" data-action="delete-game">🗑 ${t('deleteGame')}</button>`,
       ro ? readOnlyPill() : '',
     )}
+    ${loggedElsewhere(g) ? `<p class="hint warn" role="status">${t('loggedElsewhere', { email: `<b>${esc(g.owner?.email || '?')}</b>` })}</p>` : ''}
     <section class="scoreboard ${overtime ? 'overtime' : ''}">
       ${statusPill(g)}
       <div class="clock-line">
@@ -363,11 +367,27 @@ export const gameActions = {
   kickoff: () => {
     const g = currentGame();
     if (!g) return;
+    claimGame(g); // this phone logs the game until it finishes (cloud teams)
     g.status = 'live';
     g.clock.period = 1;
     g.marks.push({ type: 'start', period: 1, t: matchTime(g), wall: Date.now() });
     startClock(g);
     save();
+    rerender();
+  },
+  // Carry on logging a live game on this phone (the other phone stopped: battery, lost…).
+  'take-over': async () => {
+    const g = currentGame();
+    if (!g || !canTakeOver(g)) return;
+    const ok = await askConfirm({
+      title: t('takeOver'),
+      message: t('takeOverConfirm', { email: `<b>${esc(g.owner?.email || '?')}</b>` }),
+      ok: t('takeOver'),
+    });
+    if (!ok) return;
+    claimGame(g, true);
+    save();
+    void syncNow();
     rerender();
   },
   resume: () => {
@@ -634,6 +654,12 @@ export function openPlayerInfo(g: Game, id: string): void {
       <span class="muted small">${d.on.has(id) ? t('onPitch') : t('benchState')} · ${t('played', { t: fmtMins(s.played) })}</span>
     </div>
     ${bits ? `<p>${bits}</p>` : ''}
-    <p class="hint">${readOnlyGame(g) ? `${readOnlyPill()} ${t('readOnlyHint')}` : t('finishedHint')}</p>
+    <p class="hint">${
+      loggedElsewhere(g)
+        ? t('loggedElsewhere', { email: `<b>${esc(g.owner?.email || '?')}</b>` })
+        : readOnlyGame(g)
+          ? `${readOnlyPill()} ${t('readOnlyHint')}`
+          : t('finishedHint')
+    }</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
 }

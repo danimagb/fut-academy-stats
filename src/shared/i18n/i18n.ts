@@ -380,6 +380,10 @@ const en = {
   memberAdded: 'Added',
   teamsN: '{n} teams',
   teamsN1: '1 team',
+  takeOver: 'Continue on this phone',
+  takeOverConfirm:
+    "{email} is logging this game on another phone. Carry on here? What that phone hasn't synced yet is lost.",
+  loggedElsewhere: '{email} is logging this game on another phone.',
   close: 'Close',
   zoomHint: 'Pinch or double-tap to zoom',
   previewTap: 'Tap to enlarge',
@@ -821,6 +825,10 @@ const pt: Record<MessageKey, string> = {
   memberAdded: 'Adicionado',
   teamsN: '{n} equipas',
   teamsN1: '1 equipa',
+  takeOver: 'Continuar neste telemóvel',
+  takeOverConfirm:
+    '{email} está a registar este jogo noutro telemóvel. Continuar aqui? O que esse telemóvel ainda não sincronizou perde-se.',
+  loggedElsewhere: '{email} está a registar este jogo noutro telemóvel.',
   close: 'Fechar',
   zoomHint: 'Afasta os dedos ou toca duas vezes para ampliar',
   previewTap: 'Toca para ampliar',
