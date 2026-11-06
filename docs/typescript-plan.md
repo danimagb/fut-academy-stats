@@ -10,27 +10,27 @@ keeps deploying from the branch exactly as it does today.
 
 ## Progress
 
-| #    | Step                                                                                   | Status       | PR                            |
-| ---- | -------------------------------------------------------------------------------------- | ------------ | ----------------------------- |
-| 0    | Plan and code standards                                                                | ✅ merged    | danimagb/fut-academy-stats#32 |
-| 1    | Tooling skeleton (Vite, TypeScript, `package.json`)                                    | ✅ merged    | danimagb/fut-academy-stats#33 |
-| 2    | CI: oxlint, tsc, Vitest, build                                                         | ✅ merged    | danimagb/fut-academy-stats#35 |
-| 3    | Supabase and config as modules (drop `vendor/`)                                        | ✅ merged    | danimagb/fut-academy-stats#36 |
-| 4    | Service worker via vite-plugin-pwa (drop `sw.js`)                                      | ✅ merged    | danimagb/fut-academy-stats#37 |
-| 5.1  | Shared basics and types: I18N, format helpers, data types, formats                     | ✅ merged    | danimagb/fut-academy-stats#38 |
-| 5.2  | Game logic: clock, pitch, game state, titles, stats + tests                            | ✅ merged    | danimagb/fut-academy-stats#39 |
-| 5.3  | Storage, change tracking, validating data that comes in                                | ✅ merged    | danimagb/fut-academy-stats#40 |
-| 5.4  | Supabase client, sync and sign-in logic                                                | ✅ merged    | danimagb/fut-academy-stats#41 |
-| 5.5  | Database checks on what is stored (new migration)                                      | ✅ merged    | danimagb/fut-academy-stats#42 |
-| 7    | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged    | danimagb/fut-academy-stats#43 |
-| 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
-| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged    | danimagb/fut-academy-stats#45 |
-| 6.2b | Team and account screens                                                               | ✅ merged    | danimagb/fut-academy-stats#46 |
-| 6.3  | Game screens                                                                           | ✅ merged    | danimagb/fut-academy-stats#47 |
-| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged    | danimagb/fut-academy-stats#48 |
-| 8    | Strict TypeScript                                                                      | ⏳ todo      |                               |
-| 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged    | danimagb/fut-academy-stats#49 |
-| 10   | Merge `feature/typescript` into `main`                                                 | ⏳ todo      |                               |
+| #    | Step                                                                                   | Status    | PR                            |
+| ---- | -------------------------------------------------------------------------------------- | --------- | ----------------------------- |
+| 0    | Plan and code standards                                                                | ✅ merged | danimagb/fut-academy-stats#32 |
+| 1    | Tooling skeleton (Vite, TypeScript, `package.json`)                                    | ✅ merged | danimagb/fut-academy-stats#33 |
+| 2    | CI: oxlint, tsc, Vitest, build                                                         | ✅ merged | danimagb/fut-academy-stats#35 |
+| 3    | Supabase and config as modules (drop `vendor/`)                                        | ✅ merged | danimagb/fut-academy-stats#36 |
+| 4    | Service worker via vite-plugin-pwa (drop `sw.js`)                                      | ✅ merged | danimagb/fut-academy-stats#37 |
+| 5.1  | Shared basics and types: I18N, format helpers, data types, formats                     | ✅ merged | danimagb/fut-academy-stats#38 |
+| 5.2  | Game logic: clock, pitch, game state, titles, stats + tests                            | ✅ merged | danimagb/fut-academy-stats#39 |
+| 5.3  | Storage, change tracking, validating data that comes in                                | ✅ merged | danimagb/fut-academy-stats#40 |
+| 5.4  | Supabase client, sync and sign-in logic                                                | ✅ merged | danimagb/fut-academy-stats#41 |
+| 5.5  | Database checks on what is stored (new migration)                                      | ✅ merged | danimagb/fut-academy-stats#42 |
+| 7    | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged | danimagb/fut-academy-stats#43 |
+| 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged | danimagb/fut-academy-stats#44 |
+| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged | danimagb/fut-academy-stats#45 |
+| 6.2b | Team and account screens                                                               | ✅ merged | danimagb/fut-academy-stats#46 |
+| 6.3  | Game screens                                                                           | ✅ merged | danimagb/fut-academy-stats#47 |
+| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
+| 8    | Strict TypeScript                                                                      | ⏳ todo   |                               |
+| 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
+| 10   | Merge `feature/typescript` into `main`                                                 | ⏳ todo   |                               |
 
 **Where things stand (update this with every PR):**
 
@@ -378,19 +378,6 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - End-to-end: a player's sheet downloads as a PDF, which makes 15 tests.
   - The `.js` files moved as they were still have `@ts-nocheck`. Step 8 converts them to
     strict TypeScript.
-<<<<<<< HEAD
-- `main` merged in (#34, "lock finished games", which landed on `main` after this branch
-  started), so step 10 has nothing left to port:
-  - `canRecord(g)` is in `domain/game-state.ts` (with a test). `data/live.addEvent` returns
-    `null` for a finished game, `doSub` and `movePlayer` do nothing, and the goal, card and
-    opponent-goal actions stop when no event was added.
-  - On a finished game a tap on a player opens the info sheet with the `finishedHint` text, and
-    dragging is off.
-  - `app.js` and `sw.js` stay deleted. The new migration `20261105000000_lock_finished_games.sql`
-    runs before `20261106000000_data_checks.sql`; `rls.test.sql` plans 194 tests, and
-    `bash supabase/tests/local/run.sh` passes.
-  - End-to-end: `finished-game.spec.ts`, which makes 16 tests.
-=======
 - Done in step 9, **before step 8**. It's independent of the typing, so the migrated app can
   go live sooner, and step 8 continues afterwards.
   - `.github/workflows/deploy.yml`: on every push to `main` (or when run by hand), it runs
@@ -404,7 +391,17 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     config.
   - **Owner, before step 10:** Settings → Pages → Build and deployment → Source:
     **GitHub Actions**.
->>>>>>> origin/feature/typescript
+- `main` merged in (#34, "lock finished games", which landed on `main` after this branch
+  started), so step 10 has nothing left to port:
+  - `canRecord(g)` is in `domain/game-state.ts` (with a test). `data/live.addEvent` returns
+    `null` for a finished game, `doSub` and `movePlayer` do nothing, and the goal, card and
+    opponent-goal actions stop when no event was added.
+  - On a finished game a tap on a player opens the info sheet with the `finishedHint` text, and
+    dragging is off.
+  - `app.js` and `sw.js` stay deleted. The new migration `20261105000000_lock_finished_games.sql`
+    runs before `20261106000000_data_checks.sql`; `rls.test.sql` plans 194 tests, and
+    `bash supabase/tests/local/run.sh` passes.
+  - End-to-end: `finished-game.spec.ts`, which makes 16 tests.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").
