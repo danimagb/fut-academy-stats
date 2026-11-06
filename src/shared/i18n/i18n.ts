@@ -271,8 +271,6 @@ const en = {
   inProgress: 'game still in progress',
   didNotPlay: 'Did not play',
   notCalled: 'Not called up',
-  reportHint:
-    'Preview of the PDF: tap it to see it full screen. Each half starts at its regular time; extra time shows as (+mm:ss).',
   pdf: '📄 Share PDF',
   statsNoTeams: 'Create a team and its players first.',
   statsNoGames: 'No finished games yet. Stats show up here after full time.',
@@ -393,8 +391,6 @@ const en = {
   logoAdd: 'Add logo',
   logoChange: 'Change logo',
   logoRemove: 'Remove logo',
-  logoHint:
-    'Tap the crest at the top to add or change the logo. The centre of the image is used, as a square; it shows next to the club in the app and on the PDFs.',
   logoUploading: 'Uploading the logo…',
   logoSaved: 'Logo saved',
   logoBadImage: "This image couldn't be read. Try a PNG or JPEG.",
@@ -412,11 +408,8 @@ const en = {
   staffAlready: 'in the team',
   staffAdded: '{email} added as {role}.',
   clubOnly: "Only the club's coordinators can open this page.",
-  clubShortHint: 'Shown where space is short, e.g. "PFC - Sub-7B". The club\'s name is set by the admin.',
   noTeamRole: 'no team yet',
   noClubTeamsYet: 'No teams yet.',
-  clubPeopleHint:
-    'The admin invites people into the club; you give them a role in each team (team screen → Staff).',
   clubManager: 'Coordinator',
   clubStaff: 'Staff',
   clubRole: 'Role in the club',
@@ -431,7 +424,7 @@ const en = {
   clubSaved: 'Saved',
   deleteClub: 'Delete club',
   deleteClubConfirm: 'Delete {club}? It has no teams.',
-  clubPeople: 'People',
+  clubPeople: 'Staff',
   clubTeams: 'Teams',
   noClubPeople: 'Nobody in this club yet.',
   noClubTeams: "No teams yet: the club's coordinators create them.",
@@ -718,8 +711,6 @@ const pt: Record<MessageKey, string> = {
   inProgress: 'jogo ainda a decorrer',
   didNotPlay: 'Não jogou',
   notCalled: 'Não convocado',
-  reportHint:
-    'Pré-visualização do PDF: toca nela para a ver em ecrã inteiro. Cada parte começa no seu tempo regulamentar; o tempo extra aparece como (+mm:ss).',
   pdf: '📄 Partilhar PDF',
   statsNoTeams: 'Cria primeiro uma equipa e os seus jogadores.',
   statsNoGames: 'Ainda não há jogos terminados. As estatísticas aparecem aqui depois do fim do jogo.',
@@ -841,8 +832,6 @@ const pt: Record<MessageKey, string> = {
   logoAdd: 'Adicionar logótipo',
   logoChange: 'Mudar logótipo',
   logoRemove: 'Remover logótipo',
-  logoHint:
-    'Toca no emblema, em cima, para adicionar ou mudar o logótipo. Usa-se o centro da imagem, em quadrado; aparece junto ao clube na app e nos PDFs.',
   logoUploading: 'A enviar o logótipo…',
   logoSaved: 'Logótipo guardado',
   logoBadImage: 'Não foi possível ler esta imagem. Experimenta um PNG ou JPEG.',
@@ -860,12 +849,8 @@ const pt: Record<MessageKey, string> = {
   staffAlready: 'já está na equipa',
   staffAdded: '{email} adicionado como {role}.',
   clubOnly: 'Só os coordenadores do clube podem abrir esta página.',
-  clubShortHint:
-    'Aparece onde há pouco espaço, ex.: "PFC - Sub-7B". O nome do clube é definido pelo administrador.',
   noTeamRole: 'ainda sem equipa',
   noClubTeamsYet: 'Ainda não há equipas.',
-  clubPeopleHint:
-    'O administrador convida as pessoas para o clube; tu dás-lhes um papel em cada equipa (ecrã da equipa → Staff).',
   clubManager: 'Coordenador',
   clubStaff: 'Staff',
   clubRole: 'Papel no clube',
@@ -880,7 +865,7 @@ const pt: Record<MessageKey, string> = {
   clubSaved: 'Guardado',
   deleteClub: 'Apagar clube',
   deleteClubConfirm: 'Apagar {club}? Não tem equipas.',
-  clubPeople: 'Pessoas',
+  clubPeople: 'Staff',
   clubTeams: 'Equipas',
   noClubPeople: 'Ainda não há ninguém neste clube.',
   noClubTeams: 'Ainda não há equipas: são criadas pelos coordenadores do clube.',
