@@ -1,15 +1,9 @@
-import { getTheme, initTheme, setTheme } from '@/features/theme-switch/theme';
-import { initLanguage, switchLanguage } from '@/features/language-switch/language';
-import {
-  watchAuth,
-  sendCode,
-  verifyCode,
-  signInPassword,
-  setPassword,
-  accountSection,
-} from '@/features/sign-in/sign-in';
+import { profilePage } from '@/pages/profile/profile';
+import { initTheme } from '@/features/theme-switch/theme';
+import { initLanguage } from '@/features/language-switch/language';
+import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
 import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
-import { showSyncStatus, syncStatusText, teamBadge } from '@/features/sync-status/sync-status';
+import { showSyncStatus, teamBadge } from '@/features/sync-status/sync-status';
 import { adminDo } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
 import { $, $$ } from '@/shared/lib/dom';
@@ -45,7 +39,7 @@ import { bar, closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync, localTeams, pendingCount, removeCloudData, roleOf } from '@/data/sync';
+import { configureSync, localTeams, pendingCount, roleOf } from '@/data/sync';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -59,7 +53,6 @@ import {
   syncGameTeams,
   teamIdOf,
 } from '@/data/store';
-import { persistedState } from '@/data/persist';
 import { checkIncoming } from '@/domain/validate';
 import { fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
@@ -88,7 +81,7 @@ import {
   teamStats as teamSeason,
 } from '@/domain/stats';
 import { gameTeam, matchTitle, periodName, seasonOf, teamFull, teamLabel } from '@/domain/titles';
-import { getLang, locale, t } from '@/shared/i18n/i18n';
+import { locale, t } from '@/shared/i18n/i18n';
 
 // ---------- Config ----------
 
@@ -258,13 +251,13 @@ addViews({
   edit: viewEdit,
   game: viewGame,
   report: viewReport,
-  profile: viewProfile,
   stats: viewStats,
   player: viewPlayer,
 });
 // Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
 addViews(gamesPage.views);
 addViews(adminPage.views);
+addViews(profilePage.views);
 setFallbackView(viewGames);
 onRender({
   before: () => {
@@ -462,84 +455,6 @@ function openPlayerInfo(g, id) {
     ${bits ? `<p>${bits}</p>` : ''}
     <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
-}
-
-// ---------- Views: profile / settings ----------
-// App settings live here; add new sections as more settings appear.
-
-// Profile is an accordion: Account, Settings, Backup. One section open at a time (Account by
-// default, every time the app starts); each closed header shows a one-line summary. While
-// creating an account / choosing a password, Account stays open.
-let profileOpen = 'account';
-
-function viewProfile() {
-  const seg = (action, current, options) =>
-    `<span class="seg big" role="group">${options
-      .map(
-        ([v, label]) =>
-          `<button class="${current === v ? 'on' : ''}" data-action="${action}" data-v="${v}" aria-pressed="${current === v}">${label}</button>`,
-      )
-      .join('')}</span>`;
-  const busyAuth = cloud.needsPassword || cloud.step === 'code';
-  const open = busyAuth ? 'account' : profileOpen;
-  const a = cloud.account;
-  const accountSum = cloud.session
-    ? cloud.needsPassword
-      ? t('stepOf', { n: 3 })
-      : [
-          cloud.session.user.email,
-          a &&
-            !a.none &&
-            (a.isAdmin ? t('acctAdmin') : t(a.kind === 'director' ? 'acctDirector' : 'acctCoach')),
-        ]
-          .filter(Boolean)
-          .join(' · ')
-    : t('notSignedIn');
-  const themeLabel = { light: t('themeLight'), dark: t('themeDark'), auto: t('themeAuto') }[getTheme()];
-  const section = (id, title, summary, body) => `
-    <section class="acc ${open === id ? 'open' : ''}">
-      <button class="acc-head" data-action="profile-section" data-v="${id}" aria-expanded="${open === id}" aria-controls="acc-${id}">
-        <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum">${esc(summary)}</span></span>
-        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
-      <div class="acc-body" id="acc-${id}" ${open === id ? '' : 'hidden'}>${body}</div>
-    </section>`;
-  main.innerHTML = `
-    ${bar(t('tabProfile'))}
-    <div class="accordion">
-    ${section('account', t('account'), accountSum, accountSection(syncStatusText()))}
-    ${section(
-      'settings',
-      t('settings'),
-      `${getLang() === 'pt' ? 'Português' : 'English'} · ${themeLabel}`,
-      `
-      <ul class="list settings">
-        <li class="item"><span class="grow">${t('language')}</span>
-          ${seg('lang', getLang(), [
-            ['en', 'English'],
-            ['pt', 'Português'],
-          ])}</li>
-        <li class="item wrap"><span class="grow">${t('theme')}</span>
-          ${seg('theme', getTheme(), [
-            ['light', `☀️ ${t('themeLight')}`],
-            ['dark', `🌙 ${t('themeDark')}`],
-            ['auto', t('themeAuto')],
-          ])}</li>
-      </ul>`,
-    )}
-    ${section(
-      'backup',
-      t('backupTitle'),
-      t('backupSummary'),
-      `
-      <p class="hint">${t('backupHint')}</p>
-      ${persistedState() === null ? '' : `<p class="hint ${persistedState() ? 'ok' : 'warn'}">${persistedState() ? `✓ ${t('storageKept')}` : t('storageNotKept')}</p>`}
-      <div class="row gap">
-        <button class="btn grow" data-action="backup">⬇️ ${t('exportBackup')}</button>
-        <label class="btn grow">⬆️ ${t('importBackup')}<input type="file" accept="application/json,.json" data-change="restore" hidden></label>
-      </div>`,
-    )}
-    </div>`;
 }
 
 // ---------- Views: teams and their players ----------
@@ -1912,47 +1827,6 @@ const actions = {
   soon: ({ v }) =>
     askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
-  privacy: () =>
-    openSheet(`<h3>${t('privacyTitle')}</h3><div class="privacy">${t('privacyBody')}</div>
-    <button class="btn block" data-action="close-sheet">${t('ok')}</button>`),
-  'signin-back': () => {
-    Object.assign(cloud, { step: 'email', error: '' });
-    render();
-  },
-  'profile-section': ({ v }) => {
-    profileOpen = profileOpen === v ? '' : v; // tap the open one to close it
-    render();
-  },
-  'auth-mode': ({ v }) => {
-    // Keep a typed email when switching between Sign in / Activate account / Reset.
-    const typed = $('main input[name="email"]')?.value.trim();
-    Object.assign(cloud, { mode: v, step: 'email', error: '', email: typed || cloud.email });
-    render();
-  },
-  'change-password': () => {
-    Object.assign(cloud, { changingPassword: true, error: '' });
-    render();
-  },
-  'cancel-password': () => {
-    Object.assign(cloud, { changingPassword: false, error: '' });
-    render();
-  },
-  'signin-resend': () => sendCode(cloud.email),
-  'sign-out': async () => {
-    const n = pendingCount();
-    const message = [
-      t('signOutConfirm'),
-      Object.keys(db.sync.teams).length ? t('signOutCloud') : '',
-      n ? `<b>${plural('signOutLose', n)}</b>` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-    if (!(await askConfirm({ title: t('signOut'), message, ok: t('signOut'), danger: n > 0 }))) return;
-    removeCloudData(); // cloud teams leave this phone; teams on this phone stay
-    await sb.auth.signOut({ scope: 'local' }); // local: works offline too
-    render();
-  },
-  'sync-now': () => syncNow(),
   'upload-team': () => uploadTeams([route().id]),
 
   // People of a cloud team (team screen)
@@ -1993,16 +1867,6 @@ const actions = {
     toast(t('leftTeam'));
     await syncNow(); // the team leaves this phone
     if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
-  },
-
-  theme: ({ v }) => {
-    setTheme(v);
-    render();
-  },
-
-  lang: ({ v }) => {
-    switchLanguage(v);
-    render();
   },
 
   // teams and players
@@ -2343,6 +2207,7 @@ registerActions(actions);
 registerActions(gamesPage.actions);
 registerActions(adminPage.actions);
 registerForms(adminPage.forms);
+registerActions(profilePage.actions);
 installActionListener({
   ignore: () => drag.suppressClick, // the click that ends a drag
   allow: (name) => {
