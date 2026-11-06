@@ -18,7 +18,7 @@ export const TAB_ICONS: Record<'team' | 'matches' | 'stats' | 'profile' | 'admin
 type Tab = keyof typeof TAB_ICONS;
 
 export function renderTabbar(view: string): void {
-  const active: Tab = ['teams', 'team', 'players'].includes(view)
+  const active: Tab = ['teams', 'team', 'players', 'club'].includes(view)
     ? 'team'
     : ['stats', 'player'].includes(view)
       ? 'stats'

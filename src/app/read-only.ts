@@ -20,7 +20,7 @@ export function viewReadOnly(): boolean {
 }
 
 // Actions allowed on a read-only screen. Everything else is refused there: delete-team,
-// edit-player, delete-player, upload-team, remove-coach, sel, set-gk, set-home, save-game,
+// edit-player, delete-player, upload-team, remove-staff, add-staff, add-staff-open, pick-club, sel, set-gk, set-home, save-game,
 // kickoff, resume, end-period, next-period, do-sub, goal, yellow, red, make-gk, formation,
 // set-formation, opp-goal, fix-open, fix-end, fix-started, fix-apply, edit-goal, set-scorer,
 // delete-goal, undo-toast, undo, edit-info, delete-game (and any action added later, until it is

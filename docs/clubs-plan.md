@@ -37,8 +37,8 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 | 1   | Plan (this document)                                         | ✅ approved  | danimagb/fut-academy-stats#59 |
 | 2   | Database: clubs, club managers, new RLS, migration, tests    | ✅ merged    | danimagb/fut-academy-stats#63 |
 | 3   | Admin: clubs, their people and club managers                 | ✅ merged    | danimagb/fut-academy-stats#64 |
-| 4   | Sync + permissions in the app (club manager role)            | 🔄 in review | (this PR)                     |
-| 5   | Club manager screens: club teams, players, staff             | ⏳ to do     |                               |
+| 4   | Sync + permissions in the app (club manager role)            | ✅ merged    | danimagb/fut-academy-stats#66 |
+| 5   | Club manager screens: club teams, players, staff             | 🔄 in review | (this PR)                     |
 | 6   | Club logo (storage, upload, screens, PDFs)                   | ⏳ to do     |                               |
 | 7   | Team manager limits, README / privacy text, test on 2 phones | ⏳ to do     |                               |
 
@@ -107,8 +107,21 @@ shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an acco
   - Tests: sync unit tests on the new roles and clubs (118 unit tests); e2e
     `club-roles.spec.ts` (coach read-only, team manager and club manager can edit players;
     Profile shows the club role); the e2e stub answers `rpc/my_teams`.
-  - Not yet: the team screen still lets a team manager edit the team's name and club (the
-    change comes back from the cloud), and doesn't show the club's short name: step 5.
+- Done in step 5 (screens):
+  - Teams list: cloud teams under a heading per club (with "⚙ Club" for its coordinators),
+    then "On this phone". `src/data/clubs.ts`: `teamGroups()`, `teamShortLabel()` ("PFC -
+    Sub-7B", used in the team screen title and the games filter).
+  - "+ New team" / "Sync this team": a coordinator of several clubs picks the club (new teams
+    can also stay on this phone).
+  - Team screen: a cloud team's club is read-only; its name, Delete and staff only for whoever
+    manages it (`canManageTeam`); the input handler refuses the rest.
+  - Staff: "＋ Add" opens a sheet with the club's people (search as you type, Coach / Director),
+    those already in the team marked; club managers change roles inline and remove people. The
+    email form and its texts are gone.
+  - Club page `#/club/<id>` (coordinators): short name, the club's teams, + New team, and the
+    club's people with their team roles (online).
+  - E2E: `club-manager.spec.ts` (5 tests); 27 e2e tests in all. Checked at phone size in both
+    themes.
 
 ## What changes, in one table
 

@@ -42,7 +42,8 @@ for (const [who, clubRole, teamRole, readOnly] of [
     const errors = watchErrors(page);
     await signInAs(page, USER, { is_admin: false }, cloud(clubRole, teamRole));
     await page.goto('#/teams');
-    await expect(page.locator('#main')).toContainText('Padroense FC - Sub-7B');
+    await expect(page.locator('h2.team-group')).toContainText('Padroense FC');
+    await expect(page.locator('#main .card')).toContainText('Sub-7B');
     await page.goto('#/team/t1');
     await expect(page.locator('#main')).toContainText('Rui');
     if (readOnly) {

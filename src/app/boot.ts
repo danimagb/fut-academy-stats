@@ -16,8 +16,10 @@ import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { setClubRole, setTeamRole } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
+import { clubPage } from '@/pages/club/club';
 import { $, $$ } from '@/shared/lib/dom';
-import { remote, loadPeople, addCoach } from '@/features/team-people/team-people';
+import { filterStaff, remote, loadPeople, setStaffRole } from '@/features/team-people/team-people';
+import { canManageTeam } from '@/data/access';
 import { refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
@@ -33,7 +35,7 @@ import { closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync, localTeams, roleOf } from '@/data/sync';
+import { configureSync, localTeams } from '@/data/sync';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -127,6 +129,7 @@ export function boot(): void {
   // Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
   addViews(gamesPage.views);
   addViews(adminPage.views);
+  addViews(clubPage.views);
   addViews(profilePage.views);
   addViews(teamPage.views);
   addViews(gameEditPage.views);
@@ -147,7 +150,7 @@ export function boot(): void {
 
   window.addEventListener('hashchange', () => {
     resetDraft();
-    Object.assign(remote, { people: null, admin: null }); // online screens load again when opened
+    Object.assign(remote, { people: null, admin: null, club: null }); // online screens load again when opened
     render();
     window.scrollTo(0, 0);
   });
@@ -195,6 +198,8 @@ export function boot(): void {
   registerActions(gamesPage.actions);
   registerActions(adminPage.actions);
   registerForms(adminPage.forms);
+  registerActions(clubPage.actions);
+  registerForms(clubPage.forms);
   registerActions(profilePage.actions);
   registerActions(teamPage.actions);
   registerActions(gameEditPage.actions);
@@ -227,10 +232,13 @@ export function boot(): void {
       if (preview) preview.textContent = fixPreview(g);
       return;
     }
+    if (el.dataset.filter === 'staff') return filterStaff(el.value);
     const teamKey = el.dataset.team;
     if (teamKey === 'club' || teamKey === 'name') {
       const tm = getTeam(route().id);
       if (!tm) return;
+      // Only whoever manages the team changes it; a cloud team's club comes from its club.
+      if (!canManageTeam(tm.id) || (teamKey === 'club' && isCloudTeam(tm.id))) return refuseReadOnly();
       tm[teamKey] = el.value.trim();
       syncGameTeams(db, tm.id);
       save();
@@ -270,6 +278,11 @@ export function boot(): void {
     const { cid = '' } = el.dataset;
     if (change === 'admin-club-role') return setClubRole(cid, id, el.value);
     if (change === 'admin-role') return setTeamRole(tid, id, el.value);
+    // Team screen: a club manager changes someone's role in the team.
+    if (change === 'staff-role') {
+      const teamId = route().id;
+      return teamId ? setStaffRole(teamId, id, el.value) : undefined;
+    }
     if (change !== 'restore') return;
     const file = el.files?.[0];
     if (!file) return;
@@ -318,14 +331,6 @@ export function boot(): void {
     const data = new FormData(formEl);
     const handler = formHandler(form);
     if (handler) return void handler(data, formEl);
-    if (form === 'add-coach') {
-      // Club managers only (the form isn't shown to others; the database checks it too).
-      const teamId = route().id;
-      if (!teamId || roleOf(teamId) !== 'club_manager') return refuseReadOnly();
-      teamOpen.staff = true; // the result shows in the Staff section
-      render();
-      return void addCoach(teamId, String(data.get('email')).trim().toLowerCase());
-    }
     if (form === 'signin-email') return void sendCode(String(data.get('email')).trim().toLowerCase());
     if (form === 'signin-password')
       return void signInPassword(

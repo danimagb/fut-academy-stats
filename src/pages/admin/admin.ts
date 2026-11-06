@@ -3,7 +3,7 @@
 // the database (RLS lets the admin do it); those two go through the `admin` Edge Function.
 import { rerender } from '@/shared/lib/rerender';
 import { deleteMember } from '@/features/team-people/team-people';
-import { OFFLINE, accessError, myId, q, remote } from '@/features/team-people/team-people';
+import { OFFLINE, accessError, clubRoleLabel, myId, q, remote } from '@/features/team-people/team-people';
 import { cloud, refreshAccount, sb, syncNow } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
 import { route } from '@/shared/lib/route';
@@ -43,8 +43,6 @@ const client = (): SupabaseClient => {
   if (!sb) throw OFFLINE;
   return sb;
 };
-
-export const clubRoleLabel = (role: string): string => t(role === 'manager' ? 'clubManager' : 'clubStaff');
 
 // ---------- Admin page ----------
 

@@ -26,7 +26,11 @@ export type PeopleState = {
 // phone: offline they show "Needs internet".
 
 // The admin page's state is the admin page's own business (pages/admin keeps its shape).
-export const remote: { people: PeopleState | null; admin: unknown } = { people: null, admin: null }; // reset when the route changes
+export const remote: { people: PeopleState | null; admin: unknown; club: unknown } = {
+  people: null,
+  admin: null,
+  club: null,
+}; // reset when the route changes
 
 /** The signed-in client (these screens only run when canSync(), which needs one). */
 const client = (): SupabaseClient => {
@@ -52,6 +56,8 @@ export function accessError(e: unknown): string {
   return t('actionFailed', { msg: esc(err.message ?? String(e)) });
 }
 
+/** A club role's label: `manager` = Coordenador, `staff` = Staff. */
+export const clubRoleLabel = (role: string): string => t(role === 'manager' ? 'clubManager' : 'clubStaff');
 /** A team role's label: `manager` (and the old name `director`) = Diretor, `coach` = Treinador. */
 export const roleLabel = (role: string): string =>
   t(role === 'manager' || role === 'director' ? 'roleDirector' : 'roleCoach');
@@ -118,11 +124,11 @@ export function peopleHtml(teamId: string): string {
         (m) => `
       <li class="item">
         <span class="grow"><span class="email">${esc(m.email)}</span>${m.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}</span>
-        <span class="badge ${m.role === 'manager' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
         ${
-          manages && m.user_id !== me
-            ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>`
-            : ''
+          manages
+            ? `<select class="mini" data-change="staff-role" data-id="${esc(m.user_id)}" aria-label="${t('teamRole')}">${roleOptions(m.role)}</select>
+          <button class="btn small ghost danger" data-action="remove-staff" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>`
+            : `<span class="badge ${m.role === 'manager' ? 'cloud' : ''}">${roleLabel(m.role)}</span>`
         }
       </li>`,
       )
@@ -150,25 +156,118 @@ export function setPeopleMsg(text: string, ok: boolean): void {
   showPeople();
 }
 
-// A club manager gives someone of the club a role in the team, by email. The database refuses
-// people who aren't in the team's club (23514); club managers only see their club's accounts,
-// so an unknown email is someone without access or outside the club.
-export async function addCoach(teamId: string, email: string, role: TeamRole = 'coach'): Promise<void> {
-  const e = `<b>${esc(email)}</b>`;
+const roleOptions = (selected: string): string =>
+  (['coach', 'manager'] as const)
+    .map((r) => `<option value="${r}" ${r === selected ? 'selected' : ''}>${roleLabel(r)}</option>`)
+    .join('');
+
+// ---------- Adding staff: pick someone of the team's club (club managers) ----------
+
+type ClubPerson = { user_id: string; email: string };
+/** The club's people shown in the "add to staff" sheet (null while loading, or on error). */
+let pickList: { teamId: string; people: ClubPerson[] | null; error: string } | null = null;
+
+const pickHtml = (teamId: string): string => {
+  if (pickList?.teamId !== teamId || (!pickList.people && !pickList.error))
+    return `<li class="hint">${t('loading')}</li>`;
+  if (!pickList.people) return `<li class="hint warn">${pickList.error}</li>`;
+  if (!pickList.people.length) return `<li class="hint">${t('staffNobody')}</li>`;
+  const inTeam = new Set(remote.people?.teamId === teamId ? remote.people.members.map((m) => m.user_id) : []);
+  return pickList.people
+    .map((p) =>
+      inTeam.has(p.user_id)
+        ? `<li class="item staff-pick-row" data-email="${esc(p.email)}"><span class="grow email">${esc(p.email)}</span><span class="muted small">${t('staffAlready')}</span></li>`
+        : `<li class="staff-pick-row" data-email="${esc(p.email)}"><button class="item staff-pick" data-action="add-staff" data-id="${esc(p.user_id)}">
+          <span class="grow email">${esc(p.email)}</span><span aria-hidden="true">＋</span></button></li>`,
+    )
+    .join('');
+};
+
+const showPickList = (teamId: string): void => {
+  const el = document.getElementById('staff-pick');
+  if (el && pickList?.teamId === teamId) el.innerHTML = pickHtml(teamId);
+  filterStaff(document.querySelector<HTMLInputElement>('#sheet [data-filter="staff"]')?.value ?? '');
+};
+
+/** Loads the people of a club (its managers see them all) for the "add to staff" sheet. */
+export async function loadClubPeople(teamId: string, clubId: string): Promise<void> {
+  pickList = { teamId, people: null, error: '' };
   try {
-    const found = await q<{ user_id: string }[]>(
-      client().from('accounts').select('user_id').eq('email', email),
+    if (!navigator.onLine) throw OFFLINE;
+    const rows = await q<{ user_id: string }[]>(
+      client().from('club_members').select('user_id').eq('club_id', clubId),
     );
-    const userId = found[0]?.user_id;
-    if (!userId) return setPeopleMsg(t('coachNoAccount'), false);
-    if (remote.people?.members.some((m) => m.user_id === userId))
-      setPeopleMsg(t('coachAlready', { email: e }), true);
-    else {
-      await q(client().from('team_members').insert({ team_id: teamId, user_id: userId, role }));
-      setPeopleMsg(t('coachAdded', { email: e }), true);
-    }
+    const ids = rows.map((r) => r.user_id);
+    const accts = ids.length
+      ? await q<ClubPerson[]>(client().from('accounts').select('user_id, email').in('user_id', ids))
+      : [];
+    if (pickList.teamId === teamId) pickList.people = accts.sort((a, b) => a.email.localeCompare(b.email));
+  } catch (e) {
+    if (pickList.teamId === teamId) pickList.error = accessError(e);
+  }
+  showPickList(teamId);
+}
+
+/** Shows only the people whose email contains the text typed in the sheet's search box. */
+export function filterStaff(text: string): void {
+  const needle = text.trim().toLowerCase();
+  let shown = 0;
+  for (const li of document.querySelectorAll<HTMLElement>('#staff-pick .staff-pick-row')) {
+    const hit = !needle || (li.dataset.email ?? '').toLowerCase().includes(needle);
+    li.hidden = !hit;
+    if (hit) shown++;
+  }
+  const none = document.getElementById('staff-none');
+  if (none) none.hidden = shown > 0 || !pickList?.people?.length;
+}
+
+/** The sheet's search box, role choice and the club's people (filled in when loaded). */
+export function addStaffSheetHtml(teamId: string): string {
+  return `
+    <h3>${t('addStaff')}</h3>
+    <input type="search" class="staff-search" data-filter="staff" placeholder="${t('staffSearch')}" aria-label="${t('staffSearch')}" autocomplete="off" inputmode="email">
+    <div class="row gap staff-role" role="radiogroup" aria-label="${t('teamRole')}">
+      <label><input type="radio" name="staff-role" value="coach" checked> ${t('roleCoach')}</label>
+      <label><input type="radio" name="staff-role" value="manager"> ${t('roleDirector')}</label>
+    </div>
+    <p class="hint">${t('staffRoleHint')}</p>
+    <ul class="list staff-picks" id="staff-pick">${pickHtml(teamId)}</ul>
+    <p class="hint" id="staff-none" hidden>${t('staffNoMatch')}</p>
+    <button type="button" class="btn ghost block" data-action="close-sheet">${t('done')}</button>`;
+}
+
+/** Gives someone of the club a role in the team (the role chosen in the sheet). */
+export async function addStaff(teamId: string, userId: string): Promise<void> {
+  const role =
+    document.querySelector<HTMLInputElement>('#sheet [name="staff-role"]:checked')?.value === 'manager'
+      ? 'manager'
+      : 'coach';
+  const email = pickList?.people?.find((p) => p.user_id === userId)?.email ?? '';
+  try {
+    await q(client().from('team_members').insert({ team_id: teamId, user_id: userId, role }));
+    setPeopleMsg(t('staffAdded', { email: `<b>${esc(email)}</b>`, role: roleLabel(role) }), true);
   } catch (err) {
-    return setPeopleMsg(accessError(err), false);
+    setPeopleMsg(accessError(err), false);
+  }
+  await loadPeople(teamId);
+  showPickList(teamId);
+}
+
+/** Changes someone's role in the team (club managers). */
+export async function setStaffRole(teamId: string, userId: string, role: string): Promise<void> {
+  try {
+    const rows = await q<{ user_id: string }[]>(
+      client()
+        .from('team_members')
+        .update({ role: role === 'manager' ? 'manager' : 'coach' })
+        .eq('team_id', teamId)
+        .eq('user_id', userId)
+        .select('user_id'),
+    );
+    if (!rows.length) throw Object.assign(new Error('not allowed'), { code: '42501' });
+    setPeopleMsg(t('roleChanged'), true);
+  } catch (err) {
+    setPeopleMsg(accessError(err), false);
   }
   void loadPeople(teamId);
 }
