@@ -17,6 +17,8 @@ import { teamCrest } from '@/data/logos';
 import { matchTitle } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import { fitWidth, openZoom } from '@/shared/ui/zoom';
+import { route } from '@/shared/lib/route';
 import type { Sheet, SheetCol } from '@/data/report-sheet';
 import type { Game } from '@/domain/types';
 
@@ -69,10 +71,21 @@ export function viewReport(id: string | undefined): void {
     <button class="btn primary block" data-action="pdf">${t('pdf')}</button>
     ${readOnlyGame(g) ? '' : `<button class="btn ghost block" data-action="edit-info">${t('gameInfo')}</button>`}
     <p class="hint">${t('reportHint')}</p>
-    ${sheetPreview(statsSheet(g), teamLogoSrc(g.teamId))}`;
+    <button class="pdf-thumb" data-action="preview-open" aria-label="${t('previewLabel')}: ${t('previewTap')}">
+      <div class="pdf-fit">${sheetPreview(statsSheet(g), teamLogoSrc(g.teamId))}</div>
+      <span class="pdf-thumb-tag" aria-hidden="true">🔍 ${t('previewTap')}</span>
+    </button>`;
+  // The preview is laid out at its real size, then scaled down to the screen's width.
+  const box = main.querySelector<HTMLElement>('.pdf-fit');
+  const page = box?.querySelector<HTMLElement>('.pp-page');
+  if (box && page) fitWidth(box, page);
 }
 
 export const reportActions = {
+  'preview-open': () => {
+    const g = getGame(route().id);
+    if (g) openZoom(sheetPreview(statsSheet(g), teamLogoSrc(g.teamId)), t('previewLabel'));
+  },
   pdf: () => {
     const g = currentGame();
     if (g) void exportPdf(g);

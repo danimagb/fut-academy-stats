@@ -13,6 +13,7 @@
 @import '../pages/game/clock.css';
 @import '../shared/styles/menu.css';
 @import '../shared/styles/dialog.css';
+@import '../shared/styles/zoom.css';
 @import '../features/live-game/live-game.css';
 @import '../pages/game/pitch.css';
 @import '../pages/game/scoreboard.css';
