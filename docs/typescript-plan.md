@@ -26,10 +26,10 @@ keeps deploying from the branch exactly as it does today.
 | 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
 | 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged    | danimagb/fut-academy-stats#45 |
 | 6.2b | Team and account screens                                                               | ✅ merged    | danimagb/fut-academy-stats#46 |
-| 6.3  | Game screens                                                                           | ✅ merged    | (this PR)                     |
-| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | 🔄 in review | (this PR)                     |
+| 6.3  | Game screens                                                                           | ✅ merged    | danimagb/fut-academy-stats#47 |
+| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged    | danimagb/fut-academy-stats#48 |
 | 8    | Strict TypeScript                                                                      | ⏳ todo      |                               |
-| 9    | Deploy workflow to GitHub Pages + docs                                                 | ⏳ todo      |                               |
+| 9    | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged    | danimagb/fut-academy-stats#49 |
 | 10   | Merge `feature/typescript` into `main`                                                 | ⏳ todo      |                               |
 
 **Where things stand (update this with every PR):**
@@ -378,6 +378,7 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - End-to-end: a player's sheet downloads as a PDF, which makes 15 tests.
   - The `.js` files moved as they were still have `@ts-nocheck`. Step 8 converts them to
     strict TypeScript.
+<<<<<<< HEAD
 - `main` merged in (#34, "lock finished games", which landed on `main` after this branch
   started), so step 10 has nothing left to port:
   - `canRecord(g)` is in `domain/game-state.ts` (with a test). `data/live.addEvent` returns
@@ -389,6 +390,21 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     runs before `20261106000000_data_checks.sql`; `rls.test.sql` plans 194 tests, and
     `bash supabase/tests/local/run.sh` passes.
   - End-to-end: `finished-game.spec.ts`, which makes 16 tests.
+=======
+- Done in step 9, **before step 8**. It's independent of the typing, so the migrated app can
+  go live sooner, and step 8 continues afterwards.
+  - `.github/workflows/deploy.yml`: on every push to `main` (or when run by hand), it runs
+    `npm ci`, then `npm run build`, then `upload-pages-artifact` (`dist/`), then
+    `deploy-pages`.
+  - Permissions: `pages: write` and `id-token: write`. One deployment runs at a time.
+  - **README:** running it (`npm ci`, `npm run dev`, the checks, the end-to-end tests),
+    publishing with Pages from GitHub Actions, and the new file layout.
+  - **CLAUDE.md:** the Conventions describe the TypeScript app: layers, checks, deploy, the
+    service worker with no cache version, I18N, colours and CSS order, `save()` and validation,
+    config.
+  - **Owner, before step 10:** Settings → Pages → Build and deployment → Source:
+    **GitHub Actions**.
+>>>>>>> origin/feature/typescript
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").
