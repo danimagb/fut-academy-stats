@@ -26,8 +26,8 @@ keeps deploying from the branch exactly as it does today.
 | 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
 | 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged    | danimagb/fut-academy-stats#45 |
 | 6.2b | Team and account screens                                                               | ✅ merged    | danimagb/fut-academy-stats#46 |
-| 6.3  | Game screens                                                                           | ✅ merged    | (this PR)                     |
-| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | 🔄 in review | (this PR)                     |
+| 6.3  | Game screens                                                                           | ✅ merged    | danimagb/fut-academy-stats#47 |
+| 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged    | danimagb/fut-academy-stats#48 |
 | 8    | Strict TypeScript                                                                      | ⏳ todo      |                               |
 | 9    | Deploy workflow to GitHub Pages + docs                                                 | 🔄 in review | (this PR)                     |
 | 10   | Merge `feature/typescript` into `main`                                                 | ⏳ todo      |                               |
