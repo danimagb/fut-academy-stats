@@ -1,3 +1,4 @@
+import { defaultTeamId } from '@/data/prefs';
 // @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
 // The new-game / edit-game screen: team, opponent, format, and who starts. Moved from
 // app/legacy.js.
@@ -7,7 +8,6 @@ import { readOnlyGame, readOnlyTeam, writableTeams } from '@/data/access';
 import { readOnlyPill, refuseReadOnly } from '@/features/team-access/read-only';
 import { save } from '@/data/save';
 import { getGame, getTeam, teamPlayers } from '@/data/queries';
-import { gamesTeam } from '@/data/prefs';
 import { bar } from '@/shared/ui/bar';
 import { notify } from '@/shared/ui/dialog';
 import { uid } from '@/shared/lib/id';
@@ -31,10 +31,6 @@ export function resetDraft() {
 }
 
 // Teams where this user is a coach (read-only) are never offered for new games.
-export function defaultTeamId() {
-  const ok = (id) => (getTeam(id) && !readOnlyTeam(id) ? id : null);
-  return ok(gamesTeam()) ?? ok(db.lastTeamId) ?? writableTeams()[0]?.id ?? null;
-}
 
 export function newDraft(id) {
   const g = id && getGame(id);
