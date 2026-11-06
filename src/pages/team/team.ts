@@ -77,7 +77,7 @@ export function viewTeams(): void {
           )
           .join('');
   main.innerHTML = `
-    ${bar(t('teams'), '#/games')}
+    ${bar(t('teams'))}
     <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
     ${list}`;
 }

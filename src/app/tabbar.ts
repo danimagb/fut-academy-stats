@@ -1,7 +1,6 @@
 // The bottom tab bar (Team, Matches, Stats, Profile, and Admin for the admin).
 import { $ } from '@/shared/lib/dom';
 import { cloud } from '@/data/session';
-import { db } from '@/data/store';
 import { t } from '@/shared/i18n/i18n';
 
 // ---------- Bottom tab bar ----------
@@ -27,15 +26,13 @@ export function renderTabbar(view: string): void {
         : 'matches';
   const a = cloud.account;
   const isAdmin = !!(cloud.session && a && !('none' in a) && a.isAdmin && !cloud.needsPassword);
-  const only = db.teams.length === 1 ? db.teams[0] : undefined;
-  const myTeam = only ? `#/team/${only.id}` : '#/teams';
   const icon = (k: Tab): string => `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[k]}</svg>`;
   const tab = (k: Tab, label: string, attrs: string): string =>
     `<${attrs.startsWith('href') ? 'a' : 'button'} class="tab ${active === k ? 'on' : ''}" ${attrs}>${icon(k)}<span>${label}</span></${attrs.startsWith('href') ? 'a' : 'button'}>`;
   const bar = $('#tabbar');
   if (!bar) return;
   bar.innerHTML =
-    tab('team', t('tabTeam'), `href="${myTeam}"`) +
+    tab('team', t('tabTeam'), 'href="#/teams"') +
     tab('matches', t('tabMatches'), 'href="#/games"') +
     tab('stats', t('tabStats'), 'href="#/stats"') +
     tab('profile', t('tabProfile'), 'href="#/profile"') +
