@@ -6,10 +6,12 @@ does.
 
 ## Cloud sync
 
-Optional cloud sync with Supabase (invite-only, director/coach roles, local-first) was built on
-the `feature/cloud-sync` branch in steps; **`docs/cloud-sync-plan.md`** describes the design and
-its "Progress" section records what was done in each step and the known limitations. Read it
-before changing storage, sync, sign-in or the database. Database changes go in a new file in
+Optional cloud sync with Supabase (invite-only, local-first) was built on the
+`feature/cloud-sync` branch in steps; **`docs/cloud-sync-plan.md`** describes the design and
+its "Progress" section records what was done in each step and the known limitations. Clubs,
+coordinators and the team roles (club `manager` / `staff`, team `manager` / `coach`; UI:
+Coordenador, Diretor, Treinador) and club logos came after, on `feature/clubs`:
+**`docs/clubs-plan.md`**. Read both before changing storage, sync, sign-in or the database. Database changes go in a new file in
 `supabase/migrations/` with tests in `supabase/tests/rls.test.sql`
 (`bash supabase/tests/local/run.sh` must pass).
 

@@ -51,20 +51,26 @@ Without an account the app works exactly as above, with everything on the phone.
 adds cloud sync through [Supabase](https://supabase.com) (EU region), so a team survives losing
 the phone and can be shared with other coaches.
 
-- **Invite-only.** Nobody can create an account. The **admin** gives people access on the
-  in-app **Admin** page (the _Admin_ tab, only visible to the admin), as a **director** or
-  **coach** account.
+- **Invite-only, by club.** Nobody can create an account. The **admin** creates the **clubs**
+  (e.g. Padroense FC) and gives people access in a club on the in-app **Admin** page (the
+  _Admin_ tab, only visible to the admin), as the club's **coordinator** or as **staff**.
   Profile → Account has two tabs. **Activate account** (first time): the email the admin
   registered → a code sent to that email → choose a password. **Sign in**: email + password
   (the app keeps you signed in). _Forgot your password?_ uses the same code steps.
   Passwords are stored by Supabase Auth only as bcrypt hashes.
-- **Synced or local.** Every team is either _Synced_ or _Local_. Director
-  accounts can upload a team (or create new teams as synced); coach accounts keep their own
-  teams on the phone.
-- **Roles in a synced team.** _Directors_ can do everything and add or remove coaches (Staff section
-  on the team screen, by email, only people who already have access). _Coaches_ are
-  read-only: they see the team, games and reports and can share the PDF, but can't change
-  anything.
+- **Synced or local.** Every team is either _Synced_ (in a club) or _Local_ (only on the
+  phone). The teams list shows synced teams under their club and local ones under _On this
+  phone_. Coordinators create their club's teams (the age groups: Sub-7A, Sub-7B, Sub-10C…) as
+  synced, or upload a local team into their club; everyone else keeps their own teams local.
+- **Roles.** In the club: the **Coordinator** can do everything in every team of the club:
+  create, rename and delete teams, players and games, give the club's people a role in each
+  team (team screen → _Staff_ → ＋, picking from the club's people with a search), and set the
+  club's short name (e.g. "PFC", shown where space is short) and **logo** (⚙ Club). In a team:
+  the **Director** edits the players and runs the games (create, start, events, finish),
+  reports and stats; the **Coach** is read-only: sees the team, games and reports and can share
+  the PDF, but can't change anything.
+- **Club logo.** Shown next to the club on the teams list, team, game and report screens and
+  on the PDFs. Each phone downloads it once and keeps it for offline use.
 - **Local first.** The app saves on the phone first and syncs in the background (on start, a
   few seconds after a change, when the signal comes back, every minute, or with _Sync now_).
   Offline at the pitch, changes simply wait. Two phones logging the _same live game_ at the
@@ -75,7 +81,9 @@ the phone and can be shared with other coaches.
 
 Setting it up (once, by the maintainer) is described in
 [`docs/supabase-setup.md`](docs/supabase-setup.md); how it's built is in
-[`docs/cloud-sync-plan.md`](docs/cloud-sync-plan.md) and [`supabase/README.md`](supabase/README.md).
+[`docs/cloud-sync-plan.md`](docs/cloud-sync-plan.md), [`docs/clubs-plan.md`](docs/clubs-plan.md)
+and [`supabase/README.md`](supabase/README.md). Merging into `main` also applies new database
+migrations and deploys the `admin` function to Supabase (GitHub integration).
 The `Supabase keep-alive` GitHub Action pings the project every 2 days so the free tier
 doesn't pause; if it fails, GitHub emails the repository owner.
 
