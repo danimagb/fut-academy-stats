@@ -213,3 +213,47 @@ select.mini,
   font-size: 0.85rem;
   color: var(--muted);
 }
+/* Teams list: a heading per club (with the club page link for its coordinators). */
+.team-group {
+  align-items: center;
+}
+.team-group .btn {
+  font-weight: 600;
+}
+/* "Add to the staff" sheet: search, role, then the club's people. */
+.staff-search {
+  width: 100%;
+}
+.staff-role {
+  margin: 10px 0 2px;
+}
+.staff-role label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.staff-picks {
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+.staff-pick {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.staff-picks .email,
+.club-people .email {
+  overflow-wrap: anywhere;
+}
+.people .item select.mini {
+  flex: none;
+}
+.club-short {
+  align-items: flex-end;
+}
+.staff-pick-row[hidden] {
+  display: none;
+}
