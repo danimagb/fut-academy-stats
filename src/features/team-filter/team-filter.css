@@ -24,9 +24,13 @@
   font-weight: 600;
   padding-left: 2px;
 }
+/* One focus ring, on the picker's own rounded border (not the select's square one inside). */
+.picker select:focus {
+  outline: none;
+}
 .picker:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 .season-picker {
   flex: 0 1 auto;
