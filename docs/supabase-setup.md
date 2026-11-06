@@ -169,3 +169,66 @@ With the Supabase CLI instead: `supabase functions deploy admin` (from the repo 
 
 Give access to people only from the Admin page. They then open the app, go to
 **Profile → Account**, type their email and the code they receive.
+
+## 10. GitHub integration (migrations and the `admin` function deploy themselves)
+
+With the integration, merging into `main` applies new files in `supabase/migrations/` to the
+project and deploys the Edge Functions listed in `supabase/config.toml` (today: `admin`, with
+**Verify JWT on**). Nothing has to be pasted by hand any more. The app itself is still deployed
+by GitHub Pages; both happen on the same merge, so a migration and the app code that needs it
+go out together.
+
+### Before turning on "Deploy to production": tell Supabase which migrations already ran
+
+The migrations so far were applied by hand (SQL editor), so the project has no record of them,
+and the integration would run every file again on the first deploy. They are written to be
+re-runnable, but don't rely on that: record them as applied first. In **SQL Editor**, check:
+
+```sql
+select version, name from supabase_migrations.schema_migrations order by version;
+```
+
+If that fails (no such table) or doesn't list `20261102000000`, `20261105000000` and
+`20261106000000`, run (only list the migrations that really are on the project):
+
+```sql
+create schema if not exists supabase_migrations;
+create table if not exists supabase_migrations.schema_migrations (
+  version text primary key, statements text[], name text
+);
+insert into supabase_migrations.schema_migrations (version, name) values
+  ('20261102000000', 'cloud_sync_schema'),
+  ('20261105000000', 'lock_finished_games'),
+  ('20261106000000', 'data_checks')
+on conflict (version) do nothing;
+```
+
+(With the Supabase CLI this is
+`supabase migration repair --status applied 20261102000000 20261105000000 20261106000000`.)
+
+### Settings
+
+**Project Settings → Integrations → GitHub Integration**, repository `danimagb/fut-academy-stats`:
+
+- **Working directory**: `.` (the `supabase/` folder is at the repository root).
+- **Production branch**: `main`.
+- **Deploy to production**: on.
+- **Automatic branching** (a preview database for each branch / PR): only on the **Pro plan**,
+  billed per branch and hour while it exists, and not covered by the spend cap. If on, also
+  turn on **Supabase changes only**, so branches that don't touch `supabase/` get none. A
+  preview starts empty: its schema is built from the migrations, there is no seed data and no
+  users (sign-ups are off, as in production).
+
+On production, `supabase/config.toml` changes nothing but the functions: it has no `[remotes]`
+block for the project, so its `[auth]` and other settings only apply to preview branches.
+Production's Auth settings (sign-ups off, SMTP, 8-digit codes) stay as set in steps 2–4.
+
+### Required check
+
+In GitHub, **Settings → Branches** (or **Rules**) for `main`: require the **Supabase Preview**
+check (once it has run on a PR) as well as CI. CI's _Database and functions_ job runs the
+migrations and the RLS tests on a plain Postgres (`supabase/tests/local/run.sh`) and the Edge
+Function tests on every PR.
+
+If a deploy fails, the PR (or the commit on `main`) shows the Supabase check with a link to its
+logs; Supabase can also email you about failed branch deploys.

@@ -16,6 +16,8 @@ Database schema and security rules for cloud sync. The design is in
   can read and change. `tests/clubs_migration.test.sql` checks what the clubs migration made
   of the data before it (seeded by `tests/local/before_20261107000000_clubs.sql`).
 - `tests/local/`: runs the migration and the tests on a plain local Postgres, without Supabase.
+- `config.toml`: Supabase CLI and Branching configuration (local stack, preview branches, the
+  functions to deploy).
 - `functions/admin/index.ts`: the `admin` Edge Function (Deno) used by the app's Admin page. It
   checks that the caller is the admin and, with the service role, creates an account
   (`create_account`: the auth user, if needed, and the `accounts` row) or removes one
@@ -51,8 +53,14 @@ accounts of their teammates, and (club managers) the accounts of their club's pe
 
 ## Applying to the Supabase project
 
-Either paste the migration into the dashboard's SQL editor and run it, or, with the Supabase
-CLI linked to the project, run `supabase db push`.
+Through the Supabase GitHub integration: merging into `main` applies new migrations and deploys
+the Edge Functions declared in `config.toml` (setup and the one-off "which migrations already
+ran" step: [`docs/supabase-setup.md`](../docs/supabase-setup.md), step 10). By hand (without the
+integration): paste the migration into the dashboard's SQL editor, or run `supabase db push`
+with the CLI linked to the project.
+
+`config.toml` is the CLI / Branching configuration: preview branches take its `[auth]` and
+other settings; production only takes the functions (there is no `[remotes]` block for it).
 
 Then make yourself the admin. Create your user in the dashboard (Authentication → Add user),
 then run this in the SQL editor:
