@@ -13,6 +13,13 @@ before changing storage, sync, sign-in or the database. Database changes go in a
 `supabase/migrations/` with tests in `supabase/tests/rls.test.sql`
 (`bash supabase/tests/local/run.sh` must pass).
 
+**Merging into `main` deploys to Supabase**: the Supabase GitHub integration applies new
+migrations and deploys the Edge Functions in `supabase/config.toml` (docs/supabase-setup.md,
+step 10). So a migration must reach `main` together with the app code that works with it
+(build such changes on a feature branch), migrations are never edited after they reach `main`
+(add a new one), and `supabase/config.toml` must keep having no `[remotes]` block for
+production unless its `[auth]` settings really should overwrite production's.
+
 ## TypeScript migration
 
 The move from one `app.js` to TypeScript modules (Vite, oxlint, Vitest, Playwright) was done on
