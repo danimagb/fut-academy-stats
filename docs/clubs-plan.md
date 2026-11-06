@@ -78,7 +78,7 @@ and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed i
 - Done in step 3 (admin; not deployed yet):
   - `admin` Edge Function: `create_account { email, club_id, role: 'manager' | 'staff' }` (no
     kind). An email that already has access is added to the club (`existed: true`). Unit tests:
-    `npx deno@2 test --allow-env --no-lock supabase/functions/admin/` (6, with a fake service-role client).
+    `npx deno@2 test --allow-env --no-lock --node-modules-dir=none supabase/functions/admin/` (6, with a fake service-role client).
   - Account on the phone (`src/data/auth.ts`): `{ email, isAdmin, clubs: [{ id, name,
 shortName, role }] }`, read from `accounts`, `club_members` and `clubs`; an account stored by
     an older version (with `kind`) is read as one with no clubs. `managedClubs(account)`;

@@ -87,7 +87,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno test --allow-env --no-lock --permit-no-files supabase/functions/
+      - run: deno test --allow-env --no-lock --node-modules-dir=none --permit-no-files supabase/functions/
 
   e2e:
     name: End to end

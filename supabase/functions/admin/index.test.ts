@@ -1,5 +1,5 @@
 // Unit tests for the admin Edge Function, against an in-memory stand-in for the service-role
-// client. Run: npx deno@2 test --allow-env --no-lock supabase/functions/admin/
+// client. Run: npx deno@2 test --allow-env --no-lock --node-modules-dir=none supabase/functions/admin/
 import { assertEquals } from 'jsr:@std/assert@1';
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.118.0';
 
