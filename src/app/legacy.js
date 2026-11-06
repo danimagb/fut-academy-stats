@@ -1,25 +1,14 @@
+import { teamOpen, openAddPlayer, teamPage } from '@/pages/team/team';
 import { profilePage } from '@/pages/profile/profile';
 import { initTheme } from '@/features/theme-switch/theme';
 import { initLanguage } from '@/features/language-switch/language';
 import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
 import { uploadTeams, offerUpload } from '@/features/upload-teams/upload-teams';
-import { showSyncStatus, teamBadge } from '@/features/sync-status/sync-status';
+import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { adminDo } from '@/pages/admin/admin';
 import { adminPage } from '@/pages/admin/admin';
 import { $, $$ } from '@/shared/lib/dom';
-import {
-  remote,
-  q,
-  accessError,
-  myId,
-  loadPeople,
-  peopleHtml,
-  showPeople,
-  staffSummary,
-  setPeopleMsg,
-  addCoach,
-  deleteMember,
-} from '@/features/team-people/team-people';
+import { remote, q, loadPeople, addCoach } from '@/features/team-people/team-people';
 import { readOnlyGame, readOnlyTeam, writableTeams } from '@/data/access';
 import { readOnlyPill, refuseReadOnly } from '@/features/team-access/read-only';
 import { askPersistence, save } from '@/data/save';
@@ -39,7 +28,7 @@ import { bar, closeMenus } from '@/shared/ui/bar';
 import { askConfirm, notify } from '@/shared/ui/dialog';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync, localTeams, pendingCount, roleOf } from '@/data/sync';
+import { configureSync, localTeams, roleOf } from '@/data/sync';
 import { uid } from '@/shared/lib/id';
 import {
   RECORD_KINDS,
@@ -244,9 +233,6 @@ function describe(g, e) {
 let draft = null;
 
 addViews({
-  teams: viewTeams,
-  players: viewTeams,
-  team: viewTeam,
   new: viewEdit,
   edit: viewEdit,
   game: viewGame,
@@ -258,6 +244,7 @@ addViews({
 addViews(gamesPage.views);
 addViews(adminPage.views);
 addViews(profilePage.views);
+addViews(teamPage.views);
 setFallbackView(viewGames);
 onRender({
   before: () => {
@@ -455,158 +442,6 @@ function openPlayerInfo(g, id) {
     ${bits ? `<p>${bits}</p>` : ''}
     <p class="hint">${readOnlyPill()} ${t('readOnlyHint')}</p>
     <button class="btn ghost block" data-action="close-sheet">${t('ok')}</button>`);
-}
-
-// ---------- Views: teams and their players ----------
-
-function viewTeams() {
-  main.innerHTML = `
-    ${bar(t('teams'), '#/games')}
-    <button class="btn primary block" data-action="new-team">${t('newTeam')}</button>
-    ${
-      db.teams.length
-        ? `<ul class="list">${db.teams
-            .map(
-              (tm) => `
-      <li><a class="card" href="#/team/${tm.id}">
-        <div class="grow">
-          <strong>${esc(teamLabel(tm))}</strong>
-        </div>
-        <div class="right">
-          <span class="badge">${t('playersCount', { n: teamPlayers(tm.id).length })}</span>
-          ${teamBadge(tm)}
-        </div>
-      </a></li>`,
-            )
-            .join('')}</ul>`
-        : `<p class="empty">${t('noTeams')}</p>`
-    }`;
-}
-
-let newCloudTeam = null; // id of a team just created as a cloud team (shows a note once)
-
-function viewTeam(id) {
-  const tm = getTeam(id);
-  if (!tm) return viewTeams();
-  const ps = teamPlayers(id).sort(byNumber);
-  const ro = readOnlyTeam(id);
-  const cloudTeam = isCloudTeam(id);
-  const field = (key, label, ph) =>
-    ro
-      ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
-      : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
-  main.innerHTML = `
-    ${bar(esc(teamLabel(tm)), '#/teams', teamMenu(id, ro), ro ? readOnlyPill() : '')}
-    ${teamBadge(tm) ? `<div class="team-kind">${teamBadge(tm)}</div>` : ''}
-    ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
-    ${newCloudTeam === id && cloudTeam ? `<p class="hint ok">☁️ ${t('newTeamCloud')}</p>` : ''}
-    <div class="form">
-      ${field('club', t('club'), t('clubPh'))}
-      ${field('name', t('ageGroup'), t('teamPh'))}
-    </div>
-    ${
-      canUpload() && !cloudTeam
-        ? `<div class="upload-team">
-      <button class="btn block" data-action="upload-team">${t('uploadTeam')}</button>
-      <p class="hint">${t('uploadTeamHint')}</p>
-    </div>`
-        : ''
-    }
-    <div class="accordion team-sections">
-    ${teamSection(
-      'players',
-      t('players'),
-      plural('playersCount', ps.length),
-      ro ? '' : 'add-player',
-      ps.length
-        ? `<ul class="list">${ps
-            .map(
-              (p) => `
-      <li class="item">
-        <span class="shirt">${esc(p.number) || '–'}</span>
-        <span class="grow">${esc(p.name)}${p.fullName ? `<div class="muted small">${esc(p.fullName)}</div>` : ''}</span>
-        ${
-          ro
-            ? ''
-            : `<button class="btn small ghost" data-action="edit-player" data-id="${p.id}">${t('edit')}</button>
-        <button class="btn small ghost danger" data-action="delete-player" data-id="${p.id}" aria-label="✕">✕</button>`
-        }
-      </li>`,
-            )
-            .join('')}</ul>`
-        : `<p class="empty">${t('noPlayers')}</p>`,
-    )}
-    ${
-      cloudTeam
-        ? teamSection(
-            'staff',
-            t('people'),
-            staffSummary(id),
-            roleOf(id) === 'director' && canSync() ? 'add-coach' : '',
-            `<div id="people" class="people-section">${peopleHtml(id)}</div>`,
-          )
-        : ''
-    }
-    </div>`;
-  // Members are loaded online, once per visit of this screen (and after changes).
-  if (cloudTeam && canSync()) {
-    if (db.sync.uploads.includes(id)) {
-      remote.people = { teamId: id, status: 'uploading', members: [], msg: null };
-      showPeople();
-    } else if (remote.people?.teamId !== id || remote.people.status === 'uploading') loadPeople(id);
-  }
-}
-
-// Players and Staff on the team screen are collapsible sections, both closed by default
-// (each remembered while the app is open). `add` is the action of the section's ＋ button.
-const teamOpen = { players: false, staff: false };
-
-function teamSection(id, title, summary, add, body) {
-  const open = teamOpen[id];
-  return `
-    <section class="acc ${open ? 'open' : ''}">
-      <div class="acc-top">
-        <button class="acc-head" data-action="team-section" data-v="${id}" aria-expanded="${open}" aria-controls="acc-${id}">
-          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-          <span class="grow"><span class="acc-title">${title}</span><span class="acc-sum" id="${id}-sum">${esc(summary)}</span></span>
-        </button>
-        ${add ? `<button class="btn small acc-add" data-action="${add}">＋ ${t('add')}</button>` : ''}
-      </div>
-      <div class="acc-body" id="acc-${id}" ${open ? '' : 'hidden'}>${body}</div>
-    </section>`;
-}
-
-// The ⋯ menu of the team screen: for now only Delete team (for whoever may change the team).
-const teamMenu = (id, ro) =>
-  ro
-    ? ''
-    : `<button class="menu-item danger" role="menuitem" data-action="delete-team">🗑 ${t('deleteTeam')}</button>`;
-
-function openAddCoach() {
-  openSheet(`
-    <h3>${t('addCoach')}</h3>
-    <form class="form" data-form="add-coach">
-      <label>${t('email')}<input name="email" type="email" required autocomplete="off" inputmode="email"></label>
-      <p class="hint">${t('addCoachHint')}</p>
-      <button class="btn primary block">${t('addCoach')}</button>
-      <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
-    </form>`);
-  $('#sheet [name="email"]').focus();
-}
-
-// `added` is the name of the player just added, shown while the sheet waits for the next one.
-function openAddPlayer(added = '') {
-  openSheet(`
-    <h3>${t('newPlayer')}</h3>
-    ${added ? `<p class="hint ok" role="status">✓ ${t('playerAdded', { name: esc(added) })}</p>` : ''}
-    <form class="form" data-form="add-player">
-      <label>${t('shirtNumber')}<input name="number" inputmode="numeric" maxlength="3"></label>
-      <label>${t('shirtName')}<input name="name" required autocomplete="off"></label>
-      <label>${t('fullName')}<input name="fullName" autocomplete="off"></label>
-      <button class="btn primary block">${t('add')}</button>
-      <button type="button" class="btn ghost block" data-action="close-sheet">${t('done')}</button>
-    </form>`);
-  $('#sheet [name="number"]').focus();
 }
 
 // ---------- Views: new / edit game ----------
@@ -1827,108 +1662,11 @@ const actions = {
   soon: ({ v }) =>
     askConfirm({ title: t('soonTitle'), message: t('soonMsg', { x: t(v) }), ok: t('ok'), cancel: false }),
 
-  'upload-team': () => uploadTeams([route().id]),
-
   // People of a cloud team (team screen)
-  'people-reload': () => loadPeople(route().id),
-  'remove-coach': async ({ id }) => {
-    const teamId = route().id;
-    const m = remote.people?.members.find((x) => x.user_id === id);
-    const ok = await askConfirm({
-      title: t('removeFromTeam'),
-      message: t('removeMemberConfirm', { email: `<b>${esc(m?.email || '')}</b>` }),
-      ok: t('removeFromTeam'),
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await deleteMember(teamId, id);
-      setPeopleMsg(t('removed'), true);
-    } catch (e) {
-      return setPeopleMsg(accessError(e), false);
-    }
-    loadPeople(teamId);
-  },
-  'leave-team': async () => {
-    const teamId = route().id;
-    const ok = await askConfirm({
-      title: t('leaveTeam'),
-      message: t('leaveTeamConfirm'),
-      ok: t('leaveTeam'),
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      if (pendingCount()) await syncNow(); // a director's changes go up first
-      await deleteMember(teamId, myId());
-    } catch (e) {
-      return notify(accessError(e));
-    }
-    toast(t('leftTeam'));
-    await syncNow(); // the team leaves this phone
-    if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
-  },
 
   // teams and players
   // Signed in with a director (or admin) account: new teams are cloud teams straight away.
   // Otherwise (signed out, coach account) they stay on this phone, as before.
-  'new-team': () => {
-    const tm = { id: uid(), club: db.teams[0]?.club || '', name: '' };
-    db.teams.push(tm);
-    save();
-    if (canUpload()) {
-      newCloudTeam = tm.id;
-      uploadTeams([tm.id]);
-    }
-    location.hash = `#/team/${tm.id}`;
-  },
-  'delete-team': async () => {
-    const id = route().id;
-    if (teamPlayers(id).length) {
-      return askConfirm({ title: t('deleteTeam'), message: t('teamHasPlayers'), ok: t('ok'), cancel: false });
-    }
-    const ok = await askConfirm({
-      title: t('confirmDeleteTeam'),
-      message: esc(teamLabel(getTeam(id))),
-      ok: t('deleteBtn'),
-      danger: true,
-    });
-    if (!ok) return;
-    db.teams = db.teams.filter((x) => x.id !== id);
-    save();
-    location.hash = '#/teams';
-  },
-  'team-section': ({ v }) => {
-    teamOpen[v] = !teamOpen[v];
-    render();
-  },
-  'add-player': () => openAddPlayer(),
-  'add-coach': () => openAddCoach(),
-  'edit-player': ({ id }) => {
-    const p = db.players.find((x) => x.id === id);
-    openSheet(`
-      <h3>${t('editPlayer')}</h3>
-      <form class="form" data-form="edit-player" data-id="${p.id}">
-        <label>${t('shirtNumber')}<input name="number" inputmode="numeric" maxlength="3" value="${esc(p.number)}"></label>
-        <label>${t('shirtName')}<input name="name" required autocomplete="off" value="${esc(p.name)}"></label>
-        <label>${t('fullName')}<input name="fullName" autocomplete="off" value="${esc(p.fullName)}"></label>
-        <button class="btn primary block">${t('save')}</button>
-        <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>
-      </form>`);
-  },
-  'delete-player': async ({ id }) => {
-    const p = db.players.find((x) => x.id === id);
-    const ok = await askConfirm({
-      title: t('removePlayerTitle'),
-      message: t('confirmRemovePlayer', { name: `<b>${esc(p.name)}</b>` }),
-      ok: t('deleteBtn'),
-      danger: true,
-    });
-    if (!ok) return;
-    db.players = db.players.filter((x) => x.id !== id);
-    save();
-    render();
-  },
 
   // new / edit game
   sel: ({ id, v }) => {
@@ -2208,6 +1946,7 @@ registerActions(gamesPage.actions);
 registerActions(adminPage.actions);
 registerForms(adminPage.forms);
 registerActions(profilePage.actions);
+registerActions(teamPage.actions);
 installActionListener({
   ignore: () => drag.suppressClick, // the click that ends a drag
   allow: (name) => {
