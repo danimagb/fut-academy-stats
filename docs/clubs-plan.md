@@ -16,6 +16,12 @@ the club uses:
 | team manager (`team_members.role = 'manager'`) | Diretor / Director        |
 | team coach (`team_members.role = 'coach'`)     | Treinador / Coach         |
 
+Two levels per person: **in the club** they are a `manager` (all its teams) or a `member`
+(can be picked as staff), and **in each team** they are a `manager` or a `coach`. Team managers
+and team coaches are always club members; there is no club-wide "coach" role, because the
+same person can be team manager of Sub-7A and team coach of Sub-8 (e.g. João: club `member`,
+`manager` in Sub-7A, `coach` in Sub-8).
+
 Identifiers follow it: `is_club_manager()`, `is_team_manager()`, `is_team_coach()`, `Role = 'club_manager' |
 'team_manager' | 'team_coach'` in the app. Existing `director` names in code and i18n keys
 and `coach` (`roleDirector`, `roleCoach`, `is_team_director`, …) are renamed in the step that touches them.
