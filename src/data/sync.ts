@@ -1,4 +1,3 @@
-// @ts-nocheck -- moved unchanged apart from the hooks; typed in step 8 (strict TypeScript).
 // Cloud sync engine.
 // Local-first: the app keeps reading and writing `db` + save(). In the background, sync
 // uploads the changes of cloud teams (push), then downloads what changed in the cloud (pull).
@@ -15,12 +14,45 @@
 //
 // The engine knows nothing about screens: the app passes in the client and what to do on
 // status changes and new data (configureSync), so this module never imports upwards.
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
+import type { Game, Player, RecordKind, Role, Team, Tombstone } from '@/domain/types';
 import { checkIncoming } from '@/domain/validate';
 import { t } from '@/shared/i18n/i18n';
 import { RECORD_KINDS, db, emptySync, isCloudTeam, recordKey, saveQuiet, teamIdOf } from './store';
 
-const noop = () => {};
-const hooks = {
+type SyncRecord = Team | Player | Game;
+/** The records of one kind, as one list type (the code below treats the kinds alike). */
+const list = (kind: RecordKind): SyncRecord[] => db[kind];
+const setList = (kind: RecordKind, records: SyncRecord[]): void => {
+  (db as Record<RecordKind, SyncRecord[]>)[kind] = records;
+};
+
+/** Rows as the database sends them (the columns in COLUMNS). */
+type Deleted = { updated_at: string; deleted_at: string | null };
+type TeamRow = Deleted & { id: string; club: string | null; name: string | null };
+type PlayerRow = Deleted & {
+  id: string;
+  team_id: string;
+  number: string | null;
+  name: string | null;
+  full_name: string | null;
+};
+type GameRow = Deleted & { id: string; team_id: string; data: Omit<Game, 'id' | 'teamId'> };
+type AnyRow = (TeamRow | PlayerRow | GameRow) & { team_id?: string };
+
+export type SyncHooks = {
+  client: SupabaseClient | null;
+  canSync: () => boolean;
+  userId: () => string | null;
+  request: () => void;
+  onStatus: () => void;
+  onChange: () => void;
+  onRejected: (n: number) => void;
+  afterSync: (info: { firstOk: boolean }) => void;
+};
+
+const noop = (): void => {};
+const hooks: SyncHooks = {
   client: null,
   canSync: () => false,
   userId: () => null,
@@ -37,24 +69,24 @@ const hooks = {
  * changes (`onStatus`), new data (`onChange`), records left out (`onRejected(n)`) and after
  * each sync (`afterSync({ firstOk })`).
  */
-export function configureSync(next) {
+export function configureSync(next: Partial<SyncHooks>): void {
   Object.assign(hooks, next);
 }
 
 const PAGE = 1000;
 const PUSH_BATCH = 100;
 const PULL_OVERLAP_MS = 10000; // rows can commit with a slightly older updated_at
-const COLUMNS = {
+const COLUMNS: Record<RecordKind, string> = {
   teams: 'id, club, name, updated_at, deleted_at',
   players: 'id, team_id, number, name, full_name, updated_at, deleted_at',
   games: 'id, team_id, data, updated_at, deleted_at',
 };
-const validDate = (s) =>
+const validDate = (s: unknown): string | null =>
   typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) ? s : null;
 // App record -> database row. deleted_at: null, so uploading a record again undeletes it.
 export const toRow = {
-  teams: (r) => ({ id: r.id, club: r.club || '', name: r.name || '', deleted_at: null }),
-  players: (r) => ({
+  teams: (r: Team) => ({ id: r.id, club: r.club || '', name: r.name || '', deleted_at: null }),
+  players: (r: Player) => ({
     id: r.id,
     team_id: r.teamId,
     number: String(r.number ?? ''),
@@ -62,7 +94,7 @@ export const toRow = {
     full_name: r.fullName || '',
     deleted_at: null,
   }),
-  games: ({ updatedAt, dirty, ...g }) => ({
+  games: ({ updatedAt: _u, dirty: _d, ...g }: Game) => ({
     id: g.id,
     team_id: g.teamId,
     date: validDate(g.date),
@@ -73,76 +105,108 @@ export const toRow = {
 };
 // Database row -> app record (the app stores shirt numbers as text too).
 export const fromRow = {
-  teams: (row) => ({ id: row.id, club: row.club ?? '', name: row.name ?? '' }),
-  players: (row) => ({
+  teams: (row: TeamRow): Team => ({ id: row.id, club: row.club ?? '', name: row.name ?? '' }),
+  players: (row: PlayerRow): Player => ({
     id: row.id,
     teamId: row.team_id,
     number: row.number ?? '',
     name: row.name ?? '',
     fullName: row.full_name ?? '',
   }),
-  games: (row) => ({ ...row.data, id: row.id, teamId: row.team_id }),
+  games: (row: GameRow): Game => ({ ...row.data, id: row.id, teamId: row.team_id }),
 };
+/** One row of `kind` from the database, as an app record. */
+const recordFromRow = (kind: RecordKind, row: AnyRow): SyncRecord =>
+  kind === 'teams'
+    ? fromRow.teams(row as TeamRow)
+    : kind === 'players'
+      ? fromRow.players(row as PlayerRow)
+      : fromRow.games(row as GameRow);
+/** One app record as a row for `kind`'s table. */
+const rowFromRecord = (kind: RecordKind, r: SyncRecord): Record<string, unknown> =>
+  kind === 'teams'
+    ? toRow.teams(r as Team)
+    : kind === 'players'
+      ? toRow.players(r as Player)
+      : toRow.games(r as Game);
+
 // Key-order-independent JSON (jsonb doesn't keep key order), without the sync fields.
-const canon = (v) =>
-  Array.isArray(v)
-    ? `[${v.map(canon).join(',')}]`
-    : v && typeof v === 'object'
-      ? `{${Object.keys(v)
-          .filter((k) => v[k] !== undefined)
-          .sort()
-          .map((k) => `${JSON.stringify(k)}:${canon(v[k])}`)
-          .join(',')}}`
-      : JSON.stringify(v);
-export const sameRecord = (a, b) =>
+const canon = (v: unknown): string => {
+  if (Array.isArray(v)) return `[${v.map(canon).join(',')}]`;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o)
+      .filter((k) => o[k] !== undefined)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${canon(o[k])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(v);
+};
+export const sameRecord = (a: object, b: object): boolean =>
   canon({ ...a, updatedAt: undefined, dirty: undefined }) ===
   canon({ ...b, updatedAt: undefined, dirty: undefined });
 
-export const roleOf = (teamId) => db.sync.teams[teamId] || null;
-export const localTeams = () => db.teams.filter((tm) => !isCloudTeam(tm.id));
-const pushable = (kind, r) => r.dirty && roleOf(teamIdOf(kind, r)) === 'director';
-export const hasCloudChanges = () =>
-  RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && isCloudTeam(teamIdOf(kind, r)))) ||
+export const roleOf = (teamId: string | null | undefined): Role | null =>
+  (teamId && db.sync.teams[teamId]) || null;
+export const localTeams = (): Team[] => db.teams.filter((tm) => !isCloudTeam(tm.id));
+const pushable = (kind: RecordKind, r: SyncRecord): boolean =>
+  !!r.dirty && roleOf(teamIdOf(kind, r)) === 'director';
+export const hasCloudChanges = (): boolean =>
+  RECORD_KINDS.some((kind) => list(kind).some((r) => r.dirty && isCloudTeam(teamIdOf(kind, r)))) ||
   db.deleted.some((d) => isCloudTeam(d.teamId));
 // Changes this phone still has to upload.
-export const pendingCount = () =>
-  RECORD_KINDS.reduce((n, kind) => n + db[kind].filter((r) => pushable(kind, r)).length, 0) +
+export const pendingCount = (): number =>
+  RECORD_KINDS.reduce((n, kind) => n + list(kind).filter((r) => pushable(kind, r)).length, 0) +
   db.deleted.filter((d) => roleOf(d.teamId) === 'director').length;
 
-export const syncState = { status: 'idle', error: '' }; // status: idle | running | ok | offline | failed
-export const forceFull = new Set(); // teams to download in full on the next pull (role changed, refused)
-let syncRun = null;
+export type SyncStatus = 'idle' | 'running' | 'ok' | 'offline' | 'failed';
+export const syncState: { status: SyncStatus; error: string } = { status: 'idle', error: '' };
+export const forceFull = new Set<string>(); // teams to download in full on the next pull (role changed, refused)
+let syncRun: Promise<void> | null = null;
 let syncAgain = false;
 let syncEpoch = 0; // bumped when the cloud data is removed, so a sync in flight drops its results
-let syncTimer = null;
+let syncTimer: ReturnType<typeof setTimeout> | undefined;
 let firstSync = false; // the first sync for this user on this phone (then: offer to upload teams)
 
+/** What Supabase returns as an error (PostgrestError, or anything with a message). */
+type ErrorLike = Partial<Pick<PostgrestError, 'message' | 'code'>> & { status?: number };
+
 export class SyncError extends Error {
-  constructor(error, status) {
-    super(error?.message || String(error));
-    this.code = error?.code;
-    this.status = status ?? error?.status;
+  code: string | undefined;
+  status: number | undefined;
+  constructor(error: ErrorLike | string | null | undefined, status?: number) {
+    const e = typeof error === 'object' ? error : null;
+    super(e?.message || String(error));
+    this.code = e?.code;
+    this.status = status ?? e?.status;
   }
 }
-export const isOffline = (e) =>
-  e?.status === 0 || !navigator.onLine || /fetch|network/i.test(e?.message || '');
+export const isOffline = (e: unknown): boolean => {
+  const err = e as { status?: number; message?: string } | null | undefined;
+  return err?.status === 0 || !navigator.onLine || /fetch|network/i.test(err?.message || '');
+};
 const ABORTED = new Error('sync aborted');
-const checkEpoch = (epoch) => {
+const checkEpoch = (epoch: number): void => {
   if (epoch !== syncEpoch) throw ABORTED;
 };
 
 // Remove teams (and their players, games and pending deletes) from this phone, without
 // leaving tombstones: they are only gone from here, not from the cloud.
-export function removeTeamsLocally(ids) {
+export function removeTeamsLocally(ids: readonly string[]): void {
   const gone = new Set(ids);
-  for (const kind of RECORD_KINDS) db[kind] = db[kind].filter((r) => !gone.has(teamIdOf(kind, r)));
-  db.deleted = db.deleted.filter((d) => !gone.has(d.teamId));
+  for (const kind of RECORD_KINDS)
+    setList(
+      kind,
+      list(kind).filter((r) => !gone.has(teamIdOf(kind, r))),
+    );
+  db.deleted = db.deleted.filter((d) => !d.teamId || !gone.has(d.teamId));
   for (const id of gone) delete db.sync.teams[id];
   db.sync.uploads = db.sync.uploads.filter((id) => !gone.has(id));
 }
 
 // Signing out or another user signing in: cloud teams leave the phone, local teams stay.
-export function removeCloudData() {
+export function removeCloudData(): void {
   syncEpoch++;
   clearTimeout(syncTimer);
   forceFull.clear();
@@ -153,13 +217,13 @@ export function removeCloudData() {
   hooks.onChange();
 }
 
-export function scheduleSync(ms = 3000) {
+export function scheduleSync(ms = 3000): void {
   clearTimeout(syncTimer);
   if (hooks.canSync()) syncTimer = setTimeout(hooks.request, ms);
 }
 
 // Single flight: a call while a sync runs makes it run once more afterwards.
-export function runSync() {
+export function runSync(): Promise<void> {
   if (!hooks.canSync()) return Promise.resolve();
   if (syncRun) {
     syncAgain = true;
@@ -176,7 +240,13 @@ export function runSync() {
   return syncRun;
 }
 
-async function syncOnce() {
+/** The Supabase client; syncing only runs when canSync() says there is one. */
+function client(): SupabaseClient {
+  if (!hooks.client) throw new SyncError('no Supabase client');
+  return hooks.client;
+}
+
+async function syncOnce(): Promise<void> {
   clearTimeout(syncTimer);
   const userId = hooks.userId();
   if (db.sync.userId && db.sync.userId !== userId) removeCloudData(); // another person, same phone
@@ -191,7 +261,7 @@ async function syncOnce() {
   hooks.onStatus();
   try {
     const pushed = await push(epoch);
-    await pull(epoch, userId);
+    await pull(epoch, userId ?? '');
     db.sync.lastSyncAt = Date.now();
     syncState.status = pushed ? 'ok' : 'failed';
   } catch (e) {
@@ -208,24 +278,28 @@ async function syncOnce() {
 }
 
 // Returns false if some upload failed for a reason other than the network (it's retried later).
-async function push(epoch) {
-  const refused = new Set(); // teams the server refused this time
+async function push(epoch: number): Promise<boolean> {
+  const refused = new Set<string>(); // teams the server refused this time
   let ok = true;
   for (const kind of RECORD_KINDS) {
-    const byTeam = new Map();
-    for (const r of db[kind]) {
+    const byTeam = new Map<string, SyncRecord[]>();
+    for (const r of list(kind)) {
       if (!pushable(kind, r)) continue;
       const tid = teamIdOf(kind, r);
-      if (!byTeam.has(tid)) byTeam.set(tid, []);
-      byTeam.get(tid).push(r);
+      const recs = byTeam.get(tid) ?? [];
+      recs.push(r);
+      byTeam.set(tid, recs);
     }
     for (const [tid, recs] of byTeam) {
       for (let i = 0; i < recs.length && !refused.has(tid); i += PUSH_BATCH) {
         const batch = recs.slice(i, i + PUSH_BATCH);
         const keys = batch.map(recordKey);
-        const { error, status } = await hooks.client
+        const { error, status } = await client()
           .from(kind)
-          .upsert(batch.map(toRow[kind]), { onConflict: 'id' });
+          .upsert(
+            batch.map((r) => rowFromRecord(kind, r)),
+            { onConflict: 'id' },
+          );
         checkEpoch(epoch);
         if (error) {
           const e = new SyncError(error, status);
@@ -247,20 +321,20 @@ async function push(epoch) {
   }
 
   // Deletes. Those of teams on this phone (or where this user is a coach) are never sent.
-  const toSend = [];
+  const toSend: Tombstone[] = [];
   for (const d of db.deleted) {
     const role = roleOf(d.teamId);
-    if (role === 'director' && !refused.has(d.teamId)) toSend.push(d);
-    else if (role === 'coach') forceFull.add(d.teamId); // get the deleted record back
+    if (role === 'director' && !refused.has(d.teamId ?? '')) toSend.push(d);
+    else if (role === 'coach' && d.teamId) forceFull.add(d.teamId); // get the deleted record back
   }
   db.deleted = db.deleted.filter(
-    (d) => toSend.includes(d) || (refused.has(d.teamId) && roleOf(d.teamId) === 'director'),
+    (d) => toSend.includes(d) || (refused.has(d.teamId ?? '') && roleOf(d.teamId) === 'director'),
   );
   for (const kind of RECORD_KINDS) {
     const ds = toSend.filter((d) => d.kind === kind);
     for (let i = 0; i < ds.length; i += PUSH_BATCH) {
       const batch = ds.slice(i, i + PUSH_BATCH);
-      const { error, status } = await hooks.client
+      const { error, status } = await client()
         .from(kind)
         .update({ deleted_at: new Date().toISOString() })
         .in(
@@ -280,13 +354,14 @@ async function push(epoch) {
 // allowed (e.g. its id belongs to someone else's team): it goes back to being a local team.
 // Otherwise this user probably isn't a director any more: drop the changes so the cloud wins,
 // and download the team in full on the pull that follows (which also refreshes the role).
-function pushRefused(tid) {
+function pushRefused(tid: string): void {
   if (db.sync.uploads.includes(tid)) {
     delete db.sync.teams[tid];
     db.sync.uploads = db.sync.uploads.filter((id) => id !== tid);
     syncState.error = t('syncUploadFailed');
   } else {
-    for (const kind of RECORD_KINDS) for (const r of db[kind]) if (teamIdOf(kind, r) === tid) r.dirty = false;
+    for (const kind of RECORD_KINDS)
+      for (const r of list(kind)) if (teamIdOf(kind, r) === tid) r.dirty = false;
     db.deleted = db.deleted.filter((d) => d.teamId !== tid);
     forceFull.add(tid);
   }
@@ -295,11 +370,16 @@ function pushRefused(tid) {
 }
 
 // All rows of `kind` for these teams, changed after `since` (all rows when null), oldest first.
-async function fetchRows(kind, teamIds, since, epoch) {
+async function fetchRows(
+  kind: RecordKind,
+  teamIds: string[],
+  since: string | null,
+  epoch: number,
+): Promise<AnyRow[]> {
   if (!teamIds.length) return [];
-  const rows = [];
+  const rows: AnyRow[] = [];
   for (let from = 0; ; from += PAGE) {
-    let q = hooks.client
+    let q = client()
       .from(kind)
       .select(COLUMNS[kind])
       .in(kind === 'teams' ? 'id' : 'team_id', teamIds);
@@ -310,21 +390,24 @@ async function fetchRows(kind, teamIds, since, epoch) {
       .range(from, from + PAGE - 1);
     checkEpoch(epoch);
     if (error) throw new SyncError(error, status);
-    rows.push(...data);
-    if (data.length < PAGE) return rows;
+    const page = (data ?? []) as unknown as AnyRow[];
+    rows.push(...page);
+    if (page.length < PAGE) return rows;
   }
 }
 
-async function pull(epoch, userId) {
+async function pull(epoch: number, userId: string): Promise<void> {
   const {
     data: members,
     error,
     status,
-  } = await hooks.client.from('team_members').select('team_id, role').eq('user_id', userId);
+  } = await client().from('team_members').select('team_id, role').eq('user_id', userId);
   checkEpoch(epoch);
   if (error) throw new SyncError(error, status);
   const prev = db.sync.teams;
-  const teams = Object.fromEntries(members.map((m) => [m.team_id, m.role]));
+  const teams: Record<string, Role> = Object.fromEntries(
+    ((members ?? []) as { team_id: string; role: Role }[]).map((m) => [m.team_id, m.role]),
+  );
   // Teams still being uploaded aren't in the cloud yet: keep them.
   for (const id of db.sync.uploads) if (prev[id] && !teams[id]) teams[id] = prev[id];
   const ids = Object.keys(teams);
@@ -337,13 +420,13 @@ async function pull(epoch, userId) {
         prev[id] !== teams[id] ||
         forceFull.has(id) ||
         (teams[id] === 'coach' &&
-          RECORD_KINDS.some((kind) => db[kind].some((r) => r.dirty && teamIdOf(kind, r) === id))),
+          RECORD_KINDS.some((kind) => list(kind).some((r) => r.dirty && teamIdOf(kind, r) === id))),
     ),
   );
   const since = db.sync.lastPulledAt
     ? new Date(Date.parse(db.sync.lastPulledAt) - PULL_OVERLAP_MS).toISOString()
     : null;
-  const rows = {};
+  const rows = {} as Record<RecordKind, AnyRow[]>;
   for (const kind of RECORD_KINDS) {
     rows[kind] = [
       ...(await fetchRows(
@@ -372,16 +455,17 @@ async function pull(epoch, userId) {
   let latest = db.sync.lastPulledAt;
   let rejectedRows = 0;
   for (const kind of RECORD_KINDS) {
-    const index = new Map(db[kind].map((r, i) => [r.id, i]));
-    const seen = new Set();
-    const drop = new Set();
+    const records = list(kind);
+    const index = new Map(records.map((r, i) => [r.id, i]));
+    const seen = new Set<string>();
+    const drop = new Set<string>();
     for (const row of rows[kind]) {
       if (!latest || Date.parse(row.updated_at) > Date.parse(latest)) latest = row.updated_at;
       const tid = kind === 'teams' ? row.id : row.team_id;
-      if (!teams[tid]) continue;
+      if (!tid || !teams[tid]) continue;
       seen.add(row.id);
       const i = index.get(row.id);
-      const local = i == null ? null : db[kind][i];
+      const local = i == null ? null : records[i];
       // A record moved to a team on this phone is no longer the cloud's.
       if (local && !isCloudTeam(teamIdOf(kind, local))) continue;
       if (row.deleted_at) {
@@ -391,7 +475,7 @@ async function pull(epoch, userId) {
         continue;
       }
       if (local?.dirty && teams[teamIdOf(kind, local)] === 'director') continue; // will be uploaded
-      const rec = { ...fromRow[kind](row), updatedAt: Date.parse(row.updated_at), dirty: false };
+      const rec = { ...recordFromRow(kind, row), updatedAt: Date.parse(row.updated_at), dirty: false };
       // Never trust what comes from the cloud: a damaged or implausible record is left out.
       const check = checkIncoming(kind, rec);
       if (!check.ok) {
@@ -403,21 +487,24 @@ async function pull(epoch, userId) {
         Object.assign(local, { dirty: false, updatedAt: rec.updatedAt });
         continue;
       }
-      if (local) db[kind][i] = rec;
+      if (local && i != null) records[i] = rec;
       else {
-        index.set(rec.id, db[kind].length);
-        db[kind].push(rec);
+        index.set(rec.id, records.length);
+        records.push(rec);
       }
       changed = true;
     }
     // Teams downloaded in full: what the cloud doesn't have isn't theirs (except changes a
     // director hasn't uploaded yet).
-    for (const r of db[kind]) {
+    for (const r of records) {
       const tid = teamIdOf(kind, r);
       if (full.has(tid) && !seen.has(r.id) && !(r.dirty && teams[tid] === 'director')) drop.add(r.id);
     }
     if (drop.size) {
-      db[kind] = db[kind].filter((r) => !drop.has(r.id));
+      setList(
+        kind,
+        records.filter((r) => !drop.has(r.id)),
+      );
       changed = true;
     }
   }

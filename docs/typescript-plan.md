@@ -28,8 +28,9 @@ is done as PRs straight into `main`.
 | 6.2b    | Team and account screens                                                               | ✅ merged | danimagb/fut-academy-stats#46 |
 | 6.3     | Game screens                                                                           | ✅ merged | danimagb/fut-academy-stats#47 |
 | 6.4     | Report, stats, PDF; styles split; legacy removed                                       | ✅ merged | danimagb/fut-academy-stats#48 |
-| 8.1     | Strict on; `data/` season, report sheet, session typed                                 | 🔄 review | (this PR)                     |
-| 8.2–8.5 | Sync; features; pages; app; drop `allowJs`                                             | ⏳ todo   |                               |
+| 8.1     | Strict on; `data/` season, report sheet, session typed                                 | ✅ merged | danimagb/fut-academy-stats#52 |
+| 8.2     | Sync engine typed                                                                      | 🔄 review | (this PR)                     |
+| 8.3–8.5 | Features; pages; app; drop `allowJs`                                                   | ⏳ todo   |                               |
 | 9       | Deploy workflow to GitHub Pages + docs                                                 | ✅ merged | danimagb/fut-academy-stats#49 |
 | 10      | Merge `feature/typescript` into `main`                                                 | ✅ merged | danimagb/fut-academy-stats#50 |
 
@@ -426,6 +427,16 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
   - No behaviour changes, and no bugs found.
   - Next: 8.2 `data/sync.ts`; 8.3 `features/`; 8.4 `pages/`; 8.5 `app/`, then remove
     `allowJs` and turn on oxlint's `typescript` plugin. Each conversion must pass `strict`.
+- Done in step 8.2: `data/sync.ts` is typed.
+  - New types: `SyncHooks` (what `configureSync` takes), `SyncStatus`, and the database row
+    types `TeamRow`, `PlayerRow` and `GameRow`. `SyncError` has typed `code` and `status`.
+  - The three record kinds go through small `list(kind)` / `setList(kind, …)` helpers, and
+    `toRow`/`fromRow` go through `rowFromRecord`/`recordFromRow`, so a loop over
+    `RECORD_KINDS` type-checks.
+  - A missing client now throws a `SyncError` instead of a `TypeError`. That can't happen in
+    practice: `canSync()` checks for the client first.
+  - The sync tests pass the fake client `as unknown as SupabaseClient`, because it only has
+    the parts sync uses.
 
 ## Why
 

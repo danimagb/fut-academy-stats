@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '@/domain/types';
 import { fakeSupabase, type FakeSupabase } from '@/test/fake-supabase';
@@ -35,7 +36,7 @@ function cloud(rows: Record<string, Record<string, unknown>[]>, roles: Record<st
     team_members: Object.entries(roles).map(([team_id, role]) => ({ team_id, role, user_id: 'u1' })),
   });
   configureSync({
-    client: fake.client,
+    client: fake.client as unknown as SupabaseClient, // only the parts sync uses
     canSync: () => true,
     userId: () => 'u1',
     request: () => {},
