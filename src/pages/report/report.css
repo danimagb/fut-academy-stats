@@ -82,3 +82,50 @@
   object-fit: contain;
   background: #ffffff;
 }
+/* The preview as a thumbnail (scaled to the screen's width by fitWidth); tap → full screen. */
+.pdf-thumb {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding: 0;
+  margin: 4px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  cursor: zoom-in;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.pdf-thumb:active {
+  opacity: 0.85;
+}
+.pdf-thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.pdf-fit {
+  position: relative;
+  overflow: hidden;
+}
+.pdf-fit .pdf-preview,
+.zoom .pdf-preview {
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+}
+.pdf-fit .pp-page {
+  transform-origin: 0 0;
+  border-radius: 0;
+}
+.pdf-thumb-tag {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+}

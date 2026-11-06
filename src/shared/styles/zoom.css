@@ -1,0 +1,56 @@
+/* Full-screen viewer for a wide page (the report preview): the app stays behind, dimmed. */
+.zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  flex-direction: column;
+}
+.zoom-scroll {
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  display: grid;
+  padding: calc(env(safe-area-inset-top) + 64px) 8px calc(env(safe-area-inset-bottom) + 44px);
+}
+.zoom-stage {
+  margin: auto;
+  position: relative;
+}
+.zoom-content {
+  width: max-content;
+  /* Double-tapping zooms; it shouldn't select text. */
+  -webkit-user-select: none;
+  user-select: none;
+  transform-origin: 0 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.zoom-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: 14px;
+}
+.zoom-close svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.zoom-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  margin: 0;
+  text-align: center;
+  color: #d7dade;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+body.zoom-open {
+  overflow: hidden;
+}

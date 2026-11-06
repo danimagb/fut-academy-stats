@@ -128,7 +128,7 @@ export function viewPlayer(id: string | undefined): void {
     .slice()
     .reverse()
     .map(
-      (r) => `<li><a class="card game ${resultOf(r.d)}" href="#/report/${r.g.id}">
+      (r) => `<li><a class="card game ${resultOf(r.d)}" href="#/game/${r.g.id}">
     <div class="grow">
       <strong>${esc(gameShort(r.g, r.d))}</strong>
       <div class="muted small">${esc(ddmm(r.g))}${r.g.round ? ` · ${t('roundN', { n: esc(r.g.round) })}` : ''}</div>

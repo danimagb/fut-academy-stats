@@ -17,7 +17,8 @@ import { bar } from '@/shared/ui/bar';
 
 function gameCard(g: Game): string {
   const d = derive(g);
-  const href = g.status === 'finished' ? `#/report/${g.id}` : `#/game/${g.id}`;
+  // Always the game screen (finished ones too): the report is one tap away from there.
+  const href = `#/game/${g.id}`;
   // Result of a finished game: win / draw / loss, shown as a coloured stripe and a pill.
   const res = g.status === 'finished' ? (d.us > d.them ? 'win' : d.us < d.them ? 'loss' : 'draw') : '';
   // Our goals green, theirs red, both neutral on a draw.
