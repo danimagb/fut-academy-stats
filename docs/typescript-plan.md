@@ -24,8 +24,8 @@ keeps deploying from the branch exactly as it does today.
 | 5.5  | Database checks on what is stored (new migration)                                      | ✅ merged    | danimagb/fut-academy-stats#42 |
 | 7    | End-to-end tests (Playwright) in CI, moved before step 6                               | ✅ merged    | danimagb/fut-academy-stats#43 |
 | 6.1  | App shell: router, tab bar, action listeners, shared UI                                | ✅ merged    | danimagb/fut-academy-stats#44 |
-| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | 🔄 in review | danimagb/fut-academy-stats#45 |
-| 6.2b | Team and account screens                                                               | ⏳ todo      |                               |
+| 6.2a | Shared helpers out of legacy (save, lookups, session, re-render, route); faster e2e CI | ✅ merged    | danimagb/fut-academy-stats#45 |
+| 6.2b | Team and account screens                                                               | 🔄 in review | (this PR)                     |
 | 6.3  | Game screens                                                                           | ⏳ todo      |                               |
 | 6.4  | Report, stats, PDF; styles split; legacy removed                                       | ⏳ todo      |                               |
 | 8    | Strict TypeScript                                                                      | ⏳ todo      |                               |
@@ -302,6 +302,39 @@ userId, request, onStatus, onChange, onRejected, afterSync })` once.
     `mcr.microsoft.com/playwright:v1.63.0-noble` image. It already has Chromium and its system
     libraries, which took about 9 of the job's 10 minutes to install. Keep the image tag in
     step with `@playwright/test`.
+- Done in step 6.2b: the team and account screens are out of `app/legacy.js`, which went
+  from 3,375 to 2,287 lines.
+  - **Pages.** Each page exports `{ views, actions, forms? }`, and `app/` registers them with
+    `addViews`, `registerActions` and `registerForms`. Pages can't import `app/`.
+    - `pages/games/games.ts` (typed)
+    - `pages/admin/admin.js`
+    - `pages/profile/profile.js`
+    - `pages/team/team.js` (the teams list and the team screen)
+  - **Features:**
+    - `features/sign-in` (the Account section, plus `watchAuth()` for the Supabase session)
+    - `features/team-people`
+    - `features/sync-status`
+    - `features/upload-teams`
+    - `features/score` (`scoreHtml`)
+    - `features/team-access` (`refuseReadOnly`, `readOnlyPill`)
+    - `features/theme-switch` and `features/language-switch` (both typed)
+  - **Data:** `data/access.ts` (`readOnlyTeam`, `readOnlyGame`, `writableTeams`) and
+    `data/prefs.ts` (the games-page team filter).
+  - **Shared:** `shared/ui/main.ts` (the `#main` element).
+  - `app/router.ts`: `addViews` (a name added twice throws) and `setFallbackView`.
+    `app/actions.ts`: `registerForms` / `formHandler`.
+  - Code moved as is stays `.js` with `@ts-nocheck` until step 8.
+  - `accountSection(syncStatus)` takes the sync line as an argument, because a feature can't
+    import another feature. The layer rules caught that one.
+  - **Not moved yet:** the add/edit player forms and the team-field input. They're shared
+    with the new-game screen, and move in 6.3.
+  - New end-to-end tests:
+    - the games list filters by team
+    - **Admin:** a signed-in admin sees the tab and the account list. The session and
+      Supabase are stubbed in `e2e/cloud-stub.ts`.
+    - **Team:** edit and remove players; a team with players can't be deleted, an empty one
+      can.
+    - 14 end-to-end tests in total.
 - **Owner:** make the checks required for `feature/typescript` and `main` (Settings →
   Branches → branch protection or a ruleset → require status checks: "Lint and format",
   "Types", "Unit tests", "Build" and, from step 7, "End to end").
