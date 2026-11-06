@@ -27,7 +27,7 @@ still marked `@ts-nocheck`, as PRs into `main`). Update it in every PR for that 
   `features` → `data` → `domain` → `shared`, imports only going down (oxlint enforces it).
 - Before pushing: `npm run lint && npm run typecheck && npm test && npm run format:check`, and
   `npm run e2e` for anything that changes a screen. CI runs the same and must pass.
-- `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`. The service worker
+- `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`, after CI on `main` passes. The service worker
   (`src/sw.ts`, built by vite-plugin-pwa) updates installed apps on every build: there is no
   cache version to bump.
 - Every user-facing string is in `I18N` (`src/shared/i18n/i18n.ts`) in both `en` and `pt`

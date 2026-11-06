@@ -104,7 +104,8 @@ npm run e2e     # builds the app and runs the end-to-end tests (Playwright)
 The phone needs the app served over **HTTPS** to install it and use it offline. It's published with GitHub Pages:
 
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions** (once).
-2. Every push to `main` builds the app and publishes it (`.github/workflows/deploy.yml`).
+2. Every push to `main` runs CI; when all of it passes (end-to-end tests included), the app is
+   built and published (`.github/workflows/deploy.yml`).
 3. Open `https://<your-user>.github.io/<repo>/` on the phone, then:
    - Android/Chrome: menu ⋮ → **Add to Home screen**
    - iPhone/Safari: Share → **Add to Home Screen**

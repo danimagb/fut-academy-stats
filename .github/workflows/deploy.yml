@@ -1,9 +1,13 @@
-# Builds the app and publishes it to GitHub Pages on every push to main.
+# Publishes the app to GitHub Pages once CI has passed on main (lint, types, unit tests,
+# build and end-to-end tests), so a commit is only deployed after its own checks are green.
+# A CI run on main that fails or is cancelled (a newer push replaced it) deploys nothing.
 # One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 name: Deploy to GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -19,10 +23,17 @@ concurrency:
 
 jobs:
   build:
+    # By hand, or after a CI run on main that passed (not one from a pull request).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The commit CI checked (main may have moved on since).
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
