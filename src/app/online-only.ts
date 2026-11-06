@@ -31,6 +31,7 @@ export const ONLINE_FORMS: ReadonlySet<string> = new Set([
   'add-player-draft',
   'edit-player',
   'game-info',
+  'team-name',
 ]);
 
 /** The team the current screen changes (null: none, or not known). */

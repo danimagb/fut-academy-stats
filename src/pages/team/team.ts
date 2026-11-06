@@ -1,5 +1,4 @@
 // The Teams list and a team's screen (club, age group, players, staff).
-import { save } from '@/data/save';
 import { syncNow } from '@/data/session';
 import { pendingCount } from '@/data/sync';
 import {
@@ -11,7 +10,7 @@ import {
   myId,
   setPeopleMsg,
 } from '@/features/team-people/team-people';
-import { uploadTeams } from '@/features/upload-teams/upload-teams';
+import { saveToCloud } from '@/features/cloud-save/cloud-save';
 import { uid } from '@/shared/lib/id';
 import { rerender } from '@/shared/lib/rerender';
 import { onLeave, route } from '@/shared/lib/route';
@@ -33,7 +32,7 @@ import { bar } from '@/shared/ui/bar';
 import { accSection } from '@/shared/ui/accordion';
 import { closeSheet, openSheet } from '@/shared/ui/sheet';
 import { roleOf } from '@/data/sync';
-import { db } from '@/data/store';
+import { db, syncGameTeams } from '@/data/store';
 import { esc } from '@/shared/lib/html';
 import { byNumber } from '@/domain/players';
 import { teamLabel } from '@/domain/titles';
@@ -88,19 +87,18 @@ function openClubPicker(): void {
     <button type="button" class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
 }
 
-/** A new team in one of this user's clubs (created on this phone, uploaded straight away). */
-function createTeam(clubId: string): void {
+/** A new team in one of this user's clubs: created in the cloud first, then opened here. */
+async function createTeam(clubId: string): Promise<void> {
   const club = managedClubs(cloud.account).find((c) => c.id === clubId);
   if (!club) return;
-  const tm: Team = { id: uid(), club: club.name, name: '' };
-  db.teams.push(tm);
-  save();
-  newCloudTeam = tm.id;
-  uploadTeams([tm.id], club.id);
-  location.hash = `#/team/${tm.id}`;
+  const tm: Team = { id: uid(), club: club.name, name: '', clubId: club.id };
+  const ok = await saveToCloud(() => {
+    db.teams.push(tm);
+    db.sync.teams[tm.id] = 'club_manager';
+    db.sync.uploads.push(tm.id);
+  });
+  if (ok) location.hash = `#/team/${tm.id}`;
 }
-
-export let newCloudTeam: string | null = null; // id of a team just created as a cloud team (shows a note once)
 
 export function viewTeam(teamId: string | undefined): void {
   const tm = getTeam(teamId);
@@ -111,17 +109,22 @@ export function viewTeam(teamId: string | undefined): void {
   // The team's name: whoever manages it, online. Its club is the club's name (set by the server).
   const manage = canManageTeam(id) && !ro;
   const editable = manage && teamEditableNow(id);
-  const field = (key: 'club' | 'name', label: string, ph: string): string =>
-    !editable || key === 'club'
-      ? `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(tm[key]) || '–'}</div></div>`
-      : `<label>${label}<input data-team="${key}" value="${esc(tm[key])}" placeholder="${ph}" autocomplete="off"></label>`;
+  const roField = (label: string, value: string): string =>
+    `<div class="ro-field"><span class="muted small">${label}</span><div>${esc(value) || '–'}</div></div>`;
+  // The name is saved with a button (straight to the cloud), not while typing.
+  const nameField = editable
+    ? `<form class="row gap team-name" data-form="team-name">
+        <label class="grow">${t('ageGroup')}<input name="name" required value="${esc(tm.name)}" placeholder="${t('teamPh')}" autocomplete="off"></label>
+        <button class="btn small">${t('save')}</button>
+      </form>`
+    : roField(t('ageGroup'), tm.name);
   main.innerHTML = `
     ${bar(esc(teamShortLabel(tm)), '#/teams', teamMenu(id, !manage), ro ? readOnlyPill() : '')}
     ${ro ? `<p class="hint">${t('readOnlyHint')}</p>` : ''}
 
     <div class="form">
-      ${field('club', t('club'), t('clubPh'))}
-      ${field('name', t('ageGroup'), t('teamPh'))}
+      ${roField(t('club'), tm.club)}
+      ${nameField}
     </div>
     <div class="accordion team-sections">
     ${teamSection(
@@ -277,9 +280,7 @@ export const teamActions = {
       danger: true,
     });
     if (!ok) return;
-    db.teams = db.teams.filter((x) => x.id !== id);
-    save();
-    location.hash = '#/teams';
+    if (await saveToCloud(() => (db.teams = db.teams.filter((x) => x.id !== id)))) location.hash = '#/teams';
   },
   'team-section': ({ v = '' }: DOMStringMap) => {
     teamOpen[v] = !teamOpen[v];
@@ -310,8 +311,7 @@ export const teamActions = {
       danger: true,
     });
     if (!ok) return;
-    db.players = db.players.filter((x) => x.id !== id);
-    save();
+    await saveToCloud(() => (db.players = db.players.filter((x) => x.id !== id)));
     rerender();
   },
 };
@@ -320,4 +320,16 @@ export const teamActions = {
 export const teamPage = {
   views: { teams: viewTeams, players: viewTeams, team: viewTeam },
   actions: teamActions,
+  forms: {
+    'team-name': async (data: FormData) => {
+      const tm = getTeam(route().id);
+      const name = String(data.get('name') ?? '').trim();
+      if (!tm || !name || name === tm.name) return;
+      await saveToCloud(() => {
+        tm.name = name;
+        syncGameTeams(db, tm.id);
+      });
+      rerender();
+    },
+  },
 };

@@ -73,9 +73,10 @@ people of the club, with a copy on each phone so games can be run without signal
 - **Games work offline.** Running a game (kick-off, subs, goals, cards, the clock, fixing
   times, full time) is saved on the phone and syncs in the background (on start, a few seconds
   after a change, when the signal comes back, every minute, or with _Sync now_): with weak or no
-  signal at the pitch, it simply waits. Changing a synced team (its players, its name, new or
-  deleted teams) and creating, editing or deleting games **need the internet**; offline the app
-  says so.
+  signal at the pitch, it simply waits. Changing a team (its players, its name, new or deleted
+  teams) and creating, editing or deleting games **need the internet** and are saved in the
+  cloud straight away: the app waits for the cloud to take the change, and if it doesn't
+  (offline, not allowed, an error) nothing is changed on the phone and the app says so.
 - **One phone per game.** The phone that kicks off a synced team's game logs it until full
   time; on other phones it's read-only ("… is logging this game on another phone"), and the
   database ignores their changes to it. If that phone stops (battery, lost), a director or the

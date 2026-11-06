@@ -1,17 +1,16 @@
-import { teamEditableNow } from '@/data/online';
-import { isCloudTeam } from '@/data/store';
 // The new-game / edit-game screen: team, opponent, format, and who starts.
+import { saveToCloud } from '@/features/cloud-save/cloud-save';
+import { teamEditableNow } from '@/data/online';
 import { defaultTeamId } from '@/data/prefs';
 import { rerender } from '@/shared/lib/rerender';
 import { formationOf } from '@/data/live';
 import { readOnlyGame, readOnlyTeam, writableTeams } from '@/data/access';
 import { readOnlyPill, refuseReadOnly } from '@/features/team-access/read-only';
-import { save } from '@/data/save';
 import { getGame, getTeam, teamPlayers } from '@/data/queries';
 import { bar } from '@/shared/ui/bar';
 import { notify } from '@/shared/ui/dialog';
 import { uid } from '@/shared/lib/id';
-import { db } from '@/data/store';
+import { db, isCloudTeam } from '@/data/store';
 import { isoDate, pad } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
 import { FORMATS } from '@/domain/formats';
@@ -212,26 +211,15 @@ export function saveGame(): Promise<unknown> | void {
   const gkId = draft_.gkId;
   if (!gkId || !starters.includes(gkId)) return notify(t('errGk'));
 
-  let g = draft_.id ? getGame(draft_.id) : undefined;
-  if (!g) {
-    // A new game: the rest of its fields are filled in just below.
-    g = {
-      id: uid(),
-      status: 'scheduled',
-      clock: { running: false, startedAt: null, elapsedMs: 0, period: 1 },
-      events: [],
-      marks: [],
-      alerted: {},
-    } as unknown as Game;
-    db.games.push(g);
-  }
+  const existing = draft_.id ? getGame(draft_.id) : undefined;
+  const gameId = existing?.id ?? uid();
   const names: Record<string, SquadName> = {};
   for (const id of squad) {
     const p = db.players.find((x) => x.id === id);
     if (!p) continue;
     names[id] = { name: p.name, number: p.number, fullName: p.fullName || '' };
   }
-  Object.assign(g, {
+  const fields = {
     date: draft_.date,
     time: draft_.time,
     opponent: draft_.opponent.trim(),
@@ -249,12 +237,29 @@ export function saveGame(): Promise<unknown> | void {
     team: team.name,
     home: draft_.home,
     round: round >= 1 ? String(round) : '',
+  };
+  // Creating or editing a game goes to the cloud straight away (it opens once it's there).
+  return saveToCloud(() => {
+    let g = getGame(gameId);
+    if (!g) {
+      // A new game: the rest of its fields are filled in just below.
+      g = {
+        id: gameId,
+        status: 'scheduled',
+        clock: { running: false, startedAt: null, elapsedMs: 0, period: 1 },
+        events: [],
+        marks: [],
+        alerted: {},
+      } as unknown as Game;
+      db.games.push(g);
+    }
+    Object.assign(g, fields);
+    g.formation = formationOf(g);
+    g.lineup = startLineup(g);
+    db.lastTeamId = team.id;
+  }).then((ok) => {
+    if (ok) location.hash = `#/game/${gameId}`;
   });
-  g.formation = formationOf(g);
-  g.lineup = startLineup(g);
-  db.lastTeamId = team.id;
-  save();
-  location.hash = `#/game/${g.id}`;
 }
 
 export const gameEditActions = {

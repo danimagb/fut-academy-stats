@@ -1,3 +1,4 @@
+import { saveToCloud } from '@/features/cloud-save/cloud-save';
 // The live game screen: clock, score, pitch and bench, timeline; the player sheet and the
 // Fix times sheet.
 import { currentGame } from '@/data/queries';
@@ -631,9 +632,8 @@ export const gameActions = {
       danger: true,
     });
     if (!ok) return;
-    db.games = db.games.filter((x) => x !== g);
-    save();
-    location.hash = '#/games';
+    if (await saveToCloud(() => (db.games = db.games.filter((x) => x.id !== g.id))))
+      location.hash = '#/games';
   },
 };
 

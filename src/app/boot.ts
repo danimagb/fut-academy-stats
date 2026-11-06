@@ -18,19 +18,13 @@ import { adminPage } from '@/pages/admin/admin';
 import { clubPage } from '@/pages/club/club';
 import { $, $$ } from '@/shared/lib/dom';
 import { filterStaff, remote, loadPeople, setStaffRole } from '@/features/team-people/team-people';
-import { canManageTeam } from '@/data/access';
-import {
-  ONLINE_ACTIONS,
-  ONLINE_FORMS,
-  needsInternet,
-  refuseOffline,
-  teamEditableNow,
-} from '@/app/online-only';
+import { ONLINE_ACTIONS, ONLINE_FORMS, needsInternet, refuseOffline } from '@/app/online-only';
 import { offlineNow } from '@/data/online';
 
 let wasOffline = false;
 import { refuseReadOnly } from '@/features/team-access/read-only';
-import { askPersistence, save } from '@/data/save';
+import { saveToCloud } from '@/features/cloud-save/cloud-save';
+import { askPersistence } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
 import { canSync, cloud, sb, signInGate, syncNow } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
@@ -53,9 +47,8 @@ import { toast } from '@/shared/ui/toast';
 import { configureSync } from '@/data/sync';
 import { refreshLogos } from '@/data/logos';
 import { uid } from '@/shared/lib/id';
-import { db, initStore, isCloudTeam, loadRejected, syncGameTeams } from '@/data/store';
+import { db, initStore, isCloudTeam, loadRejected } from '@/data/store';
 import { FORMATS } from '@/domain/formats';
-import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import type { MessageKey } from '@/shared/i18n/i18n';
 import type { Player } from '@/domain/types';
@@ -217,6 +210,7 @@ export function boot(): void {
   registerForms(clubPage.forms);
   registerActions(profilePage.actions);
   registerActions(teamPage.actions);
+  registerForms(teamPage.forms);
   registerActions(gameEditPage.actions);
   registerActions(gamePage.actions);
   registerActions(reportPage.actions);
@@ -252,20 +246,6 @@ export function boot(): void {
       return;
     }
     if (el.dataset.filter === 'staff') return filterStaff(el.value);
-    const teamKey = el.dataset.team;
-    if (teamKey === 'club' || teamKey === 'name') {
-      const tm = getTeam(route().id);
-      if (!tm) return;
-      // Only whoever manages the team changes it; a cloud team's club comes from its club.
-      if (!canManageTeam(tm.id) || (teamKey === 'club' && isCloudTeam(tm.id))) return refuseReadOnly();
-      if (!teamEditableNow(tm.id)) return refuseOffline();
-      tm[teamKey] = el.value.trim();
-      syncGameTeams(db, tm.id);
-      save();
-      const title = $('.bar h1');
-      if (title) title.textContent = teamLabel(tm);
-      return;
-    }
     const field = el.dataset.field;
     const d = draft;
     if (!field || !d) return;
@@ -296,7 +276,7 @@ export function boot(): void {
     // Pickers (<select data-pick="action">): run the action with the chosen value.
     const pick = el.dataset.pick ? actionHandler(el.dataset.pick) : undefined;
     if (pick) return void pick({ ...el.dataset, id: el.value }, el);
-    const { change, id = '', tid = '' } = el.dataset; // (data-tid: data-team is the team screen's inputs)
+    const { change, id = '', tid = '' } = el.dataset;
     if (!change) return;
     // Admin page: club and team roles (RLS lets only the admin change them).
     const { cid = '' } = el.dataset;
@@ -309,7 +289,7 @@ export function boot(): void {
     }
   });
 
-  document.addEventListener('submit', (e) => {
+  document.addEventListener('submit', async (e) => {
     const formEl = e.target as HTMLFormElement;
     const form = formEl.dataset.form;
     if (!form) return;
@@ -333,17 +313,17 @@ export function boot(): void {
       if (!g) return;
       const tm = getTeam(String(data.get('teamId') ?? ''));
       const round = parseInt(String(data.get('round') ?? ''), 10);
-      Object.assign(g, {
-        opponent: String(data.get('opponent')).trim(),
-        home: data.get('home') === '1',
-        round: round >= 1 ? String(round) : '',
-        date: String(data.get('date') ?? '') || g.date,
-        time: String(data.get('time') ?? ''),
-      });
-      if (tm) Object.assign(g, { teamId: tm.id, club: tm.club, team: tm.name });
-      save();
-      render();
-      return;
+      const round_ = round >= 1 ? String(round) : '';
+      return void saveToCloud(() => {
+        Object.assign(g, {
+          opponent: String(data.get('opponent')).trim(),
+          home: data.get('home') === '1',
+          round: round_,
+          date: String(data.get('date') ?? '') || g.date,
+          time: String(data.get('time') ?? ''),
+        });
+        if (tm) Object.assign(g, { teamId: tm.id, club: tm.club, team: tm.name });
+      }).then(() => render());
     }
     const name = String(data.get('name') || '').trim();
     if (!name) return;
@@ -352,16 +332,15 @@ export function boot(): void {
     if (form === 'edit-player') {
       const p = db.players.find((x) => x.id === formEl.dataset.id);
       if (!p) return;
-      Object.assign(p, { name, number, fullName: full });
-      save();
-      render();
-      return;
+      return void saveToCloud(() => Object.assign(p, { name, number, fullName: full })).then((ok) => {
+        if (ok) closeSheet();
+        render();
+      });
     }
     const teamId = form === 'add-player-draft' ? draft?.teamId : route().id;
     if (!teamId) return;
     const p: Player = { id: uid(), name, number, fullName: full, teamId };
-    db.players.push(p);
-    save();
+    if (!(await saveToCloud(() => db.players.push(p)))) return;
     if (form === 'add-player-draft' && draft) draft.sel[p.id] = 'bench';
     if (form === 'add-player') teamOpen.players = true;
     render();

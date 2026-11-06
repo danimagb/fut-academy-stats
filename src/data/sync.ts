@@ -269,6 +269,7 @@ function client(): SupabaseClient {
 
 async function syncOnce(): Promise<void> {
   clearTimeout(syncTimer);
+  refusedTeams.clear();
   const userId = hooks.userId();
   if (db.sync.userId && db.sync.userId !== userId) removeCloudData(); // another person, same phone
   const first = !db.sync.userId;
@@ -374,7 +375,11 @@ async function push(epoch: number): Promise<boolean> {
 // allowed (e.g. its id belongs to someone else's team): it goes back to being a local team.
 // Otherwise this user probably lost the right to write: drop the changes so the cloud wins,
 // and download the team in full on the pull that follows (which also refreshes the role).
+/** Teams whose upload the server refused in the latest sync (see cloud-change.ts). */
+export const refusedTeams = new Set<string>();
+
 function pushRefused(tid: string): void {
+  refusedTeams.add(tid);
   if (db.sync.uploads.includes(tid)) {
     delete db.sync.teams[tid];
     db.sync.uploads = db.sync.uploads.filter((id) => id !== tid);
