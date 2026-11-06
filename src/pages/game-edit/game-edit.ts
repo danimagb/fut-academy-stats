@@ -1,7 +1,5 @@
+// The new-game / edit-game screen: team, opponent, format, and who starts.
 import { defaultTeamId } from '@/data/prefs';
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
-// The new-game / edit-game screen: team, opponent, format, and who starts. Moved from
-// app/legacy.js.
 import { rerender } from '@/shared/lib/rerender';
 import { formationOf } from '@/data/live';
 import { readOnlyGame, readOnlyTeam, writableTeams } from '@/data/access';
@@ -20,20 +18,45 @@ import { byNumber } from '@/domain/players';
 import { teamLabel } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import type { Game, SquadName } from '@/domain/types';
+
+/**
+ * The form's state. Number fields hold what was typed (text) until the game is saved; `sel`
+ * says who starts and who is on the bench.
+ */
+export type Draft = {
+  /** Set when editing an existing game. */
+  id?: string;
+  date: string;
+  time: string;
+  opponent: string;
+  formatId: string;
+  field: number | string;
+  periods: number | string;
+  periodMin: number | string;
+  maxExtra: number | string;
+  gkId: string | null;
+  teamId: string | null;
+  home: boolean;
+  round: string;
+  sel: Record<string, 'start' | 'bench'>;
+};
+
+const int = (v: number | string): number => parseInt(String(v), 10);
 
 // ---------- Views: new / edit game ----------
 // The game being created or edited (null when not on that screen).
-export let draft = null;
+export let draft: Draft | null = null;
 
 /** Forget the form (leaving the screen). */
-export function resetDraft() {
+export function resetDraft(): void {
   draft = null;
 }
 
 // Teams where this user is a coach (read-only) are never offered for new games.
 
-export function newDraft(id) {
-  const g = id && getGame(id);
+export function newDraft(id: string | undefined): Draft {
+  const g = id ? getGame(id) : undefined;
   if (g) {
     return {
       id: g.id,
@@ -49,10 +72,11 @@ export function newDraft(id) {
       teamId: getTeam(g.teamId) ? g.teamId : defaultTeamId(),
       home: g.home ?? true,
       round: g.round ?? '',
-      sel: Object.fromEntries(g.squad.map((p) => [p, g.starters.includes(p) ? 'start' : 'bench'])),
+      sel: Object.fromEntries(g.squad.map((p) => [p, g.starters.includes(p) ? 'start' : 'bench'] as const)),
     };
   }
   const f = FORMATS[0];
+  if (!f) throw new Error('No game formats');
   const now = new Date();
   return {
     date: isoDate(now),
@@ -71,29 +95,31 @@ export function newDraft(id) {
   };
 }
 
-export function squadCount() {
-  const need = (parseInt(draft.field, 10) || 0) + 1;
+export function squadCount(): string {
+  if (!draft) return '';
+  const need = (int(draft.field) || 0) + 1;
   const vals = Object.values(draft.sel);
   const starters = vals.filter((v) => v === 'start').length;
   const bench = vals.filter((v) => v === 'bench').length;
   return `<span class="${starters === need ? 'ok' : 'warn'}">${t('startersCount', { s: starters, n: need })}</span> · ${t('benchCount', { n: bench })}`;
 }
 
-export function viewEdit(id) {
+export function viewEdit(id: string | undefined): void {
   if (!draft) draft = newDraft(id);
-  const back = draft.id ? `#/game/${draft.id}` : '#/games';
-  const title = draft.id ? t('editGame') : t('newGameTitle');
-  if (draft.id && readOnlyGame(getGame(draft.id))) {
+  const d = draft;
+  const back = d.id ? `#/game/${d.id}` : '#/games';
+  const title = d.id ? t('editGame') : t('newGameTitle');
+  if (d.id && readOnlyGame(getGame(d.id))) {
     main.innerHTML = `${bar(title, back, '', readOnlyPill())}<p class="empty">${t('readOnlyHint')}</p>`;
     return;
   }
-  if (!draft.teamId) {
+  if (!d.teamId) {
     // Only teams where this user is a coach: explain why there's nothing to pick.
     const msg = db.teams.length ? t('newGameCoachOnly') : t('needTeam');
     main.innerHTML = `${bar(title, back)}<p class="empty">${msg}</p><a class="btn primary block" href="#/teams">${t('goTeams')}</a>`;
     return;
   }
-  const ps = teamPlayers(draft.teamId).sort(byNumber);
+  const ps = teamPlayers(d.teamId).sort(byNumber);
   main.innerHTML = `
     ${bar(title, back)}
     <div class="form">
@@ -101,32 +127,32 @@ export function viewEdit(id) {
         <select data-field="teamId">${writableTeams()
           .map(
             (tm) =>
-              `<option value="${tm.id}" ${tm.id === draft.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`,
+              `<option value="${tm.id}" ${tm.id === d.teamId ? 'selected' : ''}>${esc(teamLabel(tm))}</option>`,
           )
           .join('')}</select>
       </label>
-      <label>${t('opponent')}<input data-field="opponent" value="${esc(draft.opponent)}" placeholder="${t('opponentPh')}" autocomplete="off"></label>
+      <label>${t('opponent')}<input data-field="opponent" value="${esc(d.opponent)}" placeholder="${t('opponentPh')}" autocomplete="off"></label>
       <div class="row gap">
         <span class="seg big">
-          <button class="${draft.home ? 'on' : ''}" data-action="set-home" data-v="1">${t('home')}</button>
-          <button class="${draft.home ? '' : 'on'}" data-action="set-home" data-v="0">${t('away')}</button>
+          <button class="${d.home ? 'on' : ''}" data-action="set-home" data-v="1">${t('home')}</button>
+          <button class="${d.home ? '' : 'on'}" data-action="set-home" data-v="0">${t('away')}</button>
         </span>
-        <label class="grow">${t('round')}<input type="number" inputmode="numeric" min="1" data-field="round" value="${esc(draft.round)}"></label>
+        <label class="grow">${t('round')}<input type="number" inputmode="numeric" min="1" data-field="round" value="${esc(d.round)}"></label>
       </div>
       <div class="row gap">
-        <label class="grow">${t('date')}<input type="date" data-field="date" value="${esc(draft.date)}"></label>
-        <label class="grow">${t('time')}<input type="time" data-field="time" value="${esc(draft.time)}"></label>
+        <label class="grow">${t('date')}<input type="date" data-field="date" value="${esc(d.date)}"></label>
+        <label class="grow">${t('time')}<input type="time" data-field="time" value="${esc(d.time)}"></label>
       </div>
       <label>${t('format')}
-        <select data-field="formatId">${FORMATS.map((f) => `<option value="${f.id}" ${f.id === draft.formatId ? 'selected' : ''}>${f.id === 'Custom' ? t('custom') : `${f.id} · ${t('gkPlus', { n: f.field })}`}</option>`).join('')}</select>
+        <select data-field="formatId">${FORMATS.map((f) => `<option value="${f.id}" ${f.id === d.formatId ? 'selected' : ''}>${f.id === 'Custom' ? t('custom') : `${f.id} · ${t('gkPlus', { n: f.field })}`}</option>`).join('')}</select>
       </label>
       <div class="row gap">
-        <label class="grow">${t('fieldPlayers')}<input type="number" inputmode="numeric" min="1" max="10" data-field="field" value="${esc(draft.field)}"></label>
-        <label class="grow">${t('periods')}<input type="number" inputmode="numeric" min="1" max="4" data-field="periods" value="${esc(draft.periods)}"></label>
-        <label class="grow">${t('minPeriod')}<input type="number" inputmode="numeric" min="1" data-field="periodMin" value="${esc(draft.periodMin)}"></label>
+        <label class="grow">${t('fieldPlayers')}<input type="number" inputmode="numeric" min="1" max="10" data-field="field" value="${esc(d.field)}"></label>
+        <label class="grow">${t('periods')}<input type="number" inputmode="numeric" min="1" max="4" data-field="periods" value="${esc(d.periods)}"></label>
+        <label class="grow">${t('minPeriod')}<input type="number" inputmode="numeric" min="1" data-field="periodMin" value="${esc(d.periodMin)}"></label>
       </div>
       <label>${t('autoStop')}
-        <input type="number" inputmode="numeric" min="1" max="60" data-field="maxExtra" value="${esc(draft.maxExtra)}">
+        <input type="number" inputmode="numeric" min="1" max="60" data-field="maxExtra" value="${esc(d.maxExtra)}">
       </label>
     </div>
 
@@ -134,11 +160,11 @@ export function viewEdit(id) {
     <p class="hint">${t('squadHint')}</p>
     <ul class="list squad-pick">${ps
       .map((p) => {
-        const v = draft.sel[p.id] || '';
+        const v: string = d.sel[p.id] || '';
         return `<li class="item ${v}">
         <span class="shirt">${esc(p.number) || '–'}</span>
         <span class="grow pname">${esc(p.name)}</span>
-        <button class="gkbtn ${draft.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="${t('gkAria')}">🧤</button>
+        <button class="gkbtn ${d.gkId === p.id ? 'on' : ''}" data-action="set-gk" data-id="${p.id}" ${v === 'start' ? '' : 'disabled'} aria-label="${t('gkAria')}">🧤</button>
         <span class="seg">
           <button class="${v === '' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="">${t('selOut')}</button>
           <button class="${v === 'bench' ? 'on' : ''}" data-action="sel" data-id="${p.id}" data-v="bench">${t('selBench')}</button>
@@ -153,32 +179,37 @@ export function viewEdit(id) {
       <button class="btn">${t('add')}</button>
     </form>
 
-    <button class="btn primary block" data-action="save-game">${draft.id ? t('saveChanges') : t('createGame')}</button>`;
+    <button class="btn primary block" data-action="save-game">${d.id ? t('saveChanges') : t('createGame')}</button>`;
 }
 
-export function saveGame() {
-  if (readOnlyTeam(draft.teamId) || (draft.id && readOnlyGame(getGame(draft.id)))) return refuseReadOnly();
-  const field = parseInt(draft.field, 10);
-  const periods = parseInt(draft.periods, 10);
-  const periodMin = parseInt(draft.periodMin, 10);
-  const maxExtra = parseInt(draft.maxExtra, 10) || 10;
-  const round = parseInt(draft.round, 10);
+export function saveGame(): Promise<unknown> | void {
+  const draft_ = draft;
+  if (!draft_) return;
+  if (readOnlyTeam(draft_.teamId) || (draft_.id && readOnlyGame(getGame(draft_.id)))) return refuseReadOnly();
+  const field = int(draft_.field);
+  const periods = int(draft_.periods);
+  const periodMin = int(draft_.periodMin);
+  const maxExtra = int(draft_.maxExtra) || 10;
+  const round = int(draft_.round);
   if (!(field >= 1)) return notify(t('errField'));
   if (!(periods >= 1) || !(periodMin >= 1)) return notify(t('errPeriods'));
-  if (!draft.date) return notify(t('errDate'));
+  if (!draft_.date) return notify(t('errDate'));
 
-  const team = getTeam(draft.teamId);
+  const team = getTeam(draft_.teamId);
+  if (!team) return; // the team was deleted while the form was open
   const order = teamPlayers(team.id)
     .sort(byNumber)
     .map((p) => p.id);
-  const squad = order.filter((id) => draft.sel[id]);
-  const starters = squad.filter((id) => draft.sel[id] === 'start');
+  const squad = order.filter((id) => draft_.sel[id]);
+  const starters = squad.filter((id) => draft_.sel[id] === 'start');
   const need = field + 1;
   if (starters.length !== need) return notify(t('errStarters', { need, field, n: starters.length }));
-  if (!starters.includes(draft.gkId)) return notify(t('errGk'));
+  const gkId = draft_.gkId;
+  if (!gkId || !starters.includes(gkId)) return notify(t('errGk'));
 
-  let g = draft.id && getGame(draft.id);
+  let g = draft_.id ? getGame(draft_.id) : undefined;
   if (!g) {
+    // A new game: the rest of its fields are filled in just below.
     g = {
       id: uid(),
       status: 'scheduled',
@@ -186,31 +217,32 @@ export function saveGame() {
       events: [],
       marks: [],
       alerted: {},
-    };
+    } as unknown as Game;
     db.games.push(g);
   }
-  const names = {};
+  const names: Record<string, SquadName> = {};
   for (const id of squad) {
     const p = db.players.find((x) => x.id === id);
+    if (!p) continue;
     names[id] = { name: p.name, number: p.number, fullName: p.fullName || '' };
   }
   Object.assign(g, {
-    date: draft.date,
-    time: draft.time,
-    opponent: draft.opponent.trim(),
-    formatId: draft.formatId,
+    date: draft_.date,
+    time: draft_.time,
+    opponent: draft_.opponent.trim(),
+    formatId: draft_.formatId,
     field,
     periods,
     periodMin,
     maxExtra,
     squad,
     starters,
-    gkId: draft.gkId,
+    gkId,
     names,
     teamId: team.id,
     club: team.club,
     team: team.name,
-    home: draft.home,
+    home: draft_.home,
     round: round >= 1 ? String(round) : '',
   });
   g.formation = formationOf(g);
@@ -221,17 +253,20 @@ export function saveGame() {
 }
 
 export const gameEditActions = {
-  sel: ({ id, v }) => {
-    if (v) draft.sel[id] = v;
+  sel: ({ id, v }: DOMStringMap) => {
+    if (!draft || !id) return;
+    if (v === 'start' || v === 'bench') draft.sel[id] = v;
     else delete draft.sel[id];
     if (v !== 'start' && draft.gkId === id) draft.gkId = null;
     rerender();
   },
-  'set-gk': ({ id }) => {
-    draft.gkId = id;
+  'set-gk': ({ id }: DOMStringMap) => {
+    if (!draft) return;
+    draft.gkId = id ?? null;
     rerender();
   },
-  'set-home': ({ v }) => {
+  'set-home': ({ v }: DOMStringMap) => {
+    if (!draft) return;
     draft.home = v === '1';
     rerender();
   },

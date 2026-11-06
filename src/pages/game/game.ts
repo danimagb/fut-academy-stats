@@ -1,6 +1,5 @@
-// @ts-nocheck -- moved as is from app/legacy.js; typed in step 8 (strict TypeScript).
 // The live game screen: clock, score, pitch and bench, timeline; the player sheet and the
-// Fix times sheet. Moved from app/legacy.js.
+// Fix times sheet.
 import { currentGame } from '@/data/queries';
 import { readOnlyTeam } from '@/data/access';
 import { addEvent, applyFix, endPeriodAt, startClock } from '@/data/live';
@@ -36,12 +35,14 @@ import { byNumber, pname, sortIds } from '@/domain/players';
 import { gameTeam, matchTitle, periodName } from '@/domain/titles';
 import { t } from '@/shared/i18n/i18n';
 import { main } from '@/shared/ui/main';
+import type { GameState } from '@/domain/game-state';
+import type { Game } from '@/domain/types';
 
 // ---------- Views: live game ----------
 
-export function clockButtons(g) {
+export function clockButtons(g: Game): string {
   const c = g.clock;
-  const b = (action, label, cls = '') =>
+  const b = (action: string, label: string, cls = ''): string =>
     `<button class="btn small ${cls}" data-action="${action}">${label}</button>`;
   switch (g.status) {
     case 'scheduled':
@@ -59,7 +60,7 @@ export function clockButtons(g) {
   }
 }
 
-export const gkTag = () => ` <span class="tag">${t('gk')}</span>`;
+export const gkTag = (): string => ` <span class="tag">${t('gk')}</span>`;
 
 export const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-hidden="true">
   <rect x="3" y="3" width="94" height="124" rx="1"/>
@@ -72,7 +73,7 @@ export const PITCH_LINES = `<svg class="pitch-lines" viewBox="0 0 100 130" aria-
 // Round player token: shirt circle with minutes played in a pill on its bottom edge, the name
 // below, and small badges on the circle (cards top-right, goals bottom-right).
 // They are chips too, so tap and drag work the same. where: 'on' (pitch), 'bench' or 'off' (sent off).
-export function token(g, d, id, where, attrs = '') {
+export function token(g: Game, d: GameState, id: string, where: 'on' | 'bench' | 'off', attrs = ''): string {
   const s = d.stats[id];
   const cards = s.red
     ? '<span class="tb tb-card tb-red" aria-hidden="true"></span>'
@@ -96,7 +97,7 @@ export function token(g, d, id, where, attrs = '') {
 }
 
 // On-pitch players in formation, with the formation picker and player count in the top corners.
-export function pitch(g, d, ro = false) {
+export function pitch(g: Game, d: GameState, ro = false): string {
   const pts = slotCoords(formationOf(g));
   return `<div class="pitch">${PITCH_LINES}
     ${
@@ -109,7 +110,8 @@ export function pitch(g, d, ro = false) {
     <span class="pitch-corner right" aria-label="${t('onPitch')}">${d.on.size}/${g.field + 1}</span>
     ${d.slots
       .map((id, i) => {
-        const pos = `data-slot="${i}" style="left:${pts[i].x.toFixed(1)}%;top:${typeof pts[i].y === 'number' ? `${pts[i].y.toFixed(1)}%` : pts[i].y}"`;
+        const pt = pts[i] ?? { x: 50, y: 50 };
+        const pos = `data-slot="${i}" style="left:${pt.x.toFixed(1)}%;top:${typeof pt.y === 'number' ? `${pt.y.toFixed(1)}%` : pt.y}"`;
         return id
           ? token(g, d, id, 'on', pos)
           : `<div class="chip round slot-empty" ${pos}><span class="shirt"></span></div>`;
@@ -118,12 +120,12 @@ export function pitch(g, d, ro = false) {
 }
 
 // LIVE / PAUSED / BREAK / … pill on top of the scoreboard.
-export function statusPill(g) {
+export function statusPill(g: Game): string {
   const paused = g.status === 'live' && !g.clock.running;
   return `<span class="pill ${paused ? 'paused' : g.status}">${paused ? t('paused') : t(`st_${g.status}`)}</span>`;
 }
 
-export function viewGame(id) {
+export function viewGame(id: string | undefined): void {
   const g = getGame(id);
   if (!g) return notFound();
   const d = derive(g);
@@ -217,7 +219,7 @@ export function viewGame(id) {
 `;
 }
 
-export function tick() {
+export function tick(): void {
   // Read-only games (coach): reminders and the auto-stop are the director's phone's job.
   for (const g of db.games) if (g.status === 'live' && g.clock.running && !readOnlyGame(g)) checkTime(g);
   const { view, id } = route();
@@ -225,8 +227,10 @@ export function tick() {
   const g = getGame(id);
   if (!g || g.status !== 'live' || !g.clock.running) return;
   const d = derive(g);
-  $('#clock').textContent = fmtNow(g);
-  $('#period').textContent = periodLabel(g);
+  const clock = $('#clock');
+  const period = $('#period');
+  if (clock) clock.textContent = fmtNow(g);
+  if (period) period.textContent = periodLabel(g);
   for (const p of g.squad) {
     const el = main.querySelector(`[data-pt="${p}"]`);
     if (el) el.textContent = fmtMins(d.stats[p].played);
@@ -238,10 +242,10 @@ export function tick() {
 
 // One tap on a player: quick actions on top, substitution list right below,
 // so every action is at most two taps away.
-export function openPlayerSheet(g, id) {
+export function openPlayerSheet(g: Game, id: string): void {
   const d = derive(g);
   const on = d.on.has(id);
-  const quick = (action, icon, label, show = true) =>
+  const quick = (action: string, icon: string, label: string, show = true): string =>
     show
       ? `<button class="quick" data-action="${action}" data-id="${id}"><span class="qi">${icon}</span>${label}</button>`
       : '';
@@ -281,19 +285,22 @@ export function openPlayerSheet(g, id) {
 // ---------- Fix times (forgot to end / start a half) ----------
 // fix.end is minutes into the current period; the sheet shows game-clock minutes.
 
-export let fix = null;
+/** The Fix times sheet's choices: when the period ended, and how long ago the next one started. */
+export let fix: { end: number; started: number | null } | null = null;
 
-export const periodOffsetMin = (g) => (g.clock.period - 1) * g.periodMin;
+export const periodOffsetMin = (g: Game): number => (g.clock.period - 1) * g.periodMin;
 
 // The latest moment the current period could have ended, in minutes of that period.
-export function fixLimits(g) {
+export function fixLimits(g: Game): { maxMin: number } {
   const start = periodStart(g);
   if (g.status === 'live') return { maxMin: (matchTime(g) - start) / 60000 };
   const end = [...g.marks].reverse().find((m) => m.type === 'end');
+  if (!end) return { maxMin: (matchTime(g) - start) / 60000 }; // not reached: the sheet opens after a period
   return { maxMin: (end.t - start + (Date.now() - end.wall)) / 60000 };
 }
 
-export function fixPreview(g) {
+export function fixPreview(g: Game): string {
+  if (!fix) return '';
   const p = g.clock.period;
   let text = t('previewEnds', { p: periodName(g, p), t: fmtInPeriod(g, p, fix.end * 60000) });
   if (p < g.periods)
@@ -304,22 +311,23 @@ export function fixPreview(g) {
   return text;
 }
 
-export function openFixSheet(g) {
+export function openFixSheet(g: Game): void {
   const p = g.clock.period;
   const off = periodOffsetMin(g);
   const { maxMin } = fixLimits(g);
   if (!fix) fix = { end: Math.min(g.periodMin, maxMin), started: null };
-  const pick = (action, v, label, on) =>
+  const f = fix;
+  const pick = (action: string, v: number | string, label: string, on: boolean): string =>
     `<button class="pick ${on ? 'on' : ''}" data-action="${action}" data-v="${v}">${label}</button>`;
   const ends = [0, 1, 2, 3, 5].map((x) => g.periodMin + x).filter((v) => v <= maxMin);
   const canResume = p < g.periods && g.status !== 'finished';
-  const room = maxMin - fix.end;
+  const room = maxMin - f.end;
   openSheet(`
     <h3>${t('fixTitle', { p: periodName(g, p) })}</h3>
     <p class="muted small">${t('whenEnd', { p: periodName(g, p) })}</p>
     <div class="pick-row">
-      ${ends.map((v) => pick('fix-end', v, v === g.periodMin ? t('regular', { v: off + v }) : `+${v - g.periodMin}'`, fix.end === v)).join('')}
-      ${g.status === 'live' ? pick('fix-end', maxMin, t('now'), fix.end === maxMin) : ''}
+      ${ends.map((v) => pick('fix-end', v, v === g.periodMin ? t('regular', { v: off + v }) : `+${v - g.periodMin}'`, f.end === v)).join('')}
+      ${g.status === 'live' ? pick('fix-end', maxMin, t('now'), f.end === maxMin) : ''}
     </div>
     <label class="inline">${t('other')} <input type="number" inputmode="decimal" min="${off}" step="0.5" data-fix="end" placeholder="${off + g.periodMin}"> min</label>
     ${
@@ -327,10 +335,10 @@ export function openFixSheet(g) {
         ? `
       <p class="muted small">${t('nextStarted', { p: periodName(g, p + 1) })}</p>
       <div class="pick-row">
-        ${pick('fix-started', '', t('notYet'), fix.started == null)}
+        ${pick('fix-started', '', t('notYet'), f.started == null)}
         ${[1, 2, 3, 5, 10, 15]
           .filter((v) => v <= room)
-          .map((v) => pick('fix-started', v, t('minAgo', { n: v }), fix.started === v))
+          .map((v) => pick('fix-started', v, t('minAgo', { n: v }), f.started === v))
           .join('')}
       </div>
       <label class="inline">${t('startedPre')} <input type="number" inputmode="decimal" min="0" step="0.5" data-fix="started"> ${t('startedPost')}</label>`
@@ -341,9 +349,16 @@ export function openFixSheet(g) {
     <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
 }
 
+/** Hides the toast (an Undo for an event that is no longer the last one). */
+const hideToast = (): void => {
+  const el = $('#toast');
+  if (el) el.hidden = true;
+};
+
 export const gameActions = {
   kickoff: () => {
     const g = currentGame();
+    if (!g) return;
     g.status = 'live';
     g.clock.period = 1;
     g.marks.push({ type: 'start', period: 1, t: matchTime(g), wall: Date.now() });
@@ -353,18 +368,20 @@ export const gameActions = {
   },
   resume: () => {
     const g = currentGame();
+    if (!g) return;
     startClock(g);
     save();
     rerender();
   },
   'end-period': async () => {
     const g = currentGame();
+    if (!g) return;
     const last = g.clock.period >= g.periods;
     if (g.status !== 'live') return;
     if (last && !(await askConfirm({ title: t('confirmFullTime'), ok: t('fullTimeBtn') }))) return;
     if (g.status !== 'live') return; // auto-stopped while the popup was open
     endPeriodAt(g, matchTime(g));
-    $('#toast').hidden = true;
+    hideToast();
     buzz();
     save();
     if (last) location.hash = `#/report/${g.id}`;
@@ -372,6 +389,7 @@ export const gameActions = {
   },
   'next-period': () => {
     const g = currentGame();
+    if (!g) return;
     g.clock.period++;
     g.status = 'live';
     g.autoStopped = null;
@@ -380,39 +398,48 @@ export const gameActions = {
     save();
     rerender();
   },
-  player: ({ id }) => {
+  player: ({ id }: DOMStringMap) => {
     const g = currentGame();
+    if (!g || !id) return;
     (readOnlyGame(g) || !canRecord(g) ? openPlayerInfo : openPlayerSheet)(g, id);
   },
-  'do-sub': ({ out, in: inn }) => doSub(currentGame(), out, inn),
-  goal: ({ id }) => {
+  'do-sub': ({ out, in: inn }: DOMStringMap) => {
     const g = currentGame();
+    if (g && out && inn) doSub(g, out, inn);
+  },
+  goal: ({ id }: DOMStringMap) => {
+    const g = currentGame();
+    if (!g || !id) return;
     const eid = addEvent(g, { type: 'goal', playerId: id });
     if (!eid) return;
     rerender();
     toast(t('evGoal', { p: g.names[id].name }), undoBtn(eid));
   },
-  yellow: ({ id }) => {
+  yellow: ({ id }: DOMStringMap) => {
     const g = currentGame();
+    if (!g || !id) return;
     const eid = addEvent(g, { type: 'yellow', playerId: id });
     if (!eid) return;
     rerender();
     toast(t('evYellow', { p: g.names[id].name }), undoBtn(eid));
   },
-  red: ({ id }) => {
+  red: ({ id }: DOMStringMap) => {
     const g = currentGame();
+    if (!g || !id) return;
     const wasGk = derive(g).gk === id;
     const eid = addEvent(g, { type: 'red', playerId: id });
     if (!eid) return;
     rerender();
     toast(wasGk ? t('gkSentOff') : t('evRed', { p: g.names[id].name }), undoBtn(eid));
   },
-  'make-gk': ({ id }) => {
+  'make-gk': ({ id }: DOMStringMap) => {
     closeSheet();
-    movePlayer(currentGame(), id, 0);
+    const g = currentGame();
+    if (g && id) movePlayer(g, id, 0);
   },
   formation: () => {
     const g = currentGame();
+    if (!g) return;
     const cur = formationOf(g);
     openSheet(`
       <h3>${t('formation')}</h3>
@@ -425,8 +452,9 @@ export const gameActions = {
         .join('')}
       <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
   },
-  'set-formation': ({ v }) => {
+  'set-formation': ({ v }: DOMStringMap) => {
     const g = currentGame();
+    if (!g || !v) return;
     g.formation = v;
     db.formations = { ...db.formations, [g.field]: v };
     save();
@@ -435,6 +463,7 @@ export const gameActions = {
   },
   'opp-goal': () => {
     const g = currentGame();
+    if (!g) return;
     const eid = addEvent(g, { type: 'oppgoal' });
     if (!eid) return;
     rerender();
@@ -443,37 +472,45 @@ export const gameActions = {
   'fix-open': () => {
     const g = currentGame();
     if (!g || g.status === 'scheduled') return;
-    $('#toast').hidden = true;
+    hideToast();
     fix = null;
     openFixSheet(g);
   },
-  'fix-end': ({ v }) => {
+  'fix-end': ({ v }: DOMStringMap) => {
+    const g = currentGame();
+    if (!g || !fix) return;
     fix.end = Number(v);
-    openFixSheet(currentGame());
+    openFixSheet(g);
   },
-  'fix-started': ({ v }) => {
+  'fix-started': ({ v }: DOMStringMap) => {
+    const g = currentGame();
+    if (!g || !fix) return;
     fix.started = v === '' ? null : Number(v);
-    openFixSheet(currentGame());
+    openFixSheet(g);
   },
   'fix-apply': () => {
     const g = currentGame();
+    const f = fix;
+    if (!g || !f) return;
     const { maxMin } = fixLimits(g);
     const p = g.clock.period;
-    if (!(fix.end >= 0) || fix.end > maxMin + 0.01) {
+    if (!(f.end >= 0) || f.end > maxMin + 0.01) {
       return notify(t('errFixEnd', { a: fmtInPeriod(g, p, 0), b: fmtInPeriod(g, p, maxMin * 60000) }));
     }
-    if (fix.started != null && !(fix.started >= 0 && fix.started <= maxMin - fix.end + 0.01)) {
+    if (f.started != null && !(f.started >= 0 && f.started <= maxMin - f.end + 0.01)) {
       return notify(t('errFixStart', { p: periodName(g, p) }));
     }
-    applyFix(g, Math.min(fix.end, maxMin), fix.started);
+    applyFix(g, Math.min(f.end, maxMin), f.started);
     fix = null;
     buzz();
     rerender();
     toast(t('timesFixed'));
   },
-  'edit-goal': ({ id }) => {
+  'edit-goal': ({ id }: DOMStringMap) => {
     const g = currentGame();
+    if (!g) return;
     const e = g.events.find((x) => x.id === id);
+    if (!e || e.type !== 'goal') return;
     const d = derive(g);
     const onAt = g.squad.filter((p) => d.stats[p].intervals.some(([a, b]) => a <= e.t && e.t <= b));
     const ids = sortIds(g, onAt.length ? onAt : g.squad);
@@ -492,24 +529,28 @@ export const gameActions = {
       <button class="btn ghost danger block" data-action="delete-goal" data-id="${e.id}">${t('removeGoal')}</button>
       <button class="btn ghost block" data-action="close-sheet">${t('cancel')}</button>`);
   },
-  'set-scorer': ({ id, p }) => {
+  'set-scorer': ({ id, p }: DOMStringMap) => {
     const g = currentGame();
-    g.events.find((x) => x.id === id).playerId = p;
+    if (!g) return;
+    const e = g.events.find((x) => x.id === id);
+    if (!e || e.type !== 'goal' || !p) return;
+    e.playerId = p;
     save();
     buzz();
     rerender();
     toast(t('evGoal', { p: g.names[p].name }));
   },
-  'delete-goal': async ({ id }) => {
+  'delete-goal': async ({ id }: DOMStringMap) => {
     const g = currentGame();
+    if (!g) return;
     if (!(await askConfirm({ title: t('confirmRemoveGoal'), ok: t('deleteBtn'), danger: true }))) return;
     g.events = g.events.filter((x) => x.id !== id);
     save();
     rerender();
   },
-  'undo-toast': ({ id }) => {
+  'undo-toast': ({ id }: DOMStringMap) => {
     const g = currentGame();
-    $('#toast').hidden = true;
+    hideToast();
     if (!g || g.events[g.events.length - 1]?.id !== id) return;
     g.events.pop();
     save();
@@ -517,7 +558,7 @@ export const gameActions = {
   },
   undo: () => {
     const g = currentGame();
-    if (!g.events.length) return;
+    if (!g || !g.events.length) return;
     g.events.pop();
     buzz();
     save();
@@ -525,6 +566,7 @@ export const gameActions = {
   },
   'edit-info': () => {
     const g = currentGame();
+    if (!g) return;
     const teamId = getTeam(g.teamId) ? g.teamId : defaultTeamId();
     openSheet(`
       <h3>${t('gameInfo')}</h3>
@@ -576,7 +618,7 @@ export const gamePage = { views: { game: viewGame }, actions: gameActions };
 
 // Tap on a player in a read-only game: who it is and how they're doing, no actions.
 // Also shown for a finished game, where nothing new can be recorded.
-export function openPlayerInfo(g, id) {
+export function openPlayerInfo(g: Game, id: string): void {
   const d = derive(g);
   const s = d.stats[id];
   const bits = [s.goals && `⚽ ${s.goals}`, s.yellow && `🟨 ${s.yellow}`, s.red && `🟥 ${s.red}`]
