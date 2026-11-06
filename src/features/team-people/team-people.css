@@ -58,6 +58,7 @@
 select.mini {
   width: auto;
   min-height: 36px;
+  height: 36px;
   padding: 0 8px;
   flex: none;
 }
@@ -82,12 +83,14 @@ select.mini {
 }
 .admin-team .add-member select.grow {
   min-height: 36px;
+  height: 36px;
   padding: 0 8px;
 }
 .admin-team .members select {
   width: auto;
   flex: none;
   min-height: 36px;
+  height: 36px;
   padding: 0 8px;
 }
 .link-btn {
