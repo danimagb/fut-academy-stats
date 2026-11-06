@@ -1,5 +1,6 @@
 // A small in-memory stand-in for the parts of the Supabase client that sync uses:
-// from(table).upsert / update().in / select().in().gt().order().range() / select().eq().
+// from(table).upsert / update().in / select().in().gt().order().range() / select().eq(),
+// and rpc('my_teams') (the rows of the `my_teams` table: { team_id, role }).
 // Rows get `updated_at` from a fake server clock on every write.
 
 type Row = Record<string, unknown> & { id?: string };
@@ -10,7 +11,7 @@ export type FakeSupabase = ReturnType<typeof fakeSupabase>;
 export function fakeSupabase(tables: Record<string, Row[]> = {}) {
   let clock = Date.parse('2026-11-01T10:00:00Z');
   const now = () => new Date((clock += 1000)).toISOString();
-  const db: Record<string, Row[]> = { teams: [], players: [], games: [], team_members: [], ...tables };
+  const db: Record<string, Row[]> = { teams: [], players: [], games: [], clubs: [], my_teams: [], ...tables };
   /** Called before each write; return an error to refuse it (e.g. RLS: code 42501). */
   let refuse: (table: string, rows: Row[]) => Result['error'] = () => null;
   /** Called while an upsert is "on its way" (to simulate edits made meanwhile). */
@@ -72,8 +73,15 @@ export function fakeSupabase(tables: Record<string, Row[]> = {}) {
     };
   }
 
+  function rpc(fn: string) {
+    calls.push({ table: fn, op: 'rpc' });
+    if (fn !== 'my_teams')
+      return Promise.resolve({ data: null, error: { message: `no ${fn}` }, status: 404 });
+    return Promise.resolve({ data: structuredClone(db.my_teams ?? []), error: null, status: 200 });
+  }
+
   return {
-    client: { from },
+    client: { from, rpc },
     db,
     calls,
     serverNow: now,

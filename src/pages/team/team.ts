@@ -15,7 +15,8 @@ import { loadPeople, peopleHtml, remote, showPeople, staffSummary } from '@/feat
 import { readOnlyTeam } from '@/data/access';
 import { readOnlyPill } from '@/features/team-access/read-only';
 import { getTeam, teamPlayers } from '@/data/queries';
-import { canSync, canUpload } from '@/data/session';
+import { canSync, canUpload, cloud } from '@/data/session';
+import { managedClubs } from '@/data/auth';
 import { plural } from '@/shared/i18n/i18n';
 import { bar } from '@/shared/ui/bar';
 import { openSheet } from '@/shared/ui/sheet';
@@ -114,7 +115,7 @@ export function viewTeam(teamId: string | undefined): void {
             'staff',
             t('people'),
             staffSummary(id),
-            roleOf(id) === 'director' && canSync() ? 'add-coach' : '',
+            roleOf(id) === 'club_manager' && canSync() ? 'add-coach' : '',
             `<div id="people" class="people-section">${peopleHtml(id)}</div>`,
           )
         : ''
@@ -231,12 +232,13 @@ export const teamActions = {
     if (route().view === 'team' && route().id === teamId) location.hash = '#/teams';
   },
   'new-team': () => {
-    const tm: Team = { id: uid(), club: db.teams[0]?.club || '', name: '' };
+    const club = canUpload() ? managedClubs(cloud.account)[0] : undefined;
+    const tm: Team = { id: uid(), club: club?.name ?? (db.teams[0]?.club || ''), name: '' };
     db.teams.push(tm);
     save();
-    if (canUpload()) {
+    if (club) {
       newCloudTeam = tm.id;
-      uploadTeams([tm.id]);
+      uploadTeams([tm.id], club.id);
     }
     location.hash = `#/team/${tm.id}`;
   },

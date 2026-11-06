@@ -1,5 +1,5 @@
-// People of a cloud team (directors and coaches, invites by email) and the shared helpers for
-// the online-only screens (people, admin).
+// Staff of a cloud team (team managers and team coaches, chosen by the club's managers) and the
+// shared helpers for the online-only screens (people, admin).
 import { canSync, cloud, sb } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
 import { route } from '@/shared/lib/route';
@@ -7,10 +7,11 @@ import { SyncError, isOffline, roleOf } from '@/data/sync';
 import { esc } from '@/shared/lib/html';
 import { t } from '@/shared/i18n/i18n';
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
-import type { Role } from '@/domain/types';
 
+/** A role in team_members: `manager` (UI: Diretor) or `coach` (UI: Treinador). */
+export type TeamRole = 'manager' | 'coach';
 /** A team member, with the email from their account. */
-export type Member = { team_id: string; user_id: string; role: Role; email: string };
+export type Member = { team_id: string; user_id: string; role: TeamRole; email: string };
 type Msg = { text: string; ok: boolean };
 export type PeopleState = {
   teamId: string;
@@ -46,7 +47,7 @@ export async function q<T = unknown>(query: PromiseLike<QueryResult<T>>): Promis
 export function accessError(e: unknown): string {
   if (isOffline(e)) return t('needsInternet');
   const err = e as { code?: string; message?: string };
-  if (err.code === '23514' || /at least one director/i.test(err.message ?? '')) return t('lastDirector');
+  if (err.code === '23514' && /club/i.test(err.message ?? '')) return t('errNotInClub');
   if (err.code === '42501') return t('notAllowed');
   return t('actionFailed', { msg: esc(err.message ?? String(e)) });
 }
@@ -74,7 +75,7 @@ export async function fetchMembers(teamIds: string[]): Promise<Member[]> {
   return rows
     .map((r) => ({ ...r, email: email.get(r.user_id) || '?' }))
     .sort(
-      (a, b) => (a.role === b.role ? 0 : a.role === 'director' ? -1 : 1) || a.email.localeCompare(b.email),
+      (a, b) => (a.role === b.role ? 0 : a.role === 'manager' ? -1 : 1) || a.email.localeCompare(b.email),
     );
 }
 
@@ -109,7 +110,7 @@ export function peopleHtml(teamId: string): string {
       <button class="btn small ghost" data-action="people-reload">${t('tryAgain')}</button>`;
   }
   const me = myId();
-  const director = roleOf(teamId) === 'director';
+  const manages = roleOf(teamId) === 'club_manager';
   const msg = st.msg ? `<p class="hint ${st.msg.ok ? 'ok' : 'warn'}" role="status">${st.msg.text}</p>` : '';
   return `
     <ul class="list people">${st.members
@@ -117,9 +118,9 @@ export function peopleHtml(teamId: string): string {
         (m) => `
       <li class="item">
         <span class="grow"><span class="email">${esc(m.email)}</span>${m.user_id === me ? ` <span class="muted small">(${t('you')})</span>` : ''}</span>
-        <span class="badge ${m.role === 'director' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
+        <span class="badge ${m.role === 'manager' ? 'cloud' : ''}">${roleLabel(m.role)}</span>
         ${
-          director && m.role === 'coach' && m.user_id !== me
+          manages && m.user_id !== me
             ? `<button class="btn small ghost danger" data-action="remove-coach" data-id="${esc(m.user_id)}" aria-label="${t('removeFromTeam')}">✕</button>`
             : ''
         }
@@ -149,15 +150,25 @@ export function setPeopleMsg(text: string, ok: boolean): void {
   showPeople();
 }
 
-export async function addCoach(teamId: string, email: string): Promise<void> {
+// A club manager gives someone of the club a role in the team, by email. The database refuses
+// people who aren't in the team's club (23514); club managers only see their club's accounts,
+// so an unknown email is someone without access or outside the club.
+export async function addCoach(teamId: string, email: string, role: TeamRole = 'coach'): Promise<void> {
+  const e = `<b>${esc(email)}</b>`;
   try {
-    const r = await q<string>(client().rpc('add_team_coach', { _team_id: teamId, _email: email }));
-    const e = `<b>${esc(email)}</b>`;
-    if (r === 'added') setPeopleMsg(t('coachAdded', { email: e }), true);
-    else if (r === 'already_member') setPeopleMsg(t('coachAlready', { email: e }), true);
-    else setPeopleMsg(t('coachNoAccount'), false);
-  } catch (e) {
-    return setPeopleMsg(accessError(e), false);
+    const found = await q<{ user_id: string }[]>(
+      client().from('accounts').select('user_id').eq('email', email),
+    );
+    const userId = found[0]?.user_id;
+    if (!userId) return setPeopleMsg(t('coachNoAccount'), false);
+    if (remote.people?.members.some((m) => m.user_id === userId))
+      setPeopleMsg(t('coachAlready', { email: e }), true);
+    else {
+      await q(client().from('team_members').insert({ team_id: teamId, user_id: userId, role }));
+      setPeopleMsg(t('coachAdded', { email: e }), true);
+    }
+  } catch (err) {
+    return setPeopleMsg(accessError(err), false);
   }
   void loadPeople(teamId);
 }

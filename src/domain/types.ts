@@ -4,8 +4,11 @@
 
 export type Lang = 'en' | 'pt';
 
-/** A team member's role in a cloud team. */
-export type Role = 'director' | 'coach';
+/**
+ * This user's role in a cloud team: manages the team's club (UI: Coordenador; everything),
+ * team manager (UI: Diretor; players and games) or team coach (UI: Treinador; read-only).
+ */
+export type Role = 'club_manager' | 'team_manager' | 'team_coach';
 
 /** Fields every synced record has (set by `save()`'s change tracking, never by hand). */
 export type Tracked = {
@@ -20,6 +23,8 @@ export type Team = Tracked & {
   club: string;
   /** Age group, e.g. "Sub-7B" (shown as "Club - Age group"). */
   name: string;
+  /** The club of a cloud team (`club` is then its name, set by the server). Local teams: none. */
+  clubId?: string;
 };
 
 export type Player = Tracked & {
@@ -130,6 +135,9 @@ export type Tombstone = {
   moved?: boolean;
 };
 
+/** A club as the phone keeps it: its name and short name (e.g. "PFC", or ''). */
+export type SyncClub = { name: string; shortName: string };
+
 /** Cloud sync bookkeeping, kept out of the records so it doesn't count as a change. */
 export type SyncState = {
   userId: string | null;
@@ -138,6 +146,8 @@ export type SyncState = {
   lastSyncAt: number | null;
   /** Cloud teams, with this user's role in each. */
   teams: Record<string, Role>;
+  /** The clubs of this user's cloud teams and clubs (downloaded in full on every pull). */
+  clubs: Record<string, SyncClub>;
   /** Teams being uploaded (not confirmed by the server yet). */
   uploads: string[];
 };
