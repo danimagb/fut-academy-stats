@@ -1,3 +1,5 @@
+import { undoBtn, checkTime, doSub, movePlayer, describe } from '@/features/live-game/live-game';
+import { addEvent, applyFix, endPeriodAt, fmtNow, formationOf, matchTime, startClock } from '@/data/live';
 import { teamOpen, openAddPlayer, teamPage } from '@/pages/team/team';
 import { profilePage } from '@/pages/profile/profile';
 import { initTheme } from '@/features/theme-switch/theme';
@@ -46,21 +48,8 @@ import { checkIncoming } from '@/domain/validate';
 import { fmtMins, isoDate, mmss, pad, pct } from '@/shared/lib/format';
 import { esc } from '@/shared/lib/html';
 import { FORMATS, formationsFor } from '@/domain/formats';
-import {
-  applyFix as applyFixAt,
-  endPeriod,
-  fmtAt,
-  fmtInPeriod,
-  fmtNowAt,
-  matchTimeAt,
-  periodLabel,
-  periodStart,
-  startClock as startClockAt,
-  timeCheck,
-  timeOf,
-} from '@/domain/clock';
-import { planMove } from '@/domain/game-state';
-import { formationOf as formationOfGame, slotCoords, startLineup } from '@/domain/pitch';
+import { fmtAt, fmtInPeriod, periodLabel, periodStart, timeOf } from '@/domain/clock';
+import { slotCoords, startLineup } from '@/domain/pitch';
 import { byNumber, pname, sortIds } from '@/domain/players';
 import {
   gameLength,
@@ -96,137 +85,10 @@ const main = $('#main');
 const formatLine = (g) =>
   `${esc(fmtDate(g))} · ${esc(g.formatId === 'Custom' ? t('custom') : g.formatId)} · ${t('gkPlus', { n: g.field })}`;
 
-const undoBtn = (eventId) => `<button data-action="undo-toast" data-id="${eventId}">${t('undo')}</button>`;
-
 // ---------- Clock ----------
 // Match time (e.t, marks, clock) counts only time actually played, so minutes
 // played add up. The clock shown to the coach restarts every period at its
 // regular start (2nd half at 20:00), and extra time shows as "20:00 (+02:00)".
-
-const matchTime = (g) => matchTimeAt(g, Date.now());
-const startClock = (g) => startClockAt(g, Date.now());
-const fmtNow = (g) => fmtNowAt(g, Date.now());
-const endPeriodAt = (g, endT) => endPeriod(g, endT, Date.now());
-
-// Reminders once regular time is up, and an automatic stop if the coach forgets.
-function checkTime(g) {
-  const check = timeCheck(g, Date.now());
-  if (check.kind === 'none') return;
-  const p = check.period;
-  const onThisGame = route().view === 'game' && route().id === g.id;
-  const last = p >= g.periods;
-
-  if (check.kind === 'auto-stop') {
-    endPeriodAt(g, check.endT);
-    g.autoStopped = p;
-    save();
-    navigator.vibrate?.([500, 200, 500]);
-    if (onThisGame) {
-      render();
-      toast(
-        t('autoStoppedToast', { p: periodName(g, p), m: g.maxExtra ?? 10 }),
-        `<button data-action="fix-open">${t('fixTimes')}</button>`,
-      );
-    }
-    return;
-  }
-  g.alerted[p] = check.n;
-  save();
-  navigator.vibrate?.([300, 150, 300]);
-  if (onThisGame) {
-    const msg =
-      check.n === 0
-        ? t('timeUp', { p: periodName(g, p) })
-        : t('extraMin', { p: periodName(g, p), m: check.extraMin });
-    toast(
-      msg,
-      `<button data-action="end-period">${last ? t('fullTime') : t('endPeriod', { p: periodName(g, p) })}</button>`,
-    );
-  }
-}
-
-// "I forgot to press the button" (see applyFix in domain/clock.ts).
-function applyFix(g, endMin, startedMinAgo) {
-  applyFixAt(g, endMin, startedMinAgo, Date.now());
-  save();
-}
-
-// ---------- Pitch positions ----------
-// A lineup is one id (or null) per slot: slot 0 is the goal, slots 1..field follow the
-// formation from defence to attack, left to right. Changing formation keeps the slots.
-
-const formationOf = (g) => formationOfGame(g, db.formations);
-
-// ---------- Game state (derived from events) ----------
-
-function addEvent(g, e) {
-  const id = uid();
-  g.events.push({ id, t: matchTime(g), wall: Date.now(), ...e });
-  save();
-  buzz();
-  return id;
-}
-
-function doSub(g, out, inn) {
-  const id = addEvent(g, { type: 'sub', playerId: out, inId: inn });
-  render();
-  toast({ html: subLine(esc(pname(g, inn)), esc(pname(g, out))) }, undoBtn(id));
-}
-
-// Move a pitch player to a slot (swapping with whoever is there). Moving into or out of
-// goal changes the goalkeeper. Before kick-off this just edits the starting lineup.
-function movePlayer(g, id, slot) {
-  const plan = planMove(g, derive(g), id, slot);
-  if (plan.kind === 'none') return;
-  if (plan.kind === 'lineup') {
-    g.lineup = plan.lineup;
-    g.gkId = plan.gkId;
-    save();
-    buzz();
-    render();
-    return;
-  }
-  const eid =
-    plan.kind === 'gk'
-      ? addEvent(g, { type: 'gk', playerId: plan.playerId })
-      : addEvent(g, { type: 'pos', playerId: id, slot });
-  render();
-  toast(
-    plan.kind === 'gk'
-      ? t('inGoalToast', { p: g.names[plan.playerId].name })
-      : t('posToast', { p: g.names[id].name }),
-    undoBtn(eid),
-  );
-}
-
-// Substitution line: green ▲ for the player coming on, red ▼ for the one going off.
-// Names must already be escaped.
-const subLine = (inName, outName) =>
-  `<span class="nw"><span class="sub-in" aria-hidden="true">▲</span>${inName}</span> <span class="nw"><span class="sub-out" aria-hidden="true">▼</span>${outName}</span>`;
-
-function describe(g, e) {
-  switch (e.type) {
-    case 'sub':
-      return subLine(esc(pname(g, e.inId)), esc(pname(g, e.playerId)));
-    case 'goal':
-      return t('evGoal', { p: esc(pname(g, e.playerId)) });
-    case 'oppgoal':
-      return t('evOppGoal');
-    case 'yellow':
-      return t('evYellow', { p: esc(pname(g, e.playerId)) });
-    case 'red':
-      return t('evRed', { p: esc(pname(g, e.playerId)) });
-    case 'gk':
-      return t('evGk', { p: esc(pname(g, e.playerId)) });
-    case 'pos':
-      return t('evPos', { p: esc(pname(g, e.playerId)) });
-    case 'start':
-      return t('evStart', { p: periodName(g, e.period) });
-    case 'end':
-      return t('evEnd', { p: periodName(g, e.period) });
-  }
-  return '';
-}
 
 // ---------- Routing ----------
 
