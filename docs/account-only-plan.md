@@ -83,10 +83,9 @@ cases. New tests: the sign-in gate, the first start with local teams, sign-out b
 
 ## Decisions (with the maintainer)
 
-1. **Local teams**: nobody else uses the app, so there is no migration for other people. Step 3
-   is only a safeguard: a local team still on a phone is offered once for upload into the
-   coordinator's club.
-2. **Backup**: Import goes. Export: _to decide_ (recommended: keep it as "Export a copy of the
-   data", because the Supabase free plan has no backups).
+1. **Local teams**: nobody else uses the app and the maintainer's teams are all synced: no
+   migration step (step 3 is dropped).
+2. **Backup**: Export and Import both go. Copies of the data are made with SQL in the Supabase
+   dashboard.
 3. **The admin** creates teams only in clubs they coordinate (as now).
 4. **No demo**: without a session the app shows the sign-in / activate account screen.
