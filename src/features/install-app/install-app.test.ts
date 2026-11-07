@@ -3,7 +3,14 @@ import { HINT_AGAIN_DAYS, installHint } from './install-app';
 
 const NOW = Date.UTC(2026, 10, 7, 12);
 const DAY = 24 * 60 * 60 * 1000;
-const base = { standalone: false, canPrompt: false, menuOnly: false, closedAt: null, now: NOW };
+const base = {
+  standalone: false,
+  installed: false,
+  canPrompt: false,
+  menuOnly: false,
+  closedAt: null,
+  now: NOW,
+};
 const closedDaysAgo = (days: number) => installHint({ ...base, menuOnly: true, closedAt: NOW - days * DAY });
 
 describe('installHint', () => {
@@ -21,6 +28,10 @@ describe('installHint', () => {
 
   it('shows nothing once the app is opened from the home screen', () => {
     expect(installHint({ ...base, standalone: true, canPrompt: true, menuOnly: true })).toBeNull();
+  });
+
+  it('shows nothing once the app has been opened from the home screen on this kind of device', () => {
+    expect(installHint({ ...base, installed: true, canPrompt: true, menuOnly: true })).toBeNull();
   });
 
   it(`stays hidden for ${HINT_AGAIN_DAYS} days after it is closed, then comes back`, () => {

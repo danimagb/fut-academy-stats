@@ -131,7 +131,9 @@ The phone needs the app served over **HTTPS** to install it and use it offline. 
    button) **How to install** shows the Share-menu steps (the
    [pwa-install](https://github.com/khmyznikov/pwa-install) component, in the phone's language
    since it names the phone's menus; `vite.config.ts` adds European Portuguese for phones set to
-   pt-PT). Closed, it comes back after 7 days.
+   pt-PT). Closed, it comes back after 7 days. Once the app has been opened from the home screen
+   the hint is gone: the app notes it on the phone and in the account (`installedOn` in the user's
+   metadata), because on iPhones Safari can't see the installed app's storage.
 
 Installed apps update on their own: each build gives the service worker a new list of files.
 

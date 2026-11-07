@@ -59,7 +59,13 @@ export async function signInAs(
     token_type: 'bearer',
     expires_in: 3600,
     expires_at: now + 3600,
-    user: { id: user.id, email: user.email, aud: 'authenticated', role: 'authenticated' },
+    user: {
+      id: user.id,
+      email: user.email,
+      aud: 'authenticated',
+      role: 'authenticated',
+      user_metadata: {} as Row,
+    },
   };
   await page.addInitScript((s) => localStorage.setItem('fut-academy-stats.auth', s), JSON.stringify(session));
   const rows: Tables = {
@@ -83,7 +89,13 @@ export async function signInAs(
   await page.route('https://*.supabase.co/**', (route) => {
     const req = route.request();
     const url = new URL(req.url());
-    if (url.pathname.startsWith('/auth/v1/user')) return route.fulfill({ json: session.user });
+    if (url.pathname.startsWith('/auth/v1/user')) {
+      // updateUser({ data }) merges into the user's metadata, as Supabase does.
+      const data = (body(req) as { data?: Row } | null)?.data;
+      if (req.method() === 'PUT' && data)
+        Object.assign(session.user, { user_metadata: { ...session.user.user_metadata, ...data } });
+      return route.fulfill({ json: session.user });
+    }
     if (url.pathname.startsWith('/auth/v1/token')) return route.fulfill({ json: session });
     if (url.pathname === '/functions/v1/admin') {
       const [status, json] = adminFunction((body(req) ?? {}) as Row, rows);
