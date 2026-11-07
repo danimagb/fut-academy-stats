@@ -8,7 +8,7 @@
 // - sanity: the values make sense (known event types, times within the game, players in the
 //   squad, sensible text lengths). Applied on top of shape to data from outside (backups,
 //   cloud). The limits are generous so real data is never rejected.
-import type { Game, GameEventType, GameStatus, Player, RecordKind, Team } from './types';
+import type { Game, GameEventType, GameStatus, InstallPlatform, Player, RecordKind, Team } from './types';
 
 export type Check = { ok: boolean; problems: string[] };
 
@@ -147,4 +147,12 @@ export function checkIncoming(kind: RecordKind, r: unknown): Check {
   if (kind === 'teams') return teamSanity(r as Team);
   if (kind === 'players') return playerSanity(r as Player);
   return gameSanity(r as Game);
+}
+
+const INSTALL_PLATFORMS: readonly InstallPlatform[] = ['ios', 'android', 'desktop'];
+
+/** The platforms a list says the app is installed on (account metadata or the phone), ignoring anything else. */
+export function installPlatforms(x: unknown): InstallPlatform[] {
+  if (!Array.isArray(x)) return [];
+  return INSTALL_PLATFORMS.filter((p) => x.includes(p));
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { at, ev, makeGame, makePlayer, makeTeam } from '@/test/factories';
-import { checkIncoming, checkShape, maxMatchTime } from './validate';
+import { checkIncoming, checkShape, installPlatforms, maxMatchTime } from './validate';
 import type { Game } from './types';
 
 const players = [1, 2, 3, 4, 5].map((n) => makePlayer({ id: `p${n}`, number: String(n) }));
@@ -92,5 +92,13 @@ describe('broken or implausible data is rejected', () => {
     const g = game();
     g.events = Array.from({ length: 5001 }, (_, i) => ({ ...ev({ type: 'oppgoal', t: 0 }), id: `e${i}` }));
     expect(problems(g)).toContain('too many events');
+  });
+});
+
+describe('installPlatforms', () => {
+  it('keeps the known platforms of a list and ignores anything else', () => {
+    expect(installPlatforms(['ios', 'tv', 3, 'android'])).toEqual(['ios', 'android']);
+    expect(installPlatforms('ios')).toEqual([]);
+    expect(installPlatforms(undefined)).toEqual([]);
   });
 });

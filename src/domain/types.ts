@@ -174,3 +174,6 @@ export type Db = {
   /** Team preselected for a new game (this phone only). */
   lastTeamId?: string;
 };
+
+/** Where the app was installed from (what the install hint is about). */
+export type InstallPlatform = 'ios' | 'android' | 'desktop';

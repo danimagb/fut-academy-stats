@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures';
+import { COORDINATOR, expect, test } from './fixtures';
 import { watchErrors } from './helpers';
 
 const IPHONE_UA =
@@ -61,6 +61,36 @@ test.describe('on an iPhone', () => {
     );
     await page.reload();
     await expect(hint).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('opened from the home screen, it says so in the account', async ({ page }) => {
+    const saved: unknown[] = [];
+    await page.route('https://*.supabase.co/auth/v1/user*', (route) => {
+      const req = route.request();
+      if (req.method() === 'PUT') saved.push(req.postDataJSON());
+      return route.fallback();
+    });
+    await page.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }));
+    await page.goto('#/games');
+    await expect(page.getByRole('button', { name: '+ New game' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Install the app' })).toHaveCount(0);
+    await expect.poll(() => saved).toEqual([expect.objectContaining({ data: { installedOn: ['ios'] } })]);
+  });
+
+  test('in Safari, no hint once the account says it was opened from the home screen', async ({ page }) => {
+    const errors = watchErrors(page);
+    // The installed app has its own storage: Safari only learns it from the account.
+    const user = { ...COORDINATOR, aud: 'authenticated', role: 'authenticated' };
+    await page.route('https://*.supabase.co/auth/v1/user*', (route) =>
+      route.fulfill({ json: { ...user, user_metadata: { installedOn: ['ios'] } } }),
+    );
+    await page.goto('#/games');
+    await expect(page.getByRole('button', { name: '+ New game' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Install the app' })).toHaveCount(0);
+    await page.reload(); // remembered on the phone
+    await expect(page.getByRole('button', { name: '+ New game' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Install the app' })).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 

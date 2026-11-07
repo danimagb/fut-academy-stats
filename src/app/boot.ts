@@ -11,7 +11,7 @@ import { teamOpen, openAddPlayer, teamPage } from '@/pages/team/team';
 import { profilePage } from '@/pages/profile/profile';
 import { initTheme } from '@/features/theme-switch/theme';
 import { initLanguage } from '@/features/language-switch/language';
-import { initInstallApp, installAppActions } from '@/features/install-app/install-app';
+import { checkInstallState, initInstallApp, installAppActions } from '@/features/install-app/install-app';
 import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { setClubRole, setTeamRole } from '@/pages/admin/admin';
@@ -170,6 +170,7 @@ export function boot(): void {
     onChange: () => renderSoon(),
     onRejected: (n) => toast(plural('skippedN', n)),
     afterSync: () => {
+      checkInstallState(); // opened from the home screen: say so in the account (Safari reads it)
       // Club logos whose version changed (downloaded once, then kept on the phone).
       void refreshLogos().then((changed) => {
         if (changed) renderSoon();

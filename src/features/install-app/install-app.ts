@@ -2,7 +2,10 @@
 // browser lets a page offer installing (Chrome, Edge, Samsung Internet: `beforeinstallprompt`),
 // its button opens the browser's own install dialog. iPhones, iPads and Firefox on Android have
 // no such API: there its button opens step-by-step instructions (the pwa-install component,
-// loaded only then, in the phone's language). Closing the hint hides it for HINT_AGAIN_DAYS.
+// loaded only then, in the phone's language). Closing the hint hides it for HINT_AGAIN_DAYS. Once
+// the app has been opened from the home screen it's gone for good (data/installed).
+import { checkInstalled, knownInstalled } from '@/data/installed';
+import type { InstallPlatform } from '@/domain/types';
 import { I18N, t, type Lang } from '@/shared/i18n/i18n';
 import { rerenderSoon } from '@/shared/lib/rerender';
 
@@ -21,13 +24,15 @@ export type InstallHint = 'prompt' | 'howto' | null;
 /** Which hint to show: the install button, the how-to-install button, or none. */
 export function installHint(o: {
   standalone: boolean;
+  /** Opened from the home screen before, on this kind of device (this phone or the account says so). */
+  installed: boolean;
   canPrompt: boolean;
   /** A browser that can add the app to the home screen only from its own menus (iPhone, Firefox). */
   menuOnly: boolean;
   closedAt: number | null;
   now: number;
 }): InstallHint {
-  if (o.standalone) return null; // already opened as an installed app
+  if (o.standalone || o.installed) return null; // opened as an installed app (now or before)
   if (o.closedAt != null && o.now - o.closedAt < HINT_AGAIN_DAYS * DAY_MS) return null;
   if (o.canPrompt) return 'prompt';
   return o.menuOnly ? 'howto' : null;
@@ -36,17 +41,33 @@ export function installHint(o: {
 let promptEvent: InstallPromptEvent | null = null;
 let installed = false;
 
-const isStandalone = (): boolean =>
-  installed ||
+/** Opened from the home screen (as an installed app). */
+const openedInstalled = (): boolean =>
   window.matchMedia('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
 // iPadOS says it's a Mac: tell them apart by the touch screen.
-const isMenuOnly = (): boolean => {
-  const ua = navigator.userAgent;
-  const ios = /iPhone|iPad|iPod/.test(ua) || (ua.includes('Macintosh') && navigator.maxTouchPoints > 1);
-  return ios || (ua.includes('Android') && ua.includes('Firefox/'));
-};
+const isIos = (): boolean =>
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
+
+const platform = (): InstallPlatform =>
+  isIos() ? 'ios' : navigator.userAgent.includes('Android') ? 'android' : 'desktop';
+
+const isMenuOnly = (): boolean =>
+  isIos() || (navigator.userAgent.includes('Android') && navigator.userAgent.includes('Firefox/'));
+
+/**
+ * Notes an installed app (opened from the home screen) on the phone and in the account; in the
+ * browser, checks whether it was installed since. app/ calls it at startup and after each sync.
+ */
+export function checkInstallState(): void {
+  checkInstalled(platform(), openedInstalled() || installed)
+    .then((changed) => {
+      if (changed) rerenderSoon();
+    })
+    .catch(() => {}); // offline: next time
+}
 
 function closedAt(): number | null {
   const v = Number(localStorage.getItem(CLOSED_KEY));
@@ -67,8 +88,10 @@ export function initInstallApp(): void {
   window.addEventListener('appinstalled', () => {
     installed = true;
     promptEvent = null;
+    checkInstallState();
     rerenderSoon();
   });
+  checkInstallState();
 }
 
 const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
@@ -76,7 +99,8 @@ const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12
 /** The hint, or '' when there's nothing to suggest. */
 export function installHintHtml(): string {
   const kind = installHint({
-    standalone: isStandalone(),
+    standalone: openedInstalled() || installed,
+    installed: knownInstalled(platform()),
     canPrompt: !!promptEvent,
     menuOnly: isMenuOnly(),
     closedAt: closedAt(),
