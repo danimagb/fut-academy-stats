@@ -46,7 +46,8 @@ import { closeMenus } from '@/shared/ui/bar';
 import { askConfirm } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync } from '@/data/sync';
+import { configureSync, syncState } from '@/data/sync';
+import { installPullToRefresh } from '@/shared/ui/pull-refresh';
 import { refreshLogos } from '@/data/logos';
 import { uid } from '@/shared/lib/id';
 import { db, initStore, isCloudTeam, loadRejected } from '@/data/store';
@@ -367,6 +368,26 @@ export function boot(): void {
   });
 
   installDrag();
+
+  // Pull to refresh (sync now and redraw), only in the app opened from the home screen: browsers
+  // have their own. Not on a live game this phone logs, where players are dragged.
+  const homeScreenApp =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  if (homeScreenApp)
+    installPullToRefresh({
+      enabled: () => {
+        const g = route().view === 'game' ? currentGame() : undefined;
+        const logging = !!g && (g.status === 'live' || g.status === 'break') && !viewReadOnly();
+        return canRenderNow() && !logging;
+      },
+      refresh: async () => {
+        if (canSync()) await syncNow();
+        if (syncState.status === 'offline') toast(t('needsInternet'));
+        render();
+      },
+      label: () => t('syncing'),
+    });
 
   document.addEventListener('visibilitychange', updateWakeLock);
   document.addEventListener('keydown', (e) => {

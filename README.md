@@ -136,6 +136,8 @@ The phone needs the app served over **HTTPS** to install it and use it offline. 
    metadata), because on iPhones Safari can't see the installed app's storage.
 
 Installed apps update on their own: each build gives the service worker a new list of files.
+The installed app has no browser pull-to-refresh, so it has its own: pulling down from the top
+of a screen syncs now (not on a live game this phone is logging, where players are dragged).
 
 ## Files
 
