@@ -14,7 +14,6 @@
 @import '../shared/styles/menu.css';
 @import '../shared/styles/dialog.css';
 @import '../shared/styles/zoom.css';
-@import '../shared/styles/pull-refresh.css';
 @import '../features/live-game/live-game.css';
 @import '../pages/game/pitch.css';
 @import '../pages/game/scoreboard.css';
