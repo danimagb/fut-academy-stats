@@ -27,6 +27,7 @@ import { refuseReadOnly } from '@/features/team-access/read-only';
 import { saveToCloud } from '@/features/cloud-save/cloud-save';
 import { askPersistence } from '@/data/save';
 import { getGame, getTeam } from '@/data/queries';
+import { loggedElsewhere } from '@/data/access';
 import { canSync, cloud, sb, signInGate, syncNow } from '@/data/session';
 import { plural } from '@/shared/i18n/i18n';
 import { setRerender } from '@/shared/lib/rerender';
@@ -45,7 +46,8 @@ import { closeMenus } from '@/shared/ui/bar';
 import { askConfirm } from '@/shared/ui/dialog';
 import { closeSheet } from '@/shared/ui/sheet';
 import { toast } from '@/shared/ui/toast';
-import { configureSync } from '@/data/sync';
+import { configureSync, syncState } from '@/data/sync';
+import { installPullToRefresh } from '@/shared/ui/pull-refresh';
 import { refreshLogos } from '@/data/logos';
 import { uid } from '@/shared/lib/id';
 import { db, initStore, isCloudTeam, loadRejected } from '@/data/store';
@@ -187,7 +189,7 @@ export function boot(): void {
   }, 1500);
   setRerender({ now: () => render(), soon: () => renderSoon(), tabbar: () => showTabbar(route().view) });
 
-  // When to sync: coming back to the app, the network returning, and every minute while open.
+  // When to sync: coming back to the app, the network returning, and on a timer (below).
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void syncNow();
   });
@@ -197,11 +199,19 @@ export function boot(): void {
     void syncNow();
   });
   window.addEventListener('offline', () => renderSoon());
+  // And on a timer while the app is visible: every minute, or every 10 s while this phone shows a
+  // live game another phone is logging, so its goals and subs show up here within seconds (that
+  // phone sends each change 3 s after it).
+  let lastTimedSync = Date.now();
   setInterval(() => {
     if (document.hidden || !canSync()) return;
+    const { view, id } = route();
+    const every = view === 'game' && loggedElsewhere(getGame(id)) ? 10_000 : 60_000;
+    if (Date.now() - lastTimedSync < every) return;
+    lastTimedSync = Date.now();
     void syncNow();
     showSyncStatus();
-  }, 60000);
+  }, 5000);
 
   // The clock on the game screen, reminders and auto-stop: once a second.
   setInterval(tick, 1000);
@@ -358,6 +368,26 @@ export function boot(): void {
   });
 
   installDrag();
+
+  // Pull to refresh (sync now and redraw), only in the app opened from the home screen: browsers
+  // have their own. Not on a live game this phone logs, where players are dragged.
+  const homeScreenApp =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  if (homeScreenApp)
+    installPullToRefresh({
+      enabled: () => {
+        const g = route().view === 'game' ? currentGame() : undefined;
+        const logging = !!g && (g.status === 'live' || g.status === 'break') && !viewReadOnly();
+        return canRenderNow() && !logging;
+      },
+      refresh: async () => {
+        if (canSync()) await syncNow();
+        if (syncState.status === 'offline') toast(t('needsInternet'));
+        render();
+      },
+      label: () => t('syncing'),
+    });
 
   document.addEventListener('visibilitychange', updateWakeLock);
   document.addEventListener('keydown', (e) => {

@@ -117,7 +117,8 @@ uploads: [teamId] }` (defaulted by `normalize()`). A team is a cloud team iff it
     fetched first and applied in one go; `render()` only if something changed, and not while
     typing / a sheet, dialog or menu is open / dragging (then retried every 1.5 s).
   - Triggers: app start with a session, `SIGNED_IN` (after `refreshAccount()`), app visible
-    again, `online`, 3 s after a `save()` that changed cloud records, every 60 s while visible,
+    again, `online`, 3 s after a `save()` that changed cloud records, every 60 s while visible
+    (every 10 s while showing a live game logged on another phone),
     and "Sync now" on Profile. Nothing happens without a session and an `accounts` row.
   - A different user than `db.sync.userId` signs in → that user's cloud teams are removed from
     the phone first. Sign out (Profile) warns about changes not uploaded yet, then removes
