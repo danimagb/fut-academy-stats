@@ -19,7 +19,7 @@
 -- admin's counts are compared with what is really there.
 
 begin;
-select plan(232);
+select plan(237);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@example.com'),
@@ -395,7 +395,9 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
 select lives_ok($$insert into public.games (id, team_id, status, data) values ('gL', 't1', 'live',
-  '{"status":"live","owner":{"userId":"00000000-0000-0000-0000-00000000000a","email":"a@example.com","deviceId":"devA","at":1},"events":[]}')$$, 'A: kicks off gL as its owner (devA)');
+  '{"status":"live","owner":{"userId":"00000000-0000-0000-0000-00000000000b","email":"someone@else.com","deviceId":"devA","at":1},"events":[]}')$$, 'A: kicks off gL (devA)');
+select is((select data -> 'owner' ->> 'userId' || ' ' || (data -> 'owner' ->> 'email') from public.games where id = 'gL'),
+  '00000000-0000-0000-0000-00000000000a a@example.com', 'A: the owner is A with A''s email, whatever the phone sent');
 with u as (update public.games set data = jsonb_set(data, '{events}', '[{"id":"e1","type":"oppgoal"}]') where id = 'gL' returning data)
 select is((select jsonb_array_length(data -> 'events') from u), 1, 'owner A: can log events in their live game');
 
@@ -404,8 +406,9 @@ with u as (update public.games set data = jsonb_set(data, '{events}', '[]') wher
 select is((select jsonb_array_length(data -> 'events') from u), 1, 'M (not the owner): an update to the live game is ignored');
 with u as (update public.games set data = jsonb_set(jsonb_set(data, '{owner}', '{"userId":"00000000-0000-0000-0000-00000000000b","deviceId":"devM","at":2,"from":"devX"}'), '{events}', '[]') where id = 'gL' returning data)
 select is((select data #>> '{owner,userId}' from u), '00000000-0000-0000-0000-00000000000a', 'M: taking over without naming the owner''s device is ignored');
-with u as (update public.games set data = jsonb_set(data, '{owner}', '{"userId":"00000000-0000-0000-0000-00000000000b","email":"m@example.com","deviceId":"devM","at":2,"from":"devA"}') where id = 'gL' returning data)
-select is((select data #>> '{owner,userId}' from u), '00000000-0000-0000-0000-00000000000b', 'M: takes over the live game, naming devA');
+with u as (update public.games set data = jsonb_set(data, '{owner}', '{"userId":"00000000-0000-0000-0000-00000000000b","email":"someone@else.com","deviceId":"devM","at":2,"from":"devA"}') where id = 'gL' returning data)
+select is((select (data #>> '{owner,userId}') || ' ' || (data #>> '{owner,email}') from u), '00000000-0000-0000-0000-00000000000b m@example.com',
+  'M: takes over the live game, naming devA (with M''s own email)');
 with u as (update public.games set data = jsonb_set(data, '{events}', data -> 'events' || '[{"id":"e2","type":"oppgoal"}]') where id = 'gL' returning data)
 select is((select jsonb_array_length(data -> 'events') from u), 2, 'M (the new owner): can log events');
 
@@ -414,8 +417,15 @@ with u as (update public.games set data = jsonb_set(jsonb_set(data, '{owner}', '
 select is((select (data #>> '{owner,userId}') || '/' || jsonb_array_length(data -> 'events') from u), '00000000-0000-0000-0000-00000000000b/2',
   'A (old owner, stale copy): an update is ignored');
 with u as (update public.games set deleted_at = now() where id = 'gL' returning deleted_at)
-select ok((select deleted_at is not null from u), 'A: can still delete the live game (only data and status are guarded)');
-with u as (update public.games set deleted_at = null where id = 'gL' returning 1) select is(count(*)::int, 1, 'A: and restore it') from u;
+select ok((select deleted_at is null from u), 'A (not the owner): cannot soft-delete the live game');
+reset role;
+insert into public.teams (id, club_id, name) values ('t1x', 'c1', 'Sub-7C');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
+with u as (update public.games set team_id = 't1x', date = '2030-01-01' where id = 'gL' returning team_id || ' ' || coalesce(date::text, '-'))
+select is((select * from u), 't1 -', 'A (not the owner): cannot move the live game to another team or date');
+with d as (delete from public.games where id = 'gL' returning 1)
+select is(count(*)::int, 0, 'A (not the owner): cannot delete the live game') from d;
 
 -- Two phones kicking off the same game offline: the first to sync owns it.
 select lives_ok($$insert into public.games (id, team_id, status, data) values ('gR', 't1', 'scheduled', '{"status":"scheduled"}')$$,
@@ -427,14 +437,25 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","r
 with u as (update public.games set data = '{"status":"live","owner":{"userId":"00000000-0000-0000-0000-00000000000a","email":"a@example.com","deviceId":"devA","at":1}}' where id = 'gR' returning data)
 select is((select data #>> '{owner,userId}' from u), '00000000-0000-0000-0000-00000000000b', 'A: kicked it off offline too; their upload is ignored');
 
+-- Kicking off in someone else's name: the owner is still who kicked it off.
+select lives_ok($$insert into public.games (id, team_id, status, data) values ('gK', 't1', 'scheduled', '{"status":"scheduled"}')$$,
+  'A: a scheduled game gK');
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated"}';
+with u as (update public.games set status = 'live', data = '{"status":"live","owner":{"userId":"00000000-0000-0000-0000-00000000000a","email":"a@example.com","deviceId":"devM","at":5}}' where id = 'gK' returning data)
+select is((select (data #>> '{owner,userId}') || ' ' || (data #>> '{owner,email}') from u), '00000000-0000-0000-0000-00000000000b m@example.com',
+  'M: kicks off gK naming A as owner: the owner is M');
+with d as (delete from public.games where id = 'gK' returning 1)
+select is(count(*)::int, 1, 'M (the owner): can delete their live game') from d;
+
 with u as (update public.games set status = 'finished', data = jsonb_set(data, '{status}', '"finished"') where id = 'gL' returning status)
 select is(min(status), 'finished', 'M (owner): finishes the game') from u;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}';
 with u as (update public.games set data = jsonb_set(data, '{events,0,type}', '"oppgoal"') where id = 'gL' returning 1)
 select is(count(*)::int, 1, 'A: once finished, the lock is gone (the finished-game rules apply)');
 reset role;
+set local request.jwt.claims = '{}'; -- no signed-in user (as in the SQL editor): not guarded
 delete from public.games where id in ('gL', 'gR');
+delete from public.teams where id = 't1x';
 
 -- =============================================================================================
 -- Team coach C of t1: read-only
