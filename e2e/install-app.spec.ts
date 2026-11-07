@@ -64,12 +64,22 @@ test.describe('on an iPhone', () => {
     expect(errors).toEqual([]);
   });
 
-  test('in Portuguese, the steps are in European Portuguese', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('fut-academy-stats.lang', 'pt'));
-    await page.goto('#/games');
-    await page.getByRole('button', { name: 'Como instalar' }).click();
-    const steps = page.locator('pwa-install');
-    await expect(steps.getByText('Toca em "Adicionar ao ecrã principal"')).toBeVisible();
-    await expect(steps).not.toContainText('Tela de Início');
-  });
+  // The steps name the phone's own menus, so they follow the phone's language, not the app's.
+  for (const [phone, step, notStep] of [
+    ['pt-PT', 'Toca em "Adicionar ao ecrã principal"', 'Tela de Início'],
+    ['pt-BR', 'Pressione "Adicionar à Tela de Início"', 'ecrã principal'],
+    ['en-GB', 'Press "Add to Home Screen"', 'ecrã principal'],
+  ] as const)
+    test.describe(`on a phone in ${phone}`, () => {
+      test.use({ locale: phone });
+
+      test(`with the app in Portuguese, the steps are in ${phone}`, async ({ page }) => {
+        await page.addInitScript(() => localStorage.setItem('fut-academy-stats.lang', 'pt'));
+        await page.goto('#/games');
+        await page.getByRole('button', { name: 'Como instalar' }).click();
+        const steps = page.locator('pwa-install');
+        await expect(steps.getByText(step)).toBeVisible();
+        await expect(steps).not.toContainText(notStep);
+      });
+    });
 });
