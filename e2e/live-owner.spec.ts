@@ -89,3 +89,30 @@ test('a game logged on another phone is read-only here, until a director takes i
   expect(ownerOf(rows)?.from).toBe('joaos-phone');
   expect(errors).toEqual([]);
 });
+
+test('watching a game logged on another phone, its goals show up within seconds', async ({ page }) => {
+  const errors = watchErrors(page);
+  const owner = { userId: 'u-other', email: 'joao@example.com', deviceId: 'joaos-phone', at: 1 };
+  const start = Date.now() - 60000;
+  const live = game({
+    status: 'live',
+    owner,
+    clock: { running: true, startedAt: start, elapsedMs: 0, period: 1 },
+    marks: [{ type: 'start', period: 1, t: 0, wall: start }],
+  });
+  const rows = await signInAs(page, ME, { is_admin: false }, cloud(live));
+  await page.clock.install();
+  await page.goto('#/game/g1');
+  await expect(page.locator('#main .hint.warn')).toContainText('joao@example.com is logging this game');
+  const score = page.locator('#main .score.big');
+  await expect(score).toHaveText('0 – 0');
+
+  // The other phone logs a goal conceded and sends it.
+  const g = rows.games?.[0] as Record<string, unknown>;
+  const data = g.data as { events: unknown[] };
+  data.events.push({ id: 'e1', type: 'oppgoal', t: 90_000, wall: Date.now() });
+  g.updated_at = '2026-11-02T10:00:00Z';
+  await page.clock.runFor(11_000); // the 10 s sync, not the 60 s one
+  await expect(score).toHaveText('0 – 1');
+  expect(errors).toEqual([]);
+});
