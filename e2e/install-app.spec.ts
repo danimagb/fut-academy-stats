@@ -33,16 +33,22 @@ test('where the browser can install the app, the hint opens its install dialog',
 
 test.describe('on an iPhone', () => {
   test.use({ userAgent: IPHONE_UA });
+  test.beforeEach(async ({ page }) => {
+    // pwa-install tells an iPhone from a Mac by the touch points (Chromium here reports 1).
+    await page.addInitScript(() =>
+      Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 5 }),
+    );
+  });
 
-  test('the hint says how to add it from the Share menu, and comes back days after it is closed', async ({
-    page,
-  }) => {
+  test('the hint opens the Share-menu steps, and comes back days after it is closed', async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto('#/games');
     const hint = page.getByRole('region', { name: 'Install the app' });
-    await expect(hint).toContainText('Add to Home Screen');
-    await expect(hint.getByRole('button', { name: 'Install' })).toHaveCount(0);
+    await expect(hint.getByRole('button', { name: 'Install', exact: true })).toHaveCount(0);
+    await hint.getByRole('button', { name: 'How to install' }).click();
+    await expect(page.locator('pwa-install').getByText('Press "Add to Home Screen"')).toBeVisible();
 
+    await page.reload();
     await hint.getByRole('button', { name: 'Not now' }).click();
     await expect(hint).toHaveCount(0);
     await page.reload();
@@ -56,5 +62,14 @@ test.describe('on an iPhone', () => {
     await page.reload();
     await expect(hint).toBeVisible();
     expect(errors).toEqual([]);
+  });
+
+  test('in Portuguese, the steps are in European Portuguese', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('fut-academy-stats.lang', 'pt'));
+    await page.goto('#/games');
+    await page.getByRole('button', { name: 'Como instalar' }).click();
+    const steps = page.locator('pwa-install');
+    await expect(steps.getByText('Toca em "Adicionar ao ecrã principal"')).toBeVisible();
+    await expect(steps).not.toContainText('Tela de Início');
   });
 });

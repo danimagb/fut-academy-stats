@@ -30,6 +30,7 @@
     "workbox-routing": "7.4.1"
   },
   "dependencies": {
+    "@khmyznikov/pwa-install": "0.7.0",
     "@supabase/supabase-js": "2.118.0"
   }
 }

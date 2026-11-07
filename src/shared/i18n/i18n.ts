@@ -132,7 +132,8 @@ const en = {
   installWhy:
     'For a better experience, add it to your home screen: it opens full screen, like any other app.',
   installBtn: 'Install',
-  installIosSteps: 'Tap Share {icon} (in the ⋯ menu if you don’t see it), then <b>Add to Home Screen</b>.',
+  installHow: 'How to install',
+  installTagline: 'Subs, goals, cards and minutes played in youth football games.',
   installLater: 'Not now',
   removePlayerTitle: 'Remove player?',
   password: 'Password',
@@ -561,8 +562,8 @@ const pt: Record<MessageKey, string> = {
   installWhy:
     'Para uma melhor experiência, adiciona-a ao ecrã principal: abre em ecrã inteiro, como qualquer outra app.',
   installBtn: 'Instalar',
-  installIosSteps:
-    'Toca em Partilhar {icon} (no menu ⋯, se não o vires) e depois em <b>Adicionar ao ecrã principal</b>.',
+  installHow: 'Como instalar',
+  installTagline: 'Substituições, golos, cartões e minutos jogados nos jogos de formação.',
   installLater: 'Agora não',
   removePlayerTitle: 'Remover jogador?',
   password: 'Palavra-passe',
