@@ -2,8 +2,8 @@
 // browser lets a page offer installing (Chrome, Edge, Samsung Internet: `beforeinstallprompt`),
 // its button opens the browser's own install dialog. iPhones, iPads and Firefox on Android have
 // no such API: there its button opens step-by-step instructions (the pwa-install component,
-// loaded only then). Closing the hint hides it for HINT_AGAIN_DAYS.
-import { t } from '@/shared/i18n/i18n';
+// loaded only then, in the phone's language). Closing the hint hides it for HINT_AGAIN_DAYS.
+import { I18N, t, type Lang } from '@/shared/i18n/i18n';
 import { rerenderSoon } from '@/shared/lib/rerender';
 
 /** Chrome's install event (not in TypeScript's DOM types). */
@@ -104,14 +104,20 @@ interface HowToDialog extends HTMLElement {
   showDialog(forced?: boolean): void;
 }
 let howTo: HowToDialog | null = null;
-let howToLang = ''; // it reads the language once: made again when the app's language changed
+
+/**
+ * Our texts in the phone's language, when we have them. The dialog follows the phone, not the app,
+ * because its steps name the phone's own menus: our English or European Portuguese texts go in
+ * only when the phone is set to that, and it keeps its own texts otherwise (e.g. Brazilian).
+ */
+function phoneTexts(): (typeof I18N)[Lang] | null {
+  const l = navigator.language.toLowerCase();
+  if (l.startsWith('en')) return I18N.en;
+  return l === 'pt-pt' ? I18N.pt : null;
+}
 
 /** Shows the browser's install steps (iPhone: Share → Add to Home Screen), with pictures. */
 async function showHowTo(): Promise<void> {
-  if (howTo && howToLang !== document.documentElement.lang) {
-    howTo.remove();
-    howTo = null;
-  }
   if (!howTo) {
     await import('@khmyznikov/pwa-install'); // defines <pwa-install> (a separate, precached file)
     const el = document.createElement('pwa-install') as HowToDialog;
@@ -120,14 +126,16 @@ async function showHowTo(): Promise<void> {
     el.setAttribute('manual-chrome', '');
     el.setAttribute('manual-how-to', ''); // straight to the steps
     el.setAttribute('manifest-url', 'manifest.webmanifest');
-    el.setAttribute('description', t('installTagline'));
-    el.setAttribute('install-description', t('installWhy'));
+    const texts = phoneTexts();
+    if (texts) {
+      el.setAttribute('description', texts.installTagline);
+      el.setAttribute('install-description', texts.installWhy);
+    }
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     el.setAttribute('styles', JSON.stringify({ '--tint-color': accent }));
     document.body.append(el);
     await el.updateComplete;
     howTo = el;
-    howToLang = document.documentElement.lang;
   }
   howTo.showDialog(true);
 }

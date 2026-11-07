@@ -2,10 +2,11 @@ import { fileURLToPath } from 'node:url';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig, type Plugin } from 'vitest/config';
 
-// The pwa-install component (install steps on iPhones, src/features/install-app) has Brazilian
-// Portuguese only, and follows the phone's language. This swaps in European Portuguese and makes it
-// follow the app's language (<html lang>). It fails the build if the package changed and a swap no
-// longer applies, so an upgrade can't quietly bring the old texts back.
+// The pwa-install component (install steps on iPhones, src/features/install-app) follows the
+// phone's language, which is right: its steps name the phone's own menus. But its Portuguese is
+// Brazilian only. This adds European Portuguese ('pt-PT') for phones set to it, leaving 'pt' for
+// Brazilian phones. It fails the build if the package changed and a swap no longer applies, so an
+// upgrade can't quietly drop it.
 const PWA_INSTALL_PT: Record<string, string> = {
   s05b70c60d4ea8317: 'Toca em "Abrir no navegador..."',
   s182ab2d6c997515f: 'Adiciona-a ao ecrã principal para uma melhor experiência e um acesso mais fácil.',
@@ -46,17 +47,19 @@ function pwaInstallPt(): Plugin {
     enforce: 'pre',
     transform(code, id) {
       if (!id.includes('@khmyznikov/pwa-install/dist/pwa-install.es.js')) return null;
-      // The Brazilian table starts with this message (its keys are the ones above).
+      // Its locale table, and the list of locales it accepts.
       let out = replaceOnce(
         code,
-        /=\{s05b70c60d4ea8317:'Toque em [^}]*\}/,
-        `=${JSON.stringify(PWA_INSTALL_PT)}`,
-        'Portuguese table',
+        /\["pt",(\w+)\]/,
+        `["pt",$1],["pt-PT",{templates:${JSON.stringify(PWA_INSTALL_PT)}}]`,
+        'Portuguese locale',
       );
+      out = replaceOnce(out, /"pl","pt","ro"/, '"pl","pt","pt-PT","ro"', 'locale list');
+      // Phones say pt-PT (any case): look for that one first.
       out = replaceOnce(
         out,
         /\(navigator\.language\)/,
-        '(document.documentElement.lang||navigator.language)',
+        '((l=>/^pt-pt$/i.test(l)?"pt-PT":l)(navigator.language))',
         'language lookup',
       );
       return { code: out, map: null };
