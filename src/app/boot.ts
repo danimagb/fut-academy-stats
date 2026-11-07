@@ -11,6 +11,7 @@ import { teamOpen, openAddPlayer, teamPage } from '@/pages/team/team';
 import { profilePage } from '@/pages/profile/profile';
 import { initTheme } from '@/features/theme-switch/theme';
 import { initLanguage } from '@/features/language-switch/language';
+import { initInstallApp, installAppActions } from '@/features/install-app/install-app';
 import { watchAuth, sendCode, verifyCode, signInPassword, setPassword } from '@/features/sign-in/sign-in';
 import { showSyncStatus } from '@/features/sync-status/sync-status';
 import { setClubRole, setTeamRole } from '@/pages/admin/admin';
@@ -117,6 +118,8 @@ export function boot(): void {
 
   initStore();
 
+  initInstallApp();
+
   // Screens already moved to pages/ (see docs/typescript-plan.md, step 6).
   addViews(gamesPage.views);
   addViews(adminPage.views);
@@ -204,6 +207,7 @@ export function boot(): void {
 
   registerActions(actions);
   registerActions(gamesPage.actions);
+  registerActions(installAppActions);
   registerActions(adminPage.actions);
   registerForms(adminPage.forms);
   registerActions(clubPage.actions);

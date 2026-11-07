@@ -128,6 +128,12 @@ const en = {
   tabProfile: 'Profile',
   allTeams: 'All teams',
   noGamesTeam: 'No games for this team yet.',
+  installTitle: 'Install the app',
+  installWhy:
+    'For a better experience, add it to your home screen: it opens full screen, like any other app.',
+  installBtn: 'Install',
+  installIosSteps: 'Tap Share {icon} (in the ⋯ menu if you don’t see it), then <b>Add to Home Screen</b>.',
+  installLater: 'Not now',
   removePlayerTitle: 'Remove player?',
   password: 'Password',
   signInPw: 'Sign in',
@@ -551,6 +557,13 @@ const pt: Record<MessageKey, string> = {
   tabProfile: 'Perfil',
   allTeams: 'Todas as equipas',
   noGamesTeam: 'Ainda não há jogos desta equipa.',
+  installTitle: 'Instala a app',
+  installWhy:
+    'Para uma melhor experiência, adiciona-a ao ecrã principal: abre em ecrã inteiro, como qualquer outra app.',
+  installBtn: 'Instalar',
+  installIosSteps:
+    'Toca em Partilhar {icon} (no menu ⋯, se não o vires) e depois em <b>Adicionar ao ecrã principal</b>.',
+  installLater: 'Agora não',
   removePlayerTitle: 'Remover jogador?',
   password: 'Palavra-passe',
   signInPw: 'Entrar',
