@@ -20,6 +20,7 @@
 @import './tabbar.css';
 @import '../pages/profile/settings.css';
 @import '../pages/games/games.css';
+@import '../features/install-app/install-app.css';
 @import '../features/sync-status/sync-status.css';
 @import '../features/team-people/team-people.css';
 @import '../pages/profile/profile.css';

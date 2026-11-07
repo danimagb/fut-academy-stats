@@ -6,6 +6,7 @@ import { db } from '@/data/store';
 import { teamCrest } from '@/data/logos';
 import { crest } from '@/features/club-logo/club-logo';
 import { teamPicker } from '@/features/team-filter/team-filter';
+import { installHintHtml } from '@/features/install-app/install-app';
 import { fmtDate, matchTitle } from '@/domain/titles';
 import type { Game } from '@/domain/types';
 import { scoreHtml } from '@/features/score/score';
@@ -49,6 +50,7 @@ export function viewGames(): void {
     .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
   main.innerHTML = `
     ${bar(t('tabMatches'))}
+    ${installHintHtml()}
     <button class="btn primary block" data-action="new-game">${t('newGame')}</button>
     ${db.teams.length > 1 ? `<div class="pickers">${teamPicker({ action: 'games-team', value: team, all: true, crestHtml: team ? crest(teamCrest(team)) : '' })}</div>` : ''}
     ${

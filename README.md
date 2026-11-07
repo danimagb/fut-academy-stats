@@ -126,6 +126,12 @@ The phone needs the app served over **HTTPS** to install it and use it offline. 
    - Android/Chrome: menu ⋮ → **Add to Home screen**
    - iPhone/Safari: Share → **Add to Home Screen**
 
+   While it's open in the browser, the games list suggests installing it: on Android the
+   **Install** button opens the browser's install dialog; on iPhones (which have no such
+   button) **How to install** shows the Share-menu steps (the
+   [pwa-install](https://github.com/khmyznikov/pwa-install) component, with European Portuguese
+   texts swapped in by `vite.config.ts`). Closed, it comes back after 7 days.
+
 Installed apps update on their own: each build gives the service worker a new list of files.
 
 ## Files
