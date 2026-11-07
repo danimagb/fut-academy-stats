@@ -29,8 +29,8 @@ test('players can be edited and removed, and the team deleted', async ({ page })
   for (let i = 0; i < 2; i++) {
     await page.locator('[data-action="delete-player"]').first().click();
     await confirmDialog(page);
+    await expect(main).toContainText(i ? '0 players' : '1 player'); // saved in the cloud, the list redrawn
   }
-  await expect(main).toContainText('0 players');
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.locator('[data-action="delete-team"]').click();
   await confirmDialog(page);
