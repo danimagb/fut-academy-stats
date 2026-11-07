@@ -79,8 +79,10 @@ people of the club, with a copy on each phone so games can be run without signal
   (offline, not allowed, an error) nothing is changed on the phone and the app says so.
 - **One phone per game.** The phone that kicks off a synced team's game logs it until full
   time; on other phones it's read-only ("… is logging this game on another phone"), and the
-  database ignores their changes to it. If that phone stops (battery, lost), a director or the
-  club's coordinator uses ⋯ → _Continue on this phone_ (online) to carry on there.
+  database ignores their changes to it, including moving or deleting it. The database also
+  sets who is logging it (the signed-in user and their email), whatever the phone sent. If that
+  phone stops (battery, lost), a director or the club's coordinator uses ⋯ → _Continue on this
+  phone_ (online) to carry on there.
 - **Signing out** removes everything from that phone (it stays in the cloud) and goes back to
   the welcome screen; it warns first if game changes haven't been uploaded yet.
 - **Copies of the data** are made with SQL in the Supabase dashboard (the free plan has no
